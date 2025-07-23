@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
+import { createId } from '@paralleldrive/cuid2'
 
 export async function GET() {
   const { userId } = await auth()
@@ -104,10 +105,13 @@ export async function POST(request: Request) {
       // Create a basic person record for the user
       userPersonParty = await db.party.create({
         data: {
+          id: createId(),
           userId: userId,
           status: 'active',
+          updatedAt: new Date(),
           person: {
             create: {
+              id: createId(),
               firstName: 'User',
               lastName: 'User',
               email: ''
@@ -121,6 +125,7 @@ export async function POST(request: Request) {
     const rolePromises = organizations.map(org => 
       db.role.create({
         data: {
+          id: createId(),
           partyId: userPersonParty!.id,
           roleType: 'master',
           organizationId: org.id,

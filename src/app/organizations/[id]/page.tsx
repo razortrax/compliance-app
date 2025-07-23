@@ -37,6 +37,8 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { SectionHeader } from "@/components/ui/section-header"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { LocationForm } from "@/components/locations/location-form"
 
 interface Organization {
   id: string
@@ -54,6 +56,23 @@ interface Organization {
   }
 }
 
+interface Location {
+  id: string
+  name: string
+  locationType: string
+  address: string
+  city: string
+  state: string
+  zipCode: string
+  phone?: string | null
+  email?: string | null
+  isMainLocation?: boolean
+  _count?: {
+    equipment: number
+    role: number
+  }
+}
+
 export default function OrganizationDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -66,6 +85,26 @@ export default function OrganizationDetailPage() {
   const [editedOrg, setEditedOrg] = useState<Organization | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [locations, setLocations] = useState<Location[]>([])
+  const [showLocationForm, setShowLocationForm] = useState(false)
+
+  const fetchLocations = async () => {
+    if (!organizationId) return
+    
+    try {
+      const response = await fetch(`/api/organizations/${organizationId}/locations`)
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data)
+      } else {
+        console.error('Failed to fetch locations - Status:', response.status)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error)
+    }
+  }
 
   useEffect(() => {
     const fetchOrganization = async () => {
@@ -102,9 +141,12 @@ export default function OrganizationDetailPage() {
       }
     }
 
+
+
     if (organizationId) {
       fetchOrganization()
       fetchOrganizations()
+      fetchLocations()
     }
   }, [organizationId])
 
@@ -412,25 +454,83 @@ export default function OrganizationDetailPage() {
           <TabsContent value="locations" className="space-y-4">
             <SectionHeader
               title="Locations"
-              description="Manage terminals and yards for this organization"
+              description="Manage terminals, yards, and offices"
               actions={
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Location
-                </Button>
+                <Dialog open={showLocationForm} onOpenChange={setShowLocationForm}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Location
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Location</DialogTitle>
+                      <DialogDescription>
+                        Add a new terminal, yard, office, or warehouse location.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <LocationForm
+                      organizationId={organizationId}
+                      onSuccess={() => {
+                        setShowLocationForm(false)
+                        fetchLocations()
+                      }}
+                      onCancel={() => setShowLocationForm(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
               }
             />
             
-            {/* Empty state for locations */}
-            <EmptyState
-              icon={Building}
-              title="No locations yet"
-              description="Add terminals and yards to track compliance by location"
-              action={{
-                label: "Add First Location",
-                onClick: () => {}
-              }}
-            />
+            {locations.length > 0 ? (
+              <div className="grid gap-4">
+                {locations.map((location) => (
+                  <Card key={location.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg">{location.name}</h3>
+                            {location.isMainLocation && (
+                              <Badge variant="default">Main Location</Badge>
+                            )}
+                            <Badge variant="outline" className="capitalize">
+                              {location.locationType}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {location.address}, {location.city}, {location.state} {location.zipCode}
+                          </p>
+                          <div className="flex gap-4 text-sm text-gray-500">
+                            {location.phone && <span>📞 {location.phone}</span>}
+                            {location.email && <span>✉️ {location.email}</span>}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">
+                            {location._count?.equipment || 0} Equipment
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {location._count?.role || 0} Staff
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Building2}
+                title="No locations yet"
+                description="Add terminals, yards, or offices to organize your operations"
+                action={{
+                  label: "Add First Location",
+                  onClick: () => setShowLocationForm(true)
+                }}
+              />
+            )}
           </TabsContent>
           
           {/* Drivers Tab */}

@@ -1,8 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { db } from '@/db'
+import { createId } from '@paralleldrive/cuid2'
 
 export async function POST(request: Request) {
   try {
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user already has a profile
-    const existingParty = await prisma.party.findFirst({
+    const existingParty = await db.party.findFirst({
       where: { userId },
       include: { person: true }
     })
@@ -51,18 +50,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: any) => {
       // Create or use existing user party
       const userParty = existingParty || await tx.party.create({
         data: {
+          id: createId(),
           userId,
-          status: 'active'
+          status: 'active',
+          updatedAt: new Date()
         }
       })
 
       // Create person record
       const person = await tx.person.create({
         data: {
+          id: createId(),
           partyId: userParty.id,
           firstName,
           lastName
@@ -75,13 +77,16 @@ export async function POST(request: Request) {
       if (organizationName) {
         const organizationParty = await tx.party.create({
           data: {
+            id: createId(),
             userId, // Associate with user for ownership
-            status: 'active'
+            status: 'active',
+            updatedAt: new Date()
           }
         })
 
         organization = await tx.organization.create({
           data: {
+            id: createId(),
             partyId: organizationParty.id,
             name: organizationName
           }
@@ -91,6 +96,7 @@ export async function POST(request: Request) {
       // Create role
       const userRole = await tx.role.create({
         data: {
+          id: createId(),
           partyId: userParty.id,
           roleType: role,
           organizationId: organization?.id,

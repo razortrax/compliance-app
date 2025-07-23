@@ -92,7 +92,9 @@ model equipment {
   vinNumber          String?   @unique
   plateNumber        String?
   registrationExpiry DateTime?
+  locationId         String?   // Equipment can be assigned to specific location
   party              party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  location           location? @relation(fields: [locationId], references: [id])
 }
 
 model inspection_issue {
@@ -132,6 +134,26 @@ model license_issue {
   issue          issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
+model location {
+  id               String       @id
+  organizationId   String
+  name             String
+  locationType     String       // terminal, yard, office, warehouse
+  address          String
+  city             String
+  state            String
+  zipCode          String
+  phone            String?
+  email            String?
+  isMainLocation   Boolean      @default(false)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  equipment        equipment[]
+  role             role[]       // Staff and drivers assigned to this location
+}
+
 model organization {
   id           String         @id
   partyId      String         @unique
@@ -144,6 +166,7 @@ model organization {
   zipCode      String?
   phone        String?
   consultation consultation[]
+  location     location[]
   party        party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
@@ -182,6 +205,7 @@ model role {
   partyId        String
   roleType       String
   organizationId String?
+  locationId     String?   // Role can be assigned to specific location
   status         String    @default("pending")
   startDate      DateTime  @default(now())
   endDate        DateTime?
@@ -189,4 +213,5 @@ model role {
   expiresAt      DateTime?
   consultationId String?
   party          party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  location       location? @relation(fields: [locationId], references: [id])
 }

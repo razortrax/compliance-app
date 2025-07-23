@@ -11,7 +11,9 @@
   "dependencies": {
     "@clerk/nextjs": "^6.25.4",
     "@hookform/resolvers": "^5.1.1",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@prisma/client": "^6.12.0",
+    "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.5",

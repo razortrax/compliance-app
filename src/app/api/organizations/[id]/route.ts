@@ -175,8 +175,7 @@ export async function PUT(
         address: body.address || null,
         city: body.city || null,
         state: body.state || null,
-        zipCode: body.zipCode || null,
-        email: body.email || null
+        zipCode: body.zipCode || null
       },
       include: {
         party: {

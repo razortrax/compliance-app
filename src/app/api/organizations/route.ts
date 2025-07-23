@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
+import { createId } from '@paralleldrive/cuid2'
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
             status: true,
             createdAt: true,
             updatedAt: true,
-            roles: {
+            role: {
               where: {
                 roleType: 'master',
                 isActive: true
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Total organizations found:', organizations.length)
     organizations.forEach(org => {
-      console.log(`- ${org.name} (ID: ${org.id}, Party userId: ${org.party?.userId})`)
+      console.log(`- ${org.name} (ID: ${org.id})`)
     })
 
     return NextResponse.json(organizations)
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, dotNumber, einNumber, permitNumber, phone, notes } = body
+    const { name, dotNumber, einNumber, phone, notes } = body
 
     if (!name) {
       return NextResponse.json(
@@ -143,15 +144,20 @@ export async function POST(request: NextRequest) {
 
     // Create organization - Note: do NOT connect to current user directly
     // Organizations under a master should not have party.userId set
+    const partyId = createId()
     const organization = await db.organization.create({
       data: {
+        id: createId(),
         name,
         dotNumber: dotNumber || null,
         phone: phone || null,
+        einNumber: einNumber || null,
         party: {
           create: {
-            status: 'active' // Party itself is always active, role determines org status
+            id: partyId,
+            status: 'active', // Party itself is always active, role determines org status
             // NOT setting userId here - managed organizations don't have direct ownership
+            updatedAt: new Date()
           }
         }
       },
@@ -167,13 +173,14 @@ export async function POST(request: NextRequest) {
     })
 
     // Determine initial role status based on completion
-    const hasActivationRequirements = einNumber && permitNumber
+    const hasActivationRequirements = einNumber && dotNumber
     const initialRoleStatus = hasActivationRequirements ? 'active' : 'pending'
 
     // Create master-organization relationship in Role table
     // This establishes that the user's master company manages this organization
     const role = await db.role.create({
       data: {
+        id: createId(),
         roleType: 'master',
         partyId: userMasterOrg.partyId, // User's master company is the master
         organizationId: organization.id, // The new organization
