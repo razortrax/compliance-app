@@ -1,101 +1,225 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs"
+import { Building, Users, Shield, Truck, CheckCircle, ArrowRight, LayoutDashboard } from "lucide-react"
+import Link from "next/link"
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto px-6 py-12">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <Badge variant="secondary" className="mb-4">
+            Fleet Compliance Made Simple
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+            Stay DOT Compliant with
+            <span className="text-blue-600"> ComplianceApp</span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            Streamline your fleet's compliance tracking, automate expiration notifications, 
+            and manage inspections and accidents with our intelligent platform.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 text-blue-600 mb-4">
+              <Shield className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">DOT Compliance</h3>
+            <p className="text-muted-foreground">
+              Stay ahead of regulations with automated tracking and alerts
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-600 mb-4">
+              <Users className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Driver Management</h3>
+            <p className="text-muted-foreground">
+              Track licenses, physicals, and training requirements
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-orange-100 text-orange-600 mb-4">
+              <Truck className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Fleet Tracking</h3>
+            <p className="text-muted-foreground">
+              Monitor vehicle inspections and maintenance schedules
+            </p>
+          </div>
+        </div>
+
+        {/* Role Selection Section - For Non-Authenticated Users */}
+        <SignedOut>
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Choose Your Management Level</h2>
+              <p className="text-lg text-muted-foreground">
+                Select the option that best describes your role and responsibilities
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+            {/* Master Manager Card */}
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200">
+              <CardHeader className="text-center pb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                  <Building className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-2xl">Master Manager</CardTitle>
+                <CardDescription className="text-base">
+                  Perfect for consultants, parent companies, or multi-location operations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Manage multiple organizations</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Full administrative control</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Set user permissions</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Cross-company reporting</span>
+                  </div>
+                </div>
+                <SignUpButton mode="modal" forceRedirectUrl="/organizations?role=master">
+                  <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
+                    Get Started as Master
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </SignUpButton>
+              </CardContent>
+            </Card>
+
+            {/* Organization Manager Card */}
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-green-200">
+              <CardHeader className="text-center pb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mx-auto mb-4">
+                  <Users className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-2xl">Organization Manager</CardTitle>
+                <CardDescription className="text-base">
+                  Ideal for single-company fleet managers and safety coordinators
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Manage your organization</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Track drivers and equipment</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Compliance monitoring</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Issue management</span>
+                  </div>
+                </div>
+                                 <SignUpButton mode="modal" forceRedirectUrl="/organizations?role=organization">
+                   <Button className="w-full mt-6 bg-green-600 hover:bg-green-700">
+                     Get Started as Manager
+                     <ArrowRight className="ml-2 h-4 w-4" />
+                   </Button>
+                 </SignUpButton>
+              </CardContent>
+            </Card>
+          </div>
+
+            <div className="text-center mt-8">
+              <p className="text-sm text-muted-foreground">
+                Not sure which option is right for you? 
+                <Button variant="link" className="p-0 ml-1 h-auto text-sm">
+                  Contact us for guidance
+                </Button>
+              </p>
+            </div>
+          </div>
+        </SignedOut>
+
+        {/* Quick Access for Authenticated Users - Optional, Not Forced */}
+        <SignedIn>
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <Badge variant="outline" className="mb-3 bg-green-50 text-green-700 border-green-200">
+                ✅ You're signed in
+              </Badge>
+              <h2 className="text-2xl font-bold mb-2">Quick Access</h2>
+              <p className="text-muted-foreground">
+                Jump directly to your workspace, or continue browsing below
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Link href="/dashboard">
+                <Card className="relative hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200 h-full">
+                  <CardHeader className="text-center pb-3">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mx-auto mb-3">
+                      <LayoutDashboard className="h-6 w-6" />
+                    </div>
+                    <CardTitle className="text-lg">Master Dashboard</CardTitle>
+                    <CardDescription className="text-sm">
+                      Fleet overview and compliance metrics
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/organizations">
+                <Card className="relative hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-green-200 h-full">
+                  <CardHeader className="text-center pb-3">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mx-auto mb-3">
+                      <Building className="h-6 w-6" />
+                    </div>
+                    <CardTitle className="text-lg">Organizations</CardTitle>
+                    <CardDescription className="text-sm">
+                      Manage your organizations and fleet
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                      Manage Organizations
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          </div>
+        </SignedIn>
+
+        {/* Trust Section */}
+        <div className="text-center mt-20 mb-8">
+          <p className="text-sm text-muted-foreground">
+            Trusted by fleet managers nationwide • SOC 2 Compliant • 99.9% Uptime
+          </p>
+        </div>
+      </div>
     </div>
-  );
+  )
 }

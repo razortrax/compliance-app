@@ -34,3 +34,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# compliance app specific
+.env
+.env.production
+.env.development
+
+# database
+*.db
+*.sqlite
+
+# logs
+logs
+*.log
+
+# prisma studio temp files
+.prisma

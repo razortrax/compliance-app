@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Base party model - all entities inherit from this
+model Party {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status    String   @default("active") // active, inactive, pending, suspended
+  
+  // Relationships
+  organization Organization?
+  person       Person?
+  equipment    Equipment?
+  roles        Role[]
+  issues       Issue[]
+  
+  @@map("party")
+}
+
+model Organization {
+  id       String @id @default(cuid())
+  partyId  String @unique
+  party    Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  name         String
+  dotNumber    String? @unique
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  phone        String?
+  email        String?
+  
+  @@map("organization")
+}
+
+model Person {
+  id       String @id @default(cuid())
+  partyId  String @unique
+  party    Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime?
+  licenseNumber String? @unique
+  phone        String?
+  email        String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  
+  @@map("person")
+}
+
+model Equipment {
+  id       String @id @default(cuid())
+  partyId  String @unique
+  party    Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  vehicleType    String // truck, trailer, etc.
+  make           String?
+  model          String?
+  year           Int?
+  vinNumber      String? @unique
+  plateNumber    String?
+  registrationExpiry DateTime?
+  
+  @@map("equipment")
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  partyId   String
+  party     Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  roleType      String // driver, manager, admin, master, etc.
+  organizationId String?
+  status        String   @default("pending") // pending, active, inactive for the role
+  startDate     DateTime @default(now())
+  endDate       DateTime?
+  isActive      Boolean  @default(true)
+  
+  @@map("role")
+}
+
+model Issue {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  issueType   String   // license_issue, accident_issue, inspection_issue
+  status      String   @default("open") // open, in_progress, resolved, closed
+  priority    String   @default("medium") // low, medium, high, critical
+  
+  partyId     String
+  party       Party    @relation(fields: [partyId], references: [id])
+  
+  title       String
+  description String?
+  dueDate     DateTime?
+  resolvedAt  DateTime?
+  
+  // Polymorphic relationships
+  licenseIssue    LicenseIssue?
+  accidentIssue   AccidentIssue?
+  inspectionIssue InspectionIssue?
+  
+  @@map("issue")
+}
+
+model LicenseIssue {
+  id        String @id @default(cuid())
+  issueId   String @unique
+  issue     Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  
+  licenseType    String
+  expirationDate DateTime
+  renewalDate    DateTime?
+  
+  @@map("license_issue")
+}
+
+model AccidentIssue {
+  id        String @id @default(cuid())
+  issueId   String @unique
+  issue     Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  
+  accidentDate    DateTime
+  location        String?
+  severity        String // minor, major, fatal
+  reportNumber    String?
+  isReportable    Boolean @default(false)
+  
+  @@map("accident_issue")
+}
+
+model InspectionIssue {
+  id        String @id @default(cuid())
+  issueId   String @unique
+  issue     Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  
+  inspectionDate  DateTime
+  inspectorName   String?
+  violationCount  Int     @default(0)
+  outOfService    Boolean @default(false)
+  
+  @@map("inspection_issue")
+} 
