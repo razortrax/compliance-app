@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
-import Link from "next/link";
-import { Building, LayoutDashboard } from "lucide-react";
+import { ClerkProvider } from "@clerk/nextjs";
+import Header from "@/components/layout/header";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -39,42 +31,7 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <header className="border-b">
-            <div className="flex justify-between items-center p-4">
-              <div className="flex items-center gap-6">
-                <Link href="/" className="text-xl font-semibold">
-                  ComplianceApp
-                </Link>
-                <SignedIn>
-                  <nav className="flex gap-4 text-sm">
-                    <Link 
-                      href="/dashboard" 
-                      className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
-                    </Link>
-                    <Link 
-                      href="/organizations" 
-                      className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Building className="h-4 w-4" />
-                      Organizations
-                    </Link>
-                  </nav>
-                </SignedIn>
-              </div>
-              <div className="flex gap-4 items-center">
-                <SignedOut>
-                  <SignInButton />
-                  <SignUpButton />
-                </SignedOut>
-                <SignedIn>
-                  <UserButton />
-                </SignedIn>
-              </div>
-            </div>
-          </header>
+          <Header />
           {children}
         </body>
       </html>
