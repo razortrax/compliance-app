@@ -12,14 +12,21 @@ interface UserRole {
   organizationId?: string
 }
 
+interface UserProfile {
+  firstName?: string
+  lastName?: string
+}
+
 export default function Header() {
   const { user, isSignedIn } = useUser()
   const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (isSignedIn && user) {
       fetchUserRole()
+      fetchUserProfile()
     }
   }, [isSignedIn, user])
 
@@ -35,6 +42,18 @@ export default function Header() {
       console.error('Error fetching user role:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch('/api/user/profile')
+      if (response.ok) {
+        const data = await response.json()
+        setUserProfile(data.profile)
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
     }
   }
 
@@ -63,8 +82,12 @@ export default function Header() {
       return user.firstName
     }
     
-    // If no firstName in Clerk, we'll need to get it from our database
-    // For now, fall back to email parsing
+    // Then try our database profile
+    if (userProfile?.firstName) {
+      return userProfile.firstName
+    }
+    
+    // Finally fall back to email parsing
     return user.emailAddresses[0]?.emailAddress.split('@')[0] || 'User'
   }
 
