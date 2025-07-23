@@ -96,8 +96,8 @@ export default function LandingPage() {
                     <span className="text-sm">Cross-company reporting</span>
                   </div>
                 </div>
-                <SignUpButton mode="modal" forceRedirectUrl="/organizations?role=master">
-                  <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
+                <SignUpButton mode="modal" forceRedirectUrl="/complete-profile?role=master">
+                  <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                     Get Started as Master
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -135,8 +135,8 @@ export default function LandingPage() {
                     <span className="text-sm">Issue management</span>
                   </div>
                 </div>
-                                 <SignUpButton mode="modal" forceRedirectUrl="/organizations?role=organization">
-                   <Button className="w-full mt-6 bg-green-600 hover:bg-green-700">
+                                 <SignUpButton mode="modal" forceRedirectUrl="/complete-profile?role=organization">
+                   <Button className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                      Get Started as Manager
                      <ArrowRight className="ml-2 h-4 w-4" />
                    </Button>
@@ -175,7 +175,7 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <SignUpButton mode="modal" forceRedirectUrl="/consultant/register">
-                  <Button className="w-full mt-6 bg-purple-600 hover:bg-purple-700">
+                  <Button className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                     Join as Consultant
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>

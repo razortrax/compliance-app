@@ -5,7 +5,7 @@ import { useUser, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Building, LayoutDashboard, HelpCircle, Shield, Users } from 'lucide-react'
+import { Building, LayoutDashboard, HelpCircle, Shield, Users, Settings } from 'lucide-react'
 
 interface UserRole {
   roleType: string
@@ -96,7 +96,7 @@ export default function Header() {
       return '/consultant/dashboard'
     }
     if (userRole?.roleType === 'new_user') {
-      return '/onboarding' // This will be the user setup page
+      return '/complete-profile' // User needs to complete their profile
     }
     return '/consultants' // This will be the consultant marketplace page
   }
@@ -109,31 +109,17 @@ export default function Header() {
             ComplianceApp
           </Link>
           <SignedIn>
-            <nav className="flex gap-4 text-sm">
-              <Link 
-                href="/dashboard" 
-                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <Link 
-                href="/organizations" 
-                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Building className="h-4 w-4" />
-                Organizations
-              </Link>
-              {userRole?.roleType === 'consultant' && (
+            {userRole?.roleType === 'master' && (
+              <nav className="flex gap-4 text-sm">
                 <Link 
-                  href="/consultant/dashboard" 
+                  href="/dashboard" 
                   className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Shield className="h-4 w-4" />
-                  Consulting
+                  <LayoutDashboard className="h-4 w-4" />
+                  Master Overview
                 </Link>
-              )}
-            </nav>
+              </nav>
+            )}
           </SignedIn>
         </div>
         
@@ -142,12 +128,17 @@ export default function Header() {
             <SignInButton>
               <Button variant="ghost" size="sm">Sign In</Button>
             </SignInButton>
-            <SignUpButton>
-              <Button size="sm">Sign Up</Button>
-            </SignUpButton>
           </SignedOut>
           
           <SignedIn>
+            {/* Settings Button */}
+            <Link href="/settings">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </Link>
+            
             {/* Get Help Button */}
             <Link href={getHelpUrl()}>
               <Button variant="outline" size="sm" className="flex items-center gap-2">

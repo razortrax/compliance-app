@@ -10,29 +10,55 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Find organizations that belong to this user or that they have access to
+    // First, find the user's master company (organization they directly own)
+    const userMasterOrg = await db.organization.findFirst({
+      where: {
+        party: {
+          userId: userId
+        }
+      },
+      include: {
+        party: true
+      }
+    })
+
+    console.log('GET /api/organizations - User:', userId)
+    console.log('User Master Org:', userMasterOrg?.name, userMasterOrg?.id)
+
+    // If user has no master org, return empty array
+    if (!userMasterOrg) {
+      console.log('No master org found for user')
+      return NextResponse.json([])
+    }
+
+    // Find all organizations:
+    // 1. The master company itself
+    // 2. All organizations managed by the master company (through roles)
+    
+    // First get all organization IDs managed by the master
+    const managedOrgRoles = await db.role.findMany({
+      where: {
+        roleType: 'master',
+        partyId: userMasterOrg.partyId,
+        isActive: true
+      },
+      select: {
+        organizationId: true
+      }
+    })
+
+    const managedOrgIds = managedOrgRoles
+      .map(role => role.organizationId)
+      .filter((id): id is string => id !== null)
+
+    console.log('Managed org IDs:', managedOrgIds)
+
+    // Now get all organizations (master + managed)
     const organizations = await db.organization.findMany({
       where: {
         OR: [
-          // Organizations owned by this user
-          {
-            party: {
-              userId: userId
-            }
-          },
-          // Organizations this user has a role in
-          {
-            party: {
-              roles: {
-                some: {
-                  party: {
-                    userId: userId
-                  },
-                  isActive: true
-                }
-              }
-            }
-          }
+          { id: userMasterOrg.id }, // Include the master org itself
+          { id: { in: managedOrgIds } } // Include all managed orgs
         ]
       },
       include: {
@@ -63,9 +89,14 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log('Total organizations found:', organizations.length)
+    organizations.forEach(org => {
+      console.log(`- ${org.name} (ID: ${org.id}, Party userId: ${org.party?.userId})`)
+    })
+
     return NextResponse.json(organizations)
   } catch (error) {
-    console.error('Error fetching organizations:', error)
+    console.error('Failed to fetch organizations:', error)
     return NextResponse.json(
       { error: 'Failed to fetch organizations' },
       { status: 500 }
@@ -91,7 +122,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create organization with party relationship
+    // Find the current user's master company (organization they directly own)
+    const userMasterOrg = await db.organization.findFirst({
+      where: {
+        party: {
+          userId: userId
+        }
+      },
+      include: {
+        party: true
+      }
+    })
+
+    if (!userMasterOrg) {
+      return NextResponse.json(
+        { error: 'No master company found for user' },
+        { status: 400 }
+      )
+    }
+
+    // Create organization - Note: do NOT connect to current user directly
+    // Organizations under a master should not have party.userId set
     const organization = await db.organization.create({
       data: {
         name,
@@ -99,8 +150,8 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         party: {
           create: {
-            userId: userId, // Connect to current user
             status: 'active' // Party itself is always active, role determines org status
+            // NOT setting userId here - managed organizations don't have direct ownership
           }
         }
       },
@@ -109,50 +160,35 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Get the current user's master party (or create one if needed)
-    // For now, we'll assign to ComplianceApp master if user doesn't have a master party
-    // TODO: Later we'll create proper user master parties during signup
-    
-    // Find or create ComplianceApp master (auto-created on first use)
-    let complianceAppMaster = await db.organization.findFirst({
-      where: { name: 'ComplianceApp' },
-      include: { party: true }
+    console.log('Created organization:', {
+      id: organization.id,
+      name: organization.name,
+      partyId: organization.partyId
     })
-
-    // Create ComplianceApp master if it doesn't exist
-    if (!complianceAppMaster) {
-      console.log('Creating ComplianceApp master organization...')
-      complianceAppMaster = await db.organization.create({
-        data: {
-          name: 'ComplianceApp',
-          dotNumber: 'MASTER001',
-          email: 'admin@complianceapp.com',
-          phone: '(555) 000-0000',
-          party: {
-            create: {
-              status: 'active'
-            }
-          }
-        },
-        include: {
-          party: true
-        }
-      })
-    }
 
     // Determine initial role status based on completion
     const hasActivationRequirements = einNumber && permitNumber
     const initialRoleStatus = hasActivationRequirements ? 'active' : 'pending'
 
     // Create master-organization relationship in Role table
-    await db.role.create({
+    // This establishes that the user's master company manages this organization
+    const role = await db.role.create({
       data: {
         roleType: 'master',
-        partyId: complianceAppMaster.partyId, // ComplianceApp is the master
-        organizationId: organization.id,
+        partyId: userMasterOrg.partyId, // User's master company is the master
+        organizationId: organization.id, // The new organization
         status: initialRoleStatus,
         isActive: true
       }
+    })
+
+    console.log('Created master role:', {
+      id: role.id,
+      roleType: role.roleType,
+      masterPartyId: role.partyId,
+      managedOrgId: role.organizationId,
+      status: role.status,
+      isActive: role.isActive
     })
 
     // TODO: Store EIN and permit numbers (add to schema when needed)

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,253 +7,186 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Base party model - all entities inherit from this
-model Party {
-  id        String   @id @default(cuid())
-  userId    String?  // Clerk user ID - connects to authentication system
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  status    String   @default("active") // active, inactive, pending, suspended
-  
-  // Relationships
-  organization Organization?
-  person       Person?
-  equipment    Equipment?
-  consultant   Consultant?
-  roles        Role[]
-  issues       Issue[]
-  
-  @@map("party")
+model accident_issue {
+  id           String   @id
+  issueId      String   @unique
+  accidentDate DateTime
+  location     String?
+  severity     String
+  reportNumber String?
+  isReportable Boolean  @default(false)
+  issue        issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
-model Organization {
-  id       String @id @default(cuid())
-  partyId  String @unique
-  party    Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  
-  name         String
-  dotNumber    String? @unique
-  address      String?
-  city         String?
-  state        String?
-  zipCode      String?
-  phone        String?
-  email        String?
-  
-  // Consultant relationships
-  consultations Consultation[]
-  
-  @@map("organization")
+model consultant {
+  id              String         @id
+  partyId         String         @unique
+  licenseNumber   String?
+  specializations String[]
+  yearsExperience Int?
+  hourlyRate      Decimal?
+  bio             String?
+  isActive        Boolean        @default(true)
+  isVerified      Boolean        @default(false)
+  party           party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  consultation    consultation[]
 }
 
-model Person {
-  id       String @id @default(cuid())
-  partyId  String @unique
-  party    Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  
-  firstName    String
-  lastName     String
-  dateOfBirth  DateTime?
-  licenseNumber String? @unique
-  phone        String?
-  email        String?
-  address      String?
-  city         String?
-  state        String?
-  zipCode      String?
-  
-  @@map("person")
+model consultant_access_log {
+  id                   String               @id
+  consentId            String
+  accessedAt           DateTime             @default(now())
+  action               String
+  resourceType         String
+  resourceId           String?
+  details              String?
+  ipAddress            String?
+  userAgent            String?
+  data_sharing_consent data_sharing_consent @relation(fields: [consentId], references: [id], onDelete: Cascade)
 }
 
-model Equipment {
-  id       String @id @default(cuid())
-  partyId  String @unique
-  party    Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  
-  vehicleType    String // truck, trailer, etc.
-  make           String?
-  model          String?
-  year           Int?
-  vinNumber      String? @unique
-  plateNumber    String?
+model consultation {
+  id                   String                @id
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime
+  clientOrgId          String
+  consultantId         String
+  title                String
+  description          String?
+  consultationType     String
+  status               String                @default("REQUESTED")
+  urgency              String                @default("NORMAL")
+  requestedAt          DateTime              @default(now())
+  acceptedAt           DateTime?
+  startDate            DateTime?
+  endDate              DateTime?
+  dataAccessExpiry     DateTime?
+  agreedRate           Decimal?
+  estimatedHours       Int?
+  actualHours          Decimal?
+  organization         organization          @relation(fields: [clientOrgId], references: [id])
+  consultant           consultant            @relation(fields: [consultantId], references: [id])
+  data_sharing_consent data_sharing_consent?
+}
+
+model data_sharing_consent {
+  id                    String                  @id
+  consultationId        String                  @unique
+  consentGivenAt        DateTime                @default(now())
+  consentGivenBy        String
+  isActive              Boolean                 @default(true)
+  revokedAt             DateTime?
+  revokedBy             String?
+  scopePermissions      Json
+  consultant_access_log consultant_access_log[]
+  consultation          consultation            @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+}
+
+model equipment {
+  id                 String    @id
+  partyId            String    @unique
+  vehicleType        String
+  make               String?
+  model              String?
+  year               Int?
+  vinNumber          String?   @unique
+  plateNumber        String?
   registrationExpiry DateTime?
-  
-  @@map("equipment")
+  party              party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
-model Role {
-  id        String   @id @default(cuid())
-  partyId   String
-  party     Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  
-  roleType       String // driver, manager, admin, master, consultant, etc.
-  organizationId String?
-  status         String   @default("pending") // pending, active, inactive for the role
-  startDate      DateTime @default(now())
-  endDate        DateTime?
-  isActive       Boolean  @default(true)
-  
-  // Consultant access management
-  expiresAt      DateTime? // For temporary consultant access
-  consultationId String?   // Link to consultation for consultant roles
-  
-  @@map("role")
+model inspection_issue {
+  id             String   @id
+  issueId        String   @unique
+  inspectionDate DateTime
+  inspectorName  String?
+  violationCount Int      @default(0)
+  outOfService   Boolean  @default(false)
+  issue          issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
-model Issue {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  issueType   String   // license_issue, accident_issue, inspection_issue
-  status      String   @default("open") // open, in_progress, resolved, closed
-  priority    String   @default("medium") // low, medium, high, critical
-  
-  partyId     String
-  party       Party    @relation(fields: [partyId], references: [id])
-  
-  title       String
-  description String?
-  dueDate     DateTime?
-  resolvedAt  DateTime?
-  
-  // Polymorphic relationships
-  licenseIssue    LicenseIssue?
-  accidentIssue   AccidentIssue?
-  inspectionIssue InspectionIssue?
-  
-  @@map("issue")
+model issue {
+  id               String            @id
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime
+  issueType        String
+  status           String            @default("open")
+  priority         String            @default("medium")
+  partyId          String
+  title            String
+  description      String?
+  dueDate          DateTime?
+  resolvedAt       DateTime?
+  accident_issue   accident_issue?
+  inspection_issue inspection_issue?
+  party            party             @relation(fields: [partyId], references: [id])
+  license_issue    license_issue?
 }
 
-model LicenseIssue {
-  id        String @id @default(cuid())
-  issueId   String @unique
-  issue     Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  
+model license_issue {
+  id             String    @id
+  issueId        String    @unique
   licenseType    String
   expirationDate DateTime
   renewalDate    DateTime?
-  
-  @@map("license_issue")
+  issue          issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
-model AccidentIssue {
-  id        String @id @default(cuid())
-  issueId   String @unique
-  issue     Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  
-  accidentDate    DateTime
-  location        String?
-  severity        String // minor, major, fatal
-  reportNumber    String?
-  isReportable    Boolean @default(false)
-  
-  @@map("accident_issue")
+model organization {
+  id           String         @id
+  partyId      String         @unique
+  name         String
+  dotNumber    String?        @unique
+  einNumber    String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  phone        String?
+  consultation consultation[]
+  party        party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
-model InspectionIssue {
-  id        String @id @default(cuid())
-  issueId   String @unique
-  issue     Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  
-  inspectionDate  DateTime
-  inspectorName   String?
-  violationCount  Int     @default(0)
-  outOfService    Boolean @default(false)
-  
-  @@map("inspection_issue")
+model party {
+  id           String        @id
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  status       String        @default("active")
+  userId       String?
+  consultant   consultant?
+  equipment    equipment?
+  issue        issue[]
+  organization organization?
+  person       person?
+  role         role[]
 }
 
-// Consultant Marketplace Models
-model Consultant {
-  id        String @id @default(cuid())
-  partyId   String @unique
-  party     Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  
-  // Consultant-specific fields
-  licenseNumber     String?
-  specializations   String[] // ["DOT_AUDIT", "SAFETY", "HOURS_OF_SERVICE", "DRIVER_QUALIFICATION"]
-  yearsExperience   Int?
-  hourlyRate        Decimal?
-  bio               String?
-  isActive          Boolean @default(true)
-  isVerified        Boolean @default(false)
-  
-  // Relationships
-  consultations     Consultation[]
-  
-  @@map("consultant")
+model person {
+  id            String    @id
+  partyId       String    @unique
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime?
+  licenseNumber String?   @unique
+  phone         String?
+  email         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  party         party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
-model Consultation {
-  id           String @id @default(cuid())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Parties involved
-  clientOrgId      String
-  clientOrg        Organization @relation(fields: [clientOrgId], references: [id])
-  consultantId     String  
-  consultant       Consultant @relation(fields: [consultantId], references: [id])
-  
-  // Consultation details
-  title            String
-  description      String?
-  consultationType String // "AUDIT_PREP", "COMPLIANCE_REVIEW", "INCIDENT_RESPONSE", "GENERAL_GUIDANCE"
-  status           String @default("REQUESTED") // REQUESTED, ACCEPTED, ACTIVE, COMPLETED, CANCELLED
-  urgency          String @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  
-  // Access & Timing
-  requestedAt      DateTime @default(now())
-  acceptedAt       DateTime?
-  startDate        DateTime?
-  endDate          DateTime?
-  dataAccessExpiry DateTime? // When consultant access expires
-  
-  // Pricing
-  agreedRate       Decimal?
-  estimatedHours   Int?
-  actualHours      Decimal?
-  
-  // Data sharing consent
-  dataConsent      DataSharingConsent?
-  
-  @@map("consultation")
+model role {
+  id             String    @id
+  partyId        String
+  roleType       String
+  organizationId String?
+  status         String    @default("pending")
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  consultationId String?
+  party          party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
-
-model DataSharingConsent {
-  id              String @id @default(cuid())
-  consultationId  String @unique
-  consultation    Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
-  
-  // Consent details
-  consentGivenAt  DateTime @default(now())
-  consentGivenBy  String // User ID who gave consent
-  isActive        Boolean @default(true)
-  revokedAt       DateTime?
-  revokedBy       String?
-  
-  // What data is shared - JSON for flexibility
-  scopePermissions Json // {"issues": true, "drivers": true, "equipment": false, "reports": true}
-  
-  // Audit trail
-  accessLog       ConsultantAccessLog[]
-  
-  @@map("data_sharing_consent")
-}
-
-model ConsultantAccessLog {
-  id           String @id @default(cuid())
-  consentId    String
-  consent      DataSharingConsent @relation(fields: [consentId], references: [id], onDelete: Cascade)
-  
-  accessedAt   DateTime @default(now())
-  action       String // "VIEW", "EXPORT", "DOWNLOAD", "SEARCH"
-  resourceType String // "issue", "driver", "equipment", "organization", "report"
-  resourceId   String?
-  details      String? // Additional context about the action
-  ipAddress    String?
-  userAgent    String?
-  
-  @@map("consultant_access_log")
-} 

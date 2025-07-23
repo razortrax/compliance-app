@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { OrganizationForm } from "./organization-form"
-import { OnboardingWizard } from "./onboarding-wizard"
+// Removed onboarding wizard - users complete profile during signup
 import { SmartRedirect } from "../routing/smart-redirect"
 import { Search, Plus, Building2 } from "lucide-react"
 
@@ -29,6 +29,7 @@ interface Organization {
   id: string
   name: string
   dotNumber?: string
+  einNumber?: string
   phone?: string
   party: {
     id: string
@@ -48,18 +49,9 @@ export function OrganizationList() {
   const [isLoading, setIsLoading] = useState(true)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
-  const [showOnboarding, setShowOnboarding] = useState(false)
-
   useEffect(() => {
     fetchOrganizations()
   }, [])
-
-  useEffect(() => {
-    // Show onboarding wizard for new users with role parameter and no organizations
-    if (userRole && organizations.length === 0 && !isLoading) {
-      setShowOnboarding(true)
-    }
-  }, [userRole, organizations.length, isLoading])
 
   useEffect(() => {
     // Filter organizations based on search term
@@ -141,18 +133,7 @@ export function OrganizationList() {
     )
   }
 
-  // Show onboarding wizard for new users
-  if (showOnboarding && userRole) {
-    return (
-      <OnboardingWizard 
-        userRole={userRole}
-        onComplete={() => {
-          setShowOnboarding(false)
-          // After onboarding, show the regular organization management
-        }}
-      />
-    )
-  }
+  // Users complete their profile during signup, so no onboarding needed here
 
   return (
     <div className="space-y-4">

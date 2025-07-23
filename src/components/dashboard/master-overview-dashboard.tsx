@@ -19,10 +19,12 @@ import {
   TrendingUp,
   Plus,
   FileText,
-  Eye
+  Eye,
+  Edit
 } from "lucide-react"
 import { OrganizationForm } from "@/components/organizations/organization-form"
 import { useAuth } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 
 // Mock data - will be replaced with API calls
 const mockOrganizations = [
@@ -72,14 +74,19 @@ interface Organization {
   expiringIssues: number
   openInspections: number
   status: 'pending' | 'active' | 'inactive'
+  party?: {
+    userId: string | null
+  }
 }
 
 export function MasterOverviewDashboard() {
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [selectedCompany, setSelectedCompany] = useState<string>("all")
-  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const { userId, getToken } = useAuth()
+  const [selectedCompany, setSelectedCompany] = useState("all")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const { getToken } = useAuth()
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [masterCompany, setMasterCompany] = useState<Organization | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchOrganizations = async () => {
     try {
@@ -94,35 +101,44 @@ export function MasterOverviewDashboard() {
         const data = await response.json()
         console.log('Raw API data:', data)
         
-        // Filter out ComplianceApp master organization from user dashboard
-        const userOrganizations = data.filter((org: any) => org.name !== 'ComplianceApp')
+        // Separate master company from managed organizations
+        // Master company is the one directly owned by the user (party.userId matches)
+        const masterOrg = data.find((org: any) => org.party?.userId === userId)
+        const subOrganizations = data.filter((org: any) => org.party?.userId !== userId)
         
-        // If no user organizations, show empty state (not mock data)
-        if (userOrganizations.length === 0) {
-          console.log('No user organizations found, showing empty dashboard')
-          setOrganizations([])
-        } else {
-          // Transform API data to include mock metrics for now
-          const organizationsWithMetrics = userOrganizations.map((org: any) => ({
-            ...org,
-            // Extract status from master role relationship, not party status
-            status: org.party?.roles?.[0]?.status || 'pending',
+        if (masterOrg) {
+          // Transform master company data
+          const masterWithMetrics = {
+            ...masterOrg,
+            status: 'active' as const, // Master company is always active
             driversCount: 0, // TODO: Calculate from actual driver data
             equipmentCount: 0, // TODO: Calculate from actual equipment data  
             expiringIssues: 0, // TODO: Calculate from actual issues
             openInspections: 0, // TODO: Calculate from actual inspections
-          }))
-          setOrganizations(organizationsWithMetrics)
-          console.log('✅ Successfully loaded organizations from API:', organizationsWithMetrics)
+          }
+          setMasterCompany(masterWithMetrics)
+          console.log('✅ Master company:', masterWithMetrics)
         }
+        
+        // Transform managed organizations data
+        const organizationsWithMetrics = subOrganizations.map((org: any) => ({
+          ...org,
+          // Extract status from master role relationship, not party status
+          status: org.party?.roles?.[0]?.status || 'pending',
+          driversCount: 0, // TODO: Calculate from actual driver data
+          equipmentCount: 0, // TODO: Calculate from actual equipment data  
+          expiringIssues: 0, // TODO: Calculate from actual issues
+          openInspections: 0, // TODO: Calculate from actual inspections
+        }))
+        
+        setOrganizations(organizationsWithMetrics)
+        console.log('✅ Managed organizations:', organizationsWithMetrics)
       } else {
         console.warn('API failed, showing empty state:', response.status, response.statusText)
-        // Show empty state instead of mock data when API fails but database is connected
         setOrganizations([])
       }
     } catch (error) {
       console.warn('Network error, showing empty state:', error)
-      // Show empty state instead of mock data when network issues occur
       setOrganizations([])
     } finally {
       setIsLoading(false)
@@ -131,7 +147,7 @@ export function MasterOverviewDashboard() {
 
   useEffect(() => {
     fetchOrganizations()
-  }, [])
+  }, [userId])
 
   const handleOrganizationSubmit = async (data: any) => {
     try {
@@ -178,11 +194,12 @@ export function MasterOverviewDashboard() {
     }
   }
 
-  // Calculate aggregated metrics
-  const totalDrivers = organizations.reduce((sum, org) => sum + (org.driversCount || 0), 0)
-  const totalEquipment = organizations.reduce((sum, org) => sum + (org.equipmentCount || 0), 0)
-  const totalExpiringIssues = organizations.reduce((sum, org) => sum + (org.expiringIssues || 0), 0)
-  const totalOpenInspections = organizations.reduce((sum, org) => sum + (org.openInspections || 0), 0)
+  // Calculate aggregated metrics (including master company if it exists)
+  const allOrgs = masterCompany ? [masterCompany, ...organizations] : organizations
+  const totalDrivers = allOrgs.reduce((sum, org) => sum + (org.driversCount || 0), 0)
+  const totalEquipment = allOrgs.reduce((sum, org) => sum + (org.equipmentCount || 0), 0)
+  const totalExpiringIssues = allOrgs.reduce((sum, org) => sum + (org.expiringIssues || 0), 0)
+  const totalOpenInspections = allOrgs.reduce((sum, org) => sum + (org.openInspections || 0), 0)
 
   // Helper function to display metrics
   const displayMetric = (value: number, emptyText: string = "None") => {
@@ -267,7 +284,7 @@ export function MasterOverviewDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Master Overview</h1>
           <p className="text-muted-foreground">
-            Fleet compliance across {organizations.length} organizations
+            Fleet compliance across {organizations.length} organization{organizations.length === 1 ? '' : 's'}
           </p>
         </div>
         <div className="flex gap-3">
@@ -282,6 +299,48 @@ export function MasterOverviewDashboard() {
         </div>
       </div>
 
+      {/* Master Company Info */}
+      {masterCompany && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-xl">{masterCompany.name}</CardTitle>
+                <CardDescription>Your Master Company</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/settings')}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Master
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Organizations</p>
+                <p className="text-2xl font-bold">{organizations.length}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Drivers</p>
+                <p className="text-2xl font-bold">{displayMetric(totalDrivers, "0")}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Vehicles</p>
+                <p className="text-2xl font-bold">{displayMetric(totalEquipment, "0")}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Compliance Rate</p>
+                <p className="text-2xl font-bold text-green-600">100%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Top KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
@@ -292,7 +351,7 @@ export function MasterOverviewDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{displayMetric(totalDrivers, "No drivers")}</div>
             <p className="text-xs text-muted-foreground">
-              Across {organizations.length} organizations
+              Across all organizations
             </p>
           </CardContent>
         </Card>
@@ -356,84 +415,107 @@ export function MasterOverviewDashboard() {
       </div>
 
       {/* Organizations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedOrganizations.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <div className="text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No Organizations Yet</h3>
-              <p className="text-sm">Get started by adding your first organization.</p>
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Organizations</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedOrganizations.length === 0 ? (
+            <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <div className="text-muted-foreground">
+                <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No Organizations Yet</h3>
+                <p className="text-sm mb-4">Get started by adding your first organization.</p>
+                <Button size="sm" onClick={() => setIsAddModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Organization
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          sortedOrganizations.map((org) => (
-          <Card key={org.id} className="relative hover:shadow-lg transition-shadow cursor-pointer">
-                         <CardHeader className="pb-3">
-               <div className="flex items-center justify-between">
-                 <CardTitle className="text-lg">{org.name}</CardTitle>
-                 <div className="flex gap-2">
-                   {/* Organization Status */}
-                   <div className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(org.status)}`}>
-                     {getStatusIcon(org.status)} {org.status}
+          ) : (
+            sortedOrganizations.map((org) => (
+            <Card 
+              key={org.id} 
+              className="relative hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => router.push(`/organizations/${org.id}`)}
+            >
+                           <CardHeader className="pb-3">
+                 <div className="flex items-center justify-between">
+                   <CardTitle className="text-lg">{org.name}</CardTitle>
+                   <div className="flex gap-2">
+                     {/* Organization Status */}
+                     <div className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(org.status)}`}>
+                       {getStatusIcon(org.status)} {org.status}
+                     </div>
+                     {/* Add any additional status badges here */}
                    </div>
-                   {/* Add any additional status badges here */}
                  </div>
-               </div>
-             </CardHeader>
-            <CardContent className="space-y-4">
-                             <div className="grid grid-cols-2 gap-4">
-                 <div className="text-center">
-                   <div className="text-2xl font-bold text-blue-600">
-                     {org.driversCount > 0 ? org.driversCount : "0"}
+               </CardHeader>
+              <CardContent className="space-y-4">
+                               <div className="grid grid-cols-2 gap-4">
+                   <div className="text-center">
+                     <div className="text-2xl font-bold text-blue-600">
+                       {org.driversCount > 0 ? org.driversCount : "0"}
+                     </div>
+                     <p className="text-xs text-muted-foreground">Drivers</p>
                    </div>
-                   <p className="text-xs text-muted-foreground">Drivers</p>
-                 </div>
-                 <div className="text-center">
-                   <div className="text-2xl font-bold text-green-600">
-                     {org.equipmentCount > 0 ? org.equipmentCount : "0"}
+                   <div className="text-center">
+                     <div className="text-2xl font-bold text-green-600">
+                       {org.equipmentCount > 0 ? org.equipmentCount : "0"}
+                     </div>
+                     <p className="text-xs text-muted-foreground">Vehicles</p>
                    </div>
-                   <p className="text-xs text-muted-foreground">Vehicles</p>
                  </div>
-               </div>
 
-              <div className="space-y-2">
-                {org.expiringIssues > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-orange-600">Expiring Issues</span>
-                    <Badge variant="outline" className="text-orange-600 border-orange-200">
-                      {org.expiringIssues}
-                    </Badge>
-                  </div>
-                )}
-                {org.openInspections > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-blue-600">Open Inspections</span>
-                    <Badge variant="outline" className="text-blue-600 border-blue-200">
-                      {org.openInspections}
-                    </Badge>
-                  </div>
-                )}
-                {org.expiringIssues === 0 && org.openInspections === 0 && (
-                  <div className="text-sm text-green-600 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    All issues current
-                  </div>
-                )}
-              </div>
+                <div className="space-y-2">
+                  {org.expiringIssues > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-orange-600">Expiring Issues</span>
+                      <Badge variant="outline" className="text-orange-600 border-orange-200">
+                        {org.expiringIssues}
+                      </Badge>
+                    </div>
+                  )}
+                  {org.openInspections > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-600">Open Inspections</span>
+                      <Badge variant="outline" className="text-blue-600 border-blue-200">
+                        {org.openInspections}
+                      </Badge>
+                    </div>
+                  )}
+                  {org.expiringIssues === 0 && org.openInspections === 0 && (
+                    <div className="text-sm text-green-600 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      All issues current
+                    </div>
+                  )}
+                </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Eye className="h-4 w-4 mr-1" />
-                  View Details
-                </Button>
-                <Button variant="outline" size="sm">
-                  <FileText className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-                      </Card>
-          ))
-        )}
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/organizations/${org.id}`)
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View Details
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+                        </Card>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Quick Actions */}

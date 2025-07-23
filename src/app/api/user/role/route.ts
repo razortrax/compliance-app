@@ -76,14 +76,14 @@ export async function GET() {
       })
     }
 
-    // No role found for this user - they need onboarding
-    // For now, create a default organization role
+    // No role found for this user - they need to complete their profile
+    // Check if they have a party record
     const userParty = await db.party.findFirst({
       where: { userId: userId }
     })
 
     if (!userParty) {
-      // User has no party record yet - they need complete onboarding
+      // User has no party record yet - they need to complete their profile
       return NextResponse.json({
         role: {
           roleType: 'new_user',
