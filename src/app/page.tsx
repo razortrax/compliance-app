@@ -65,7 +65,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-3 gap-8">
             {/* Master Manager Card */}
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200">
               <CardHeader className="text-center pb-4">
@@ -141,6 +141,45 @@ export default function LandingPage() {
                      <ArrowRight className="ml-2 h-4 w-4" />
                    </Button>
                  </SignUpButton>
+              </CardContent>
+            </Card>
+
+            {/* DOT Consultant Card */}
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-purple-200">
+              <CardHeader className="text-center pb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 text-purple-600 mx-auto mb-4">
+                  <Shield className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-2xl">DOT Consultant</CardTitle>
+                <CardDescription className="text-base">
+                  For compliance experts offering consulting services to fleets
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Manage multiple client companies</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Temporary data access with consent</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Audit preparation assistance</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm">Compliance consulting marketplace</span>
+                  </div>
+                </div>
+                <SignUpButton mode="modal" forceRedirectUrl="/consultant/register">
+                  <Button className="w-full mt-6 bg-purple-600 hover:bg-purple-700">
+                    Join as Consultant
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </SignUpButton>
               </CardContent>
             </Card>
           </div>

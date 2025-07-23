@@ -21,6 +21,7 @@ model Party {
   organization Organization?
   person       Person?
   equipment    Equipment?
+  consultant   Consultant?
   roles        Role[]
   issues       Issue[]
   
@@ -40,6 +41,9 @@ model Organization {
   zipCode      String?
   phone        String?
   email        String?
+  
+  // Consultant relationships
+  consultations Consultation[]
   
   @@map("organization")
 }
@@ -84,12 +88,16 @@ model Role {
   partyId   String
   party     Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
   
-  roleType      String // driver, manager, admin, master, etc.
+  roleType       String // driver, manager, admin, master, consultant, etc.
   organizationId String?
-  status        String   @default("pending") // pending, active, inactive for the role
-  startDate     DateTime @default(now())
-  endDate       DateTime?
-  isActive      Boolean  @default(true)
+  status         String   @default("pending") // pending, active, inactive for the role
+  startDate      DateTime @default(now())
+  endDate        DateTime?
+  isActive       Boolean  @default(true)
+  
+  // Consultant access management
+  expiresAt      DateTime? // For temporary consultant access
+  consultationId String?   // Link to consultation for consultant roles
   
   @@map("role")
 }
@@ -156,4 +164,98 @@ model InspectionIssue {
   outOfService    Boolean @default(false)
   
   @@map("inspection_issue")
+}
+
+// Consultant Marketplace Models
+model Consultant {
+  id        String @id @default(cuid())
+  partyId   String @unique
+  party     Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  // Consultant-specific fields
+  licenseNumber     String?
+  specializations   String[] // ["DOT_AUDIT", "SAFETY", "HOURS_OF_SERVICE", "DRIVER_QUALIFICATION"]
+  yearsExperience   Int?
+  hourlyRate        Decimal?
+  bio               String?
+  isActive          Boolean @default(true)
+  isVerified        Boolean @default(false)
+  
+  // Relationships
+  consultations     Consultation[]
+  
+  @@map("consultant")
+}
+
+model Consultation {
+  id           String @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Parties involved
+  clientOrgId      String
+  clientOrg        Organization @relation(fields: [clientOrgId], references: [id])
+  consultantId     String  
+  consultant       Consultant @relation(fields: [consultantId], references: [id])
+  
+  // Consultation details
+  title            String
+  description      String?
+  consultationType String // "AUDIT_PREP", "COMPLIANCE_REVIEW", "INCIDENT_RESPONSE", "GENERAL_GUIDANCE"
+  status           String @default("REQUESTED") // REQUESTED, ACCEPTED, ACTIVE, COMPLETED, CANCELLED
+  urgency          String @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  
+  // Access & Timing
+  requestedAt      DateTime @default(now())
+  acceptedAt       DateTime?
+  startDate        DateTime?
+  endDate          DateTime?
+  dataAccessExpiry DateTime? // When consultant access expires
+  
+  // Pricing
+  agreedRate       Decimal?
+  estimatedHours   Int?
+  actualHours      Decimal?
+  
+  // Data sharing consent
+  dataConsent      DataSharingConsent?
+  
+  @@map("consultation")
+}
+
+model DataSharingConsent {
+  id              String @id @default(cuid())
+  consultationId  String @unique
+  consultation    Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  
+  // Consent details
+  consentGivenAt  DateTime @default(now())
+  consentGivenBy  String // User ID who gave consent
+  isActive        Boolean @default(true)
+  revokedAt       DateTime?
+  revokedBy       String?
+  
+  // What data is shared - JSON for flexibility
+  scopePermissions Json // {"issues": true, "drivers": true, "equipment": false, "reports": true}
+  
+  // Audit trail
+  accessLog       ConsultantAccessLog[]
+  
+  @@map("data_sharing_consent")
+}
+
+model ConsultantAccessLog {
+  id           String @id @default(cuid())
+  consentId    String
+  consent      DataSharingConsent @relation(fields: [consentId], references: [id], onDelete: Cascade)
+  
+  accessedAt   DateTime @default(now())
+  action       String // "VIEW", "EXPORT", "DOWNLOAD", "SEARCH"
+  resourceType String // "issue", "driver", "equipment", "organization", "report"
+  resourceId   String?
+  details      String? // Additional context about the action
+  ipAddress    String?
+  userAgent    String?
+  
+  @@map("consultant_access_log")
 } 
