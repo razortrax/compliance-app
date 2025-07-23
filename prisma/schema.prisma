@@ -13,6 +13,7 @@ datasource db {
 // Base party model - all entities inherit from this
 model Party {
   id        String   @id @default(cuid())
+  userId    String?  // Clerk user ID - connects to authentication system
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   status    String   @default("active") // active, inactive, pending, suspended

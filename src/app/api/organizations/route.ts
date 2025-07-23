@@ -10,13 +10,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // TODO: Add role-based filtering based on user permissions
-    // For now, return all organizations (Master manager view)
+    // Find organizations that belong to this user or that they have access to
     const organizations = await db.organization.findMany({
+      where: {
+        OR: [
+          // Organizations owned by this user
+          {
+            party: {
+              userId: userId
+            }
+          },
+          // Organizations this user has a role in
+          {
+            party: {
+              roles: {
+                some: {
+                  party: {
+                    userId: userId
+                  },
+                  isActive: true
+                }
+              }
+            }
+          }
+        ]
+      },
       include: {
         party: {
           select: {
             id: true,
+            userId: true,
             status: true,
             createdAt: true,
             updatedAt: true,
@@ -76,6 +99,7 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         party: {
           create: {
+            userId: userId, // Connect to current user
             status: 'active' // Party itself is always active, role determines org status
           }
         }

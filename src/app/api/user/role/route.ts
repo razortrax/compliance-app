@@ -14,6 +14,7 @@ export async function GET() {
     const consultantRole = await db.role.findFirst({
       where: {
         party: {
+          userId: userId, // Filter by current user
           consultant: {
             isNot: null
           }
@@ -39,9 +40,12 @@ export async function GET() {
       })
     }
 
-    // Check for other roles (master, organization, location)
+    // Check for other roles (master, organization, location) for this user
     const userRole = await db.role.findFirst({
       where: {
+        party: {
+          userId: userId // Filter by current user
+        },
         isActive: true,
         roleType: {
           in: ['master', 'organization', 'location', 'admin', 'manager']
@@ -72,7 +76,23 @@ export async function GET() {
       })
     }
 
-    // Default to organization level for new users
+    // No role found for this user - they need onboarding
+    // For now, create a default organization role
+    const userParty = await db.party.findFirst({
+      where: { userId: userId }
+    })
+
+    if (!userParty) {
+      // User has no party record yet - they need complete onboarding
+      return NextResponse.json({
+        role: {
+          roleType: 'new_user',
+          organizationId: null
+        }
+      })
+    }
+
+    // Default to organization level for existing users without roles
     return NextResponse.json({
       role: {
         roleType: 'organization',

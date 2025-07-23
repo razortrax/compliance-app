@@ -48,6 +48,8 @@ export default function Header() {
         return { label: 'Location', color: 'bg-orange-100 text-orange-800', icon: <LayoutDashboard className="h-3 w-3" /> }
       case 'consultant':
         return { label: 'Consultant', color: 'bg-purple-100 text-purple-800', icon: <Shield className="h-3 w-3" /> }
+      case 'new_user':
+        return { label: 'Setup Needed', color: 'bg-yellow-100 text-yellow-800', icon: <Building className="h-3 w-3" /> }
       default:
         return { label: 'User', color: 'bg-gray-100 text-gray-800', icon: null }
     }
@@ -55,12 +57,23 @@ export default function Header() {
 
   const getFirstName = () => {
     if (!user) return ''
-    return user.firstName || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'User'
+    
+    // First try Clerk user data
+    if (user.firstName) {
+      return user.firstName
+    }
+    
+    // If no firstName in Clerk, we'll need to get it from our database
+    // For now, fall back to email parsing
+    return user.emailAddresses[0]?.emailAddress.split('@')[0] || 'User'
   }
 
   const getHelpUrl = () => {
     if (userRole?.roleType === 'consultant') {
       return '/consultant/dashboard'
+    }
+    if (userRole?.roleType === 'new_user') {
+      return '/onboarding' // This will be the user setup page
     }
     return '/consultants' // This will be the consultant marketplace page
   }
