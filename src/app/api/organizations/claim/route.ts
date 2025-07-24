@@ -113,8 +113,7 @@ export async function POST(request: Request) {
             create: {
               id: createId(),
               firstName: 'User',
-              lastName: 'User',
-              email: ''
+              lastName: 'User'
             }
           }
         }

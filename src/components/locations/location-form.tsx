@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 const locationFormSchema = z.object({
   name: z.string().min(1, 'Location name is required'),
@@ -51,6 +53,7 @@ export function LocationForm({
   onCancel,
 }: LocationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<LocationFormValues>({
     resolver: zodResolver(locationFormSchema),
@@ -69,6 +72,8 @@ export function LocationForm({
 
   async function onSubmit(values: LocationFormValues) {
     setIsSubmitting(true)
+    setError(null)
+    
     try {
       const url = location
         ? `/api/organizations/${organizationId}/locations/${location.id}`
@@ -85,13 +90,14 @@ export function LocationForm({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save location')
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save location')
       }
 
       onSuccess?.()
     } catch (error) {
       console.error('Error saving location:', error)
-      // TODO: Show error to user
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
     }
@@ -100,6 +106,13 @@ export function LocationForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         <FormField
           control={form.control}
           name="name"

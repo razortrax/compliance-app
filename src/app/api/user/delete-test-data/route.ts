@@ -29,12 +29,12 @@ async function handleDeleteTestData() {
         organization: true,
         person: true,
         equipment: true,
-        roles: true,
-        issues: {
+        role: true,
+        issue: {
           include: {
-            licenseIssue: true,
-            accidentIssue: true,
-            inspectionIssue: true
+            license_issue: true,
+            accident_issue: true,
+            inspection_issue: true
           }
         }
       }
@@ -64,18 +64,18 @@ async function handleDeleteTestData() {
 
     // Delete issue-related data first
     for (const party of userParties) {
-      for (const issue of party.issues) {
+      for (const issue of party.issue) {
         // Delete issue-specific data
-        if (issue.licenseIssue) {
-          await prisma.licenseIssue.delete({ where: { id: issue.licenseIssue.id } })
+        if (issue.license_issue) {
+          await prisma.license_issue.delete({ where: { id: issue.license_issue.id } })
           deletedCounts.licenseIssues++
         }
-        if (issue.accidentIssue) {
-          await prisma.accidentIssue.delete({ where: { id: issue.accidentIssue.id } })
+        if (issue.accident_issue) {
+          await prisma.accident_issue.delete({ where: { id: issue.accident_issue.id } })
           deletedCounts.accidentIssues++
         }
-        if (issue.inspectionIssue) {
-          await prisma.inspectionIssue.delete({ where: { id: issue.inspectionIssue.id } })
+        if (issue.inspection_issue) {
+          await prisma.inspection_issue.delete({ where: { id: issue.inspection_issue.id } })
           deletedCounts.inspectionIssues++
         }
         
@@ -85,7 +85,7 @@ async function handleDeleteTestData() {
       }
 
       // Delete roles
-      for (const role of party.roles) {
+      for (const role of party.role) {
         await prisma.role.delete({ where: { id: role.id } })
         deletedCounts.roles++
       }

@@ -76,8 +76,9 @@ export async function GET(request: NextRequest) {
                 isActive: true
               },
               select: {
+                id: true,
                 status: true,
-                isActive: true
+                roleType: true
               }
             }
           }
@@ -173,7 +174,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Determine initial role status based on completion
-    const hasActivationRequirements = einNumber && dotNumber
+    // Only DOT number is required for activation
+    const hasActivationRequirements = !!dotNumber
     const initialRoleStatus = hasActivationRequirements ? 'active' : 'pending'
 
     // Create master-organization relationship in Role table

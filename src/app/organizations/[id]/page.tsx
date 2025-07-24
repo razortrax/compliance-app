@@ -486,7 +486,11 @@ export default function OrganizationDetailPage() {
             {locations.length > 0 ? (
               <div className="grid gap-4">
                 {locations.map((location) => (
-                  <Card key={location.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card 
+                    key={location.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => router.push(`/organizations/${organizationId}/locations/${location.id}`)}
+                  >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">

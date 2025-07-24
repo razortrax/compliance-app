@@ -1,0 +1,80 @@
+// Updated schema with Location as Party model
+// Key changes:
+// 1. Location now has partyId (like Organization)
+// 2. Location no longer has direct organizationId FK  
+// 3. Org-Location relationship through Role table
+// 4. New role types: LOCATION_OF, SUBLOCATION_OF
+
+model location {
+  id               String       @id
+  partyId          String       @unique  // NEW: Makes location a party entity
+  name             String
+  locationType     String       // terminal, yard, office, warehouse
+  address          String
+  city             String
+  state            String
+  zipCode          String
+  phone            String?
+  email            String?
+  isMainLocation   Boolean      @default(false)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  // NEW: Party relationship (like Organization)
+  party            party        @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  // Existing relationships remain
+  equipment        equipment[]
+  role             role[]       // Staff and drivers assigned to this location
+  
+  // REMOVED: organizationId - now handled through Role
+  // organizationId   String
+  // organization     organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model party {
+  id           String        @id
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  status       String        @default("active")
+  userId       String?
+  consultant   consultant?
+  equipment    equipment?
+  issue        issue[]
+  organization organization?
+  location     location?     // NEW: Location can be a party
+  person       person?
+  role         role[]
+}
+
+model role {
+  id             String    @id
+  partyId        String
+  roleType       String    // NEW role types: LOCATION_OF, SUBLOCATION_OF, MANAGER, DRIVER, etc.
+  organizationId String?   // Still used for org-based roles
+  locationId     String?   // Still used for location-based roles
+  
+  // NEW: Target party for party-to-party relationships
+  targetPartyId  String?   // For Location->Org relationships
+  
+  status         String    @default("pending")
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  consultationId String?
+  
+  party          party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  location       location? @relation(fields: [locationId], references: [id])
+  
+  // NEW: Relationship to target party
+  targetParty    party?    @relation("PartyToPartyRoles", fields: [targetPartyId], references: [id])
+}
+
+// Role Types:
+// - LOCATION_OF: Location belongs to Organization  
+// - SUBLOCATION_OF: Location is sub-location of another Location
+// - MANAGER: Person manages Organization/Location
+// - DRIVER: Person drives for Organization/Location
+// - CONSULTANT: Consultant works with Organization 

@@ -10,12 +10,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { firstName, lastName, role, organizationName } = await request.json()
+    const { firstName = 'User', lastName = 'User', role, organizationName } = await request.json()
 
-    // Validate required fields
-    if (!firstName || !lastName || !role) {
+    // Validate required fields - only role is required for auth flow
+    if (!role) {
       return NextResponse.json(
-        { error: 'First name, last name, and role are required' },
+        { error: 'Role is required' },
         { status: 400 }
       )
     }

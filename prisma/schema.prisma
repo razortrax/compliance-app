@@ -136,7 +136,8 @@ model license_issue {
 
 model location {
   id               String       @id
-  organizationId   String
+  partyId          String?      @unique  // NEW: Makes location a party entity
+  organizationId   String       // Keep for backward compatibility during transition
   name             String
   locationType     String       // terminal, yard, office, warehouse
   address          String
@@ -149,6 +150,9 @@ model location {
   isActive         Boolean      @default(true)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+  
+  // Relationships
+  party            party?       @relation(fields: [partyId], references: [id], onDelete: Cascade)
   organization     organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   equipment        equipment[]
   role             role[]       // Staff and drivers assigned to this location
@@ -173,13 +177,14 @@ model organization {
 model party {
   id           String        @id
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime      @updatedAt
   status       String        @default("active")
   userId       String?
   consultant   consultant?
   equipment    equipment?
   issue        issue[]
   organization organization?
+  location     location?     // NEW: Location can be a party
   person       person?
   role         role[]
 }

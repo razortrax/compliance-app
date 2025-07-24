@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/layout/header";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -33,6 +34,7 @@ export default function RootLayout({
         >
           <Header />
           {children}
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

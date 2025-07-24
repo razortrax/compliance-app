@@ -1,17 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
+import { createId } from '@paralleldrive/cuid2'
 import { z } from 'zod'
 
+// Consultant registration schema
 const consultantRegistrationSchema = z.object({
   licenseNumber: z.string().optional(),
-  yearsExperience: z.string().transform(val => parseInt(val, 10)),
-  hourlyRate: z.string().transform(val => parseFloat(val)),
-  bio: z.string().min(50, 'Bio must be at least 50 characters'),
-  specializations: z.array(z.string()).min(1, 'At least one specialization required')
+  specializations: z.array(z.string()).default([]),
+  yearsExperience: z.number().min(0).optional(),
+  hourlyRate: z.number().min(0).optional(),
+  bio: z.string().optional()
 })
 
-export async function POST(request: Request) {
+// Register as consultant
+export async function POST(request: NextRequest) {
   const { userId } = await auth()
 
   if (!userId) {
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
     // Check if user is already a consultant
     const existingConsultant = await db.party.findFirst({
       where: {
-        roles: {
+        role: {
           some: {
             roleType: 'consultant',
             isActive: true
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
       // Create party for consultant if not exists
       let consultantParty = await tx.party.findFirst({
         where: {
-          roles: {
+          role: {
             some: {
               roleType: 'consultant'
             }
@@ -57,7 +60,8 @@ export async function POST(request: Request) {
       if (!consultantParty) {
         consultantParty = await tx.party.create({
           data: {
-            status: 'active'
+            status: 'active',
+            updatedAt: new Date()
           }
         })
       }
@@ -65,52 +69,52 @@ export async function POST(request: Request) {
       // Create consultant profile
       const consultant = await tx.consultant.create({
         data: {
+          id: createId(),
           partyId: consultantParty.id,
-          licenseNumber: validatedData.licenseNumber || null,
+          licenseNumber: validatedData.licenseNumber,
+          specializations: validatedData.specializations,
           yearsExperience: validatedData.yearsExperience,
           hourlyRate: validatedData.hourlyRate,
           bio: validatedData.bio,
-          specializations: validatedData.specializations,
           isActive: true,
-          isVerified: false // Will be verified by admin later
+          isVerified: false // Will be verified by admin
         }
       })
 
       // Create consultant role
-      await tx.role.create({
+      const role = await tx.role.create({
         data: {
+          id: createId(),
           partyId: consultantParty.id,
           roleType: 'consultant',
-          status: 'active',
+          status: 'pending', // Pending verification
           isActive: true
         }
       })
 
-      return consultant
+      return { consultant, consultantParty, role }
     })
 
     return NextResponse.json({
-      message: 'Consultant registration successful',
-      consultant: {
-        id: result.id,
-        specializations: result.specializations,
-        isVerified: result.isVerified
-      }
+      message: 'Consultant registration submitted successfully',
+      consultant: result.consultant,
+      status: 'pending_verification'
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Consultant registration error:', error)
+    console.error('Error registering consultant:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
-        error: 'Validation failed', 
-        details: error.issues 
+        error: 'Invalid data provided',
+        details: error.errors 
       }, { status: 400 })
     }
 
-    return NextResponse.json({ 
-      error: 'Registration failed' 
-    }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to register consultant' },
+      { status: 500 }
+    )
   }
 }
 
@@ -126,7 +130,7 @@ export async function GET() {
     const consultant = await db.consultant.findFirst({
       where: {
         party: {
-          roles: {
+          role: {
             some: {
               roleType: 'consultant',
               isActive: true
@@ -136,9 +140,9 @@ export async function GET() {
       },
       include: {
         party: true,
-        consultations: {
+        consultation: {
           include: {
-            clientOrg: true
+            organization: true
           },
           orderBy: {
             createdAt: 'desc'
@@ -151,22 +155,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Consultant profile not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      consultant: {
-        id: consultant.id,
-        licenseNumber: consultant.licenseNumber,
-        yearsExperience: consultant.yearsExperience,
-        hourlyRate: consultant.hourlyRate,
-        bio: consultant.bio,
-        specializations: consultant.specializations,
-        isActive: consultant.isActive,
-        isVerified: consultant.isVerified,
-        consultations: consultant.consultations
-      }
-    })
+    return NextResponse.json(consultant)
 
   } catch (error) {
     console.error('Error fetching consultant profile:', error)
-    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to fetch consultant profile' },
+      { status: 500 }
+    )
   }
 } 

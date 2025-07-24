@@ -1,8 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { db } from '@/db'
 
 export async function POST(request: Request) {
   try {
@@ -21,11 +19,11 @@ export async function POST(request: Request) {
     }
 
     // Find the user's organization
-    const userParty = await prisma.party.findFirst({
+    const userParty = await db.party.findFirst({
       where: { userId },
       include: {
         organization: true,
-        roles: {
+        role: {
           where: { isActive: true }
         }
       }
@@ -42,11 +40,11 @@ export async function POST(request: Request) {
     // For org/location users, update their direct organization
     let organization = userParty.organization
 
-    if (!organization && userParty.roles.length > 0) {
+    if (!organization && userParty.role.length > 0) {
       // Find organization through role for master users
-      const role = userParty.roles[0]
+      const role = userParty.role[0]
       if (role.organizationId) {
-        organization = await prisma.organization.findUnique({
+        organization = await db.organization.findUnique({
           where: { id: role.organizationId }
         })
       }
@@ -60,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     // Update the organization name
-    const updatedOrganization = await prisma.organization.update({
+    const updatedOrganization = await db.organization.update({
       where: { id: organization.id },
       data: {
         name: organizationName.trim()
@@ -79,6 +77,6 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   } finally {
-    await prisma.$disconnect()
+    // No need to disconnect when using shared db instance
   }
 } 

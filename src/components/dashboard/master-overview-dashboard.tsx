@@ -124,7 +124,7 @@ export function MasterOverviewDashboard() {
         const organizationsWithMetrics = subOrganizations.map((org: any) => ({
           ...org,
           // Extract status from master role relationship, not party status
-          status: org.party?.roles?.[0]?.status || 'pending',
+          status: org.party?.role?.[0]?.status || 'pending',
           driversCount: 0, // TODO: Calculate from actual driver data
           equipmentCount: 0, // TODO: Calculate from actual equipment data  
           expiringIssues: 0, // TODO: Calculate from actual issues
@@ -148,6 +148,14 @@ export function MasterOverviewDashboard() {
   useEffect(() => {
     fetchOrganizations()
   }, [userId])
+
+  // Redirect to profile completion if no master company found
+  useEffect(() => {
+    if (!isLoading && !masterCompany && organizations.length === 0) {
+      console.log('No master company found for user, redirecting to profile completion')
+      router.push('/complete-profile?role=master')
+    }
+  }, [isLoading, masterCompany, organizations, router])
 
   const handleOrganizationSubmit = async (data: any) => {
     try {

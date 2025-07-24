@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from 'react'
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useToast } from '@/hooks/use-toast'
 
 // DOT number validation - required but allows "No DOT" option
 const dotNumberSchema = z.string().min(1, "DOT number is required").refine((val) => {
@@ -70,6 +71,7 @@ export function OrganizationForm({
   const [dotType, setDotType] = useState<'dot' | 'no-dot'>(
     initialData?.dotNumber === 'NO_DOT' ? 'no-dot' : 'dot'
   )
+  const { toast } = useToast()
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -88,8 +90,18 @@ export function OrganizationForm({
       await onSubmit(data)
       form.reset()
       onOpenChange(false)
+      toast({
+        title: "Success",
+        description: `Organization ${isEditing ? 'updated' : 'created'} successfully.`,
+      })
     } catch (error) {
       console.error("Failed to save organization:", error)
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
