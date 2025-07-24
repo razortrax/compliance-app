@@ -193,27 +193,58 @@ export async function POST(
       })
     }
 
-    // Back to working version while we debug the party creation issue
-    const location = await db.location.create({
-      data: {
-        id: createId(),
-        organizationId,
-        name: body.name,
-        locationType: body.locationType,
-        address: body.address,
-        city: body.city,
-        state: body.state,
-        zipCode: body.zipCode,
-        phone: body.phone || null,
-        email: body.email || null,
-        isMainLocation: body.isMainLocation || false,
-        isActive: true
-      }
+    // Create location with party model for flexibility (ownership transfers, etc.)
+    const result = await db.$transaction(async (tx) => {
+      // 1. Create party record for the location
+      const party = await tx.party.create({
+        data: {
+          id: createId(),
+          status: 'active'
+        }
+      })
+
+      // 2. Create location linked to party
+      const location = await tx.location.create({
+        data: {
+          id: createId(),
+          partyId: party.id,
+          organizationId, // Keep for backward compatibility and direct access
+          name: body.name,
+          locationType: body.locationType,
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          zipCode: body.zipCode,
+          phone: body.phone || null,
+          email: body.email || null,
+          isMainLocation: body.isMainLocation || false,
+          isActive: true
+        }
+      })
+
+      // 3. Create role relationship: location belongs to organization
+      await tx.role.create({
+        data: {
+          id: createId(),
+          partyId: party.id,
+          roleType: 'LOCATION_OF',
+          organizationId: organizationId,
+          status: 'active',
+          isActive: true
+        }
+      })
+
+      console.log('✅ Created location with party model:', {
+        locationId: location.id,
+        partyId: party.id,
+        name: location.name,
+        org: organizationId
+      })
+
+      return location
     })
 
-    console.log('✅ Created location (old model):', location.id, location.name)
-
-    return NextResponse.json(location)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error creating location:', error)
     return NextResponse.json(
