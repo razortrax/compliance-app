@@ -265,72 +265,18 @@ export default function OrganizationDetailPage() {
       className="p-6"
     >
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            {/* Company Selector */}
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="default"
-                  className="h-10 px-3 border-gray-300 hover:bg-gray-50"
-                >
-                  <Building2 className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                <SheetHeader>
-                  <SheetTitle>Switch Organization</SheetTitle>
-                  <SheetDescription>
-                    Select a different organization to manage
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6 space-y-2">
-                  {(() => {
-                    // Always exclude master organization and current organization
-                    const filteredOrgs = organizations.filter(org => 
-                      !org.party?.userId && org.id !== organizationId
-                    )
-
-                    if (filteredOrgs.length === 0) {
-                      return (
-                        <div className="text-center py-8 text-gray-500">
-                          <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                          <p className="text-sm">No other organizations to switch to</p>
-                          <p className="text-xs mt-2">Return to Master Overview to create or manage organizations</p>
-                        </div>
-                      )
-                    }
-
-                    return filteredOrgs.map((org) => (
-                      <button
-                        key={org.id}
-                        onClick={() => handleOrganizationSelect(org)}
-                        className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between group"
-                      >
-                        <div>
-                          <div className="font-medium">{org.name}</div>
-                          {org.dotNumber && (
-                            <div className="text-sm text-gray-500">DOT: {org.dotNumber}</div>
-                          )}
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
-                      </button>
-                    ))
-                  })()}
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            {/* Page Title */}
-            <PageHeader
-              title={organization.name}
-            />
-          </div>
+        {/* Name row per pagesContentOutline: Organization name + Edit/Reports buttons */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">{organization.name}</h1>
           
-          {/* Edit Button (moved to right) */}
-          <div>
+          <div className="flex items-center gap-2">
+            {/* Reports Button */}
+            <Button variant="outline">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
+            </Button>
+            
+            {/* Edit Button */}
             {!isEditing ? (
               <Button onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-2" />
