@@ -74,7 +74,14 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
   }
 
   const getFirstName = () => {
-    return user?.firstName || user?.fullName?.split(' ')[0] || 'User'
+    // Try different name sources from Clerk user object
+    if (user?.firstName) return user.firstName
+    if (user?.fullName) return user.fullName.split(' ')[0]  
+    if (user?.username) return user.username
+    if (user?.emailAddresses?.[0]?.emailAddress) {
+      return user.emailAddresses[0].emailAddress.split('@')[0]
+    }
+    return 'User'
   }
 
   return (
@@ -120,7 +127,7 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
           {user && (
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-gray-700">
-                Hello, {getFirstName()}
+                Hello {getFirstName()}
               </span>
               {userRole && (
                 <Badge 

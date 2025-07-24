@@ -5,6 +5,16 @@ import { useUser } from '@clerk/nextjs'
 import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
 
+interface Organization {
+  id: string
+  name: string
+  dotNumber?: string | null
+  party?: {
+    userId?: string | null
+    status?: string
+  }
+}
+
 interface AppLayoutProps {
   children: ReactNode
   // Header configuration
@@ -18,6 +28,12 @@ interface AppLayoutProps {
   showOrgSelector?: boolean
   showDriverEquipmentSelector?: boolean
   sidebarMenu?: 'organization' | 'driver' | 'equipment'
+  // Organization selector props
+  organizations?: Organization[]
+  currentOrgId?: string
+  isSheetOpen?: boolean
+  onSheetOpenChange?: (open: boolean) => void
+  onOrganizationSelect?: (org: Organization) => void
   // Content configuration
   className?: string
 }
@@ -29,6 +45,11 @@ export function AppLayout({
   showOrgSelector = false,
   showDriverEquipmentSelector = false,
   sidebarMenu,
+  organizations,
+  currentOrgId,
+  isSheetOpen,
+  onSheetOpenChange,
+  onOrganizationSelect,
   className = ""
 }: AppLayoutProps) {
   const { user } = useUser()
@@ -48,6 +69,11 @@ export function AppLayout({
             showOrgSelector={showOrgSelector}
             showDriverEquipmentSelector={showDriverEquipmentSelector}
             menuType={sidebarMenu}
+            organizations={organizations}
+            currentOrgId={currentOrgId}
+            isSheetOpen={isSheetOpen}
+            onSheetOpenChange={onSheetOpenChange}
+            onOrganizationSelect={onOrganizationSelect}
           />
         )}
         

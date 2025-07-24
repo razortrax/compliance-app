@@ -1,14 +1,14 @@
-import { AppLayout } from '@/components/layouts/app-layout'
-import { MasterOverviewDashboard } from "@/components/dashboard/master-overview-dashboard"
-import { useUser } from '@clerk/nextjs'
-
 'use client'
 
+import { AppLayout } from '@/components/layouts/app-layout'
+import { MasterOverviewDashboard } from "@/components/dashboard/master-overview-dashboard"
+import { useMasterOrg } from '@/hooks/use-master-org'
+
 export default function DashboardPage() {
-  const { user } = useUser()
+  const { masterOrg, loading } = useMasterOrg()
   
-  // Get master name (user's name for now)
-  const masterName = user?.fullName || user?.firstName || 'Master'
+  // Use master organization name in header
+  const masterName = masterOrg?.name || 'Master'
   
   return (
     <AppLayout

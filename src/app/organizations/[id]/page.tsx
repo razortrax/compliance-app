@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from '@clerk/nextjs'
 import { AppLayout } from '@/components/layouts/app-layout'
+import { useMasterOrg } from '@/hooks/use-master-org'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import {
   Sheet,
   SheetContent,
@@ -79,6 +80,7 @@ export default function OrganizationDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useUser()
+  const { masterOrg } = useMasterOrg()
   const organizationId = params.id as string
 
   const [organization, setOrganization] = useState<Organization | null>(null)
@@ -90,6 +92,18 @@ export default function OrganizationDetailPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [showLocationForm, setShowLocationForm] = useState(false)
+
+  const fetchOrganizations = async () => {
+    try {
+      const response = await fetch('/api/organizations')
+      if (response.ok) {
+        const data = await response.json()
+        setOrganizations(data)
+      }
+    } catch (error) {
+      console.error('Error fetching organizations:', error)
+    }
+  }
 
   const fetchLocations = async () => {
     if (!organizationId) return
@@ -108,6 +122,8 @@ export default function OrganizationDetailPage() {
       console.error('Error fetching locations:', error)
     }
   }
+
+
 
   useEffect(() => {
     const fetchOrganization = async () => {
@@ -223,8 +239,8 @@ export default function OrganizationDetailPage() {
     )
   }
 
-  // Get master name and setup navigation
-  const masterName = user?.fullName || user?.firstName || 'Master'
+  // Get master organization name for header
+  const masterName = masterOrg?.name || 'Master'
   
   // Top navigation per pagesContentOutline specification
   const topNav = [
@@ -247,11 +263,6 @@ export default function OrganizationDetailPage() {
       label: 'Equipment', 
       href: `/organizations/${organizationId}/equipment`,
       isActive: false
-    },
-    { 
-      label: 'Settings', 
-      href: '/settings',
-      isActive: false
     }
   ]
 
@@ -263,6 +274,12 @@ export default function OrganizationDetailPage() {
       showDriverEquipmentSelector={true}
       sidebarMenu="organization"
       className="p-6"
+      // Pass organization selector props
+      organizations={organizations}
+      currentOrgId={organizationId}
+      isSheetOpen={isSheetOpen}
+      onSheetOpenChange={setIsSheetOpen}
+      onOrganizationSelect={handleOrganizationSelect}
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Name row per pagesContentOutline: Organization name + Edit/Reports buttons */}
@@ -304,18 +321,8 @@ export default function OrganizationDetailPage() {
           </div>
         </div>
 
-        {/* Tabs Section - Moved to top */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
-            <TabsTrigger value="drivers">Drivers</TabsTrigger>
-            <TabsTrigger value="equipment">Equipment</TabsTrigger>
-            <TabsTrigger value="issues">Issues</TabsTrigger>
-          </TabsList>
-          
-          {/* Overview Tab - Contains Organization Details */}
-          <TabsContent value="overview" className="space-y-4">
+        {/* Organization Details - Overview content from tabs */}
+        <div className="space-y-4">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -436,170 +443,7 @@ export default function OrganizationDetailPage() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-          
-          {/* Locations Tab */}
-          <TabsContent value="locations" className="space-y-4">
-            <SectionHeader
-              title="Locations"
-              description="Manage terminals, yards, and offices"
-              actions={
-                <Dialog open={showLocationForm} onOpenChange={setShowLocationForm}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Location
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                      <DialogTitle>Add New Location</DialogTitle>
-                      <DialogDescription>
-                        Add a new terminal, yard, office, or warehouse location.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <LocationForm
-                      organizationId={organizationId}
-                      onSuccess={() => {
-                        setShowLocationForm(false)
-                        fetchLocations()
-                      }}
-                      onCancel={() => setShowLocationForm(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
-              }
-            />
-            
-            {locations.length > 0 ? (
-              <div className="grid gap-4">
-                {locations.map((location) => (
-                  <Card 
-                    key={location.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => router.push(`/organizations/${organizationId}/locations/${location.id}`)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{location.name}</h3>
-                            {location.isMainLocation && (
-                              <Badge variant="default">Main Location</Badge>
-                            )}
-                            <Badge variant="outline" className="capitalize">
-                              {location.locationType}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            {location.address}, {location.city}, {location.state} {location.zipCode}
-                          </p>
-                          <div className="flex gap-4 text-sm text-gray-500">
-                            {location.phone && <span>📞 {location.phone}</span>}
-                            {location.email && <span>✉️ {location.email}</span>}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-500">
-                            {location._count?.equipment || 0} Equipment
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {location._count?.role || 0} Staff
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Building2}
-                title="No locations yet"
-                description="Add terminals, yards, or offices to organize your operations"
-                action={{
-                  label: "Add First Location",
-                  onClick: () => setShowLocationForm(true)
-                }}
-              />
-            )}
-          </TabsContent>
-          
-          {/* Drivers Tab */}
-          <TabsContent value="drivers" className="space-y-4">
-            <SectionHeader
-              title="Drivers"
-              description="Manage drivers and their compliance status"
-              actions={
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Driver
-                </Button>
-              }
-            />
-            
-            {/* Empty state for drivers */}
-            <EmptyState
-              icon={Users}
-              title="No drivers yet"
-              description="Add drivers to track licenses, medical certificates, and training"
-              action={{
-                label: "Add First Driver",
-                onClick: () => {}
-              }}
-            />
-          </TabsContent>
-          
-          {/* Equipment Tab */}
-          <TabsContent value="equipment" className="space-y-4">
-            <SectionHeader
-              title="Equipment"
-              description="Manage vehicles and their maintenance schedules"
-              actions={
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Equipment
-                </Button>
-              }
-            />
-            
-            {/* Empty state for equipment */}
-            <EmptyState
-              icon={Truck}
-              title="No equipment yet"
-              description="Add vehicles to track registrations and maintenance"
-              action={{
-                label: "Add First Vehicle",
-                onClick: () => {}
-              }}
-            />
-          </TabsContent>
-          
-          {/* Issues Tab */}
-          <TabsContent value="issues" className="space-y-4">
-            <SectionHeader
-              title="Issues"
-              description="View and manage compliance issues"
-              actions={
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Issue
-                </Button>
-              }
-            />
-            
-            {/* Empty state for issues */}
-            <EmptyState
-              icon={AlertCircle}
-              title="No issues found"
-              description="All compliance items are up to date"
-              action={{
-                label: "Report an Issue",
-                onClick: () => {}
-              }}
-            />
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </AppLayout>
   )

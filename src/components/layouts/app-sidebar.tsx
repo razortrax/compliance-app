@@ -4,11 +4,21 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { 
   Building, 
+  Building2,
   Users, 
   Truck, 
   ChevronDown,
+  ChevronRight,
   BarChart3,
   AlertTriangle,
   ShieldCheck,
@@ -18,78 +28,174 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+interface Organization {
+  id: string
+  name: string
+  dotNumber?: string | null
+  party?: {
+    userId?: string | null
+  }
+}
+
 interface AppSidebarProps {
   showOrgSelector?: boolean
   showDriverEquipmentSelector?: boolean
   menuType?: 'organization' | 'driver' | 'equipment'
+  // Props for working organization selector
+  organizations?: Organization[]
+  currentOrgId?: string
+  isSheetOpen?: boolean
+  onSheetOpenChange?: (open: boolean) => void
+  onOrganizationSelect?: (org: Organization) => void
 }
 
 export function AppSidebar({
   showOrgSelector = false,
   showDriverEquipmentSelector = false,
-  menuType
+  menuType,
+  organizations = [],
+  currentOrgId,
+  isSheetOpen = false,
+  onSheetOpenChange = () => {},
+  onOrganizationSelect = () => {}
 }: AppSidebarProps) {
   const [selectedTab, setSelectedTab] = useState<'drivers' | 'equipment'>('drivers')
 
-  // Organization Selector Button (for master users)
+  // Organization Selector Button (working version from org page)
   const OrganizationSelector = () => (
-    <Button
-      variant="outline"
-      className="w-full h-12 justify-between bg-white border-2 border-gray-200 hover:border-blue-300"
-    >
-      <div className="flex items-center gap-2">
-        <Building className="h-4 w-4" />
-        <span className="font-medium">Select Organization</span>
-      </div>
-      <ChevronDown className="h-4 w-4" />
-    </Button>
+    <Sheet open={isSheetOpen} onOpenChange={onSheetOpenChange}>
+      <SheetTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="default"
+          className="h-12 w-12 p-0 border-2 border-gray-200 hover:border-blue-300"
+        >
+          <Building2 className="h-6 w-6" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle>Switch Organization</SheetTitle>
+          <SheetDescription>
+            Select a different organization to manage
+          </SheetDescription>
+        </SheetHeader>
+        <div className="mt-6 space-y-2">
+          {(() => {
+            // Always exclude master organization and current organization
+            const filteredOrgs = organizations.filter(org => 
+              !org.party?.userId && org.id !== currentOrgId
+            )
+
+            if (filteredOrgs.length === 0) {
+              return (
+                <div className="text-center py-8 text-gray-500">
+                  <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm">No other organizations to switch to</p>
+                  <p className="text-xs mt-2">Return to Master Overview to create or manage organizations</p>
+                </div>
+              )
+            }
+
+            return filteredOrgs.map((org) => (
+              <button
+                key={org.id}
+                onClick={() => onOrganizationSelect(org)}
+                className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between group"
+              >
+                <div>
+                  <div className="font-medium">{org.name}</div>
+                  {org.dotNumber && (
+                    <div className="text-sm text-gray-500">DOT: {org.dotNumber}</div>
+                  )}
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+              </button>
+            ))
+          })()}
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 
-  // Driver/Equipment Selector Button
-  const DriverEquipmentSelector = () => (
-    <div className="flex flex-col">
-      <Button
-        variant="outline"
-        className="w-full h-12 justify-between bg-white border-2 border-gray-200 hover:border-blue-300"
-      >
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          <Truck className="h-4 w-4" />
-          <span className="font-medium">Selector</span>
-        </div>
-        <ChevronDown className="h-4 w-4" />
-      </Button>
-      
-      {/* Selector Dropdown Content (simplified for now) */}
-      <div className="mt-2 bg-white border border-gray-200 rounded-md shadow-sm">
-        <div className="flex border-b">
-          <button
-            className={`flex-1 px-3 py-2 text-sm font-medium ${
-              selectedTab === 'drivers' 
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setSelectedTab('drivers')}
+  // Driver/Equipment Selector Button (shadcn Sheet approach)
+  const DriverEquipmentSelector = () => {
+    const [selectorOpen, setSelectorOpen] = useState(false)  // Modal open/close state
+    // selectedTab state is already defined at component level - keeps tab selection separate from modal state
+    
+    return (
+      <Sheet open={selectorOpen} onOpenChange={setSelectorOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-full h-12 justify-between bg-white border-2 border-gray-200 hover:border-blue-300"
           >
-            Drivers
-          </button>
-          <button
-            className={`flex-1 px-3 py-2 text-sm font-medium ${
-              selectedTab === 'equipment' 
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setSelectedTab('equipment')}
-          >
-            Equipment
-          </button>
-        </div>
-        <div className="p-2 text-sm text-gray-500">
-          {selectedTab === 'drivers' ? 'Driver list here' : 'Equipment list here'}
-        </div>
-      </div>
-    </div>
-  )
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <Truck className="h-4 w-4" />
+              <span className="font-medium">Selector</span>
+            </div>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+          <SheetHeader>
+            <SheetTitle>Select Driver or Equipment</SheetTitle>
+            <SheetDescription>
+              Switch between drivers and equipment for this organization
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-6">
+            {/* Tab Toggle - using plain buttons to avoid any shadcn Button behavior */}
+            <div className="flex border-b border-gray-200 mb-4">
+              <button
+                type="button"
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  selectedTab === 'drivers'
+                    ? 'text-blue-600 border-blue-600 bg-blue-50'
+                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
+                }`}
+                onClick={() => setSelectedTab('drivers')}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Drivers
+              </button>
+              <button
+                type="button"
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  selectedTab === 'equipment'
+                    ? 'text-blue-600 border-blue-600 bg-blue-50'
+                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
+                }`}
+                onClick={() => setSelectedTab('equipment')}
+              >
+                <Truck className="h-4 w-4 mr-2" />
+                Equipment
+              </button>
+            </div>
+            
+            {/* Content Area - conditional rendering inside, not around the modal */}
+            <div className="space-y-2">
+              {selectedTab === 'drivers' ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm">No drivers found</p>
+                  <p className="text-xs mt-2">Drivers will appear here when added to this organization</p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Truck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm">No equipment found</p>
+                  <p className="text-xs mt-2">Equipment will appear here when added to this organization</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
   // Organization Context Menu
   const OrganizationMenu = () => (
@@ -97,7 +203,10 @@ export function AppSidebar({
       <h3 className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
         Organization
       </h3>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId ? `/organizations/${currentOrgId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <BarChart3 className="mr-3 h-4 w-4" />
         Overview
       </Link>
@@ -114,8 +223,8 @@ export function AppSidebar({
         Accidents
       </Link>
       <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
-        <Clipboard className="mr-3 h-4 w-4" />
-        Audits
+        <Settings className="mr-3 h-4 w-4" />
+        Preferences
       </Link>
     </nav>
   )
@@ -211,9 +320,13 @@ export function AppSidebar({
     <aside className="w-64 bg-white border-r border-gray-200 h-[calc(100vh-73px)]">
       <div className="p-4 space-y-4">
         {/* Selector Buttons */}
-        <div className="space-y-2">
+        <div className="flex gap-2">
           {showOrgSelector && <OrganizationSelector />}
-          {showDriverEquipmentSelector && <DriverEquipmentSelector />}
+          {showDriverEquipmentSelector && (
+            <div className="flex-1">
+              <DriverEquipmentSelector />
+            </div>
+          )}
         </div>
         
         {/* Context Menu */}
