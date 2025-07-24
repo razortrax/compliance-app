@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { useUser } from '@clerk/nextjs'
+import { AppLayout } from '@/components/layouts/app-layout'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -76,6 +78,7 @@ interface Location {
 export default function OrganizationDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { user } = useUser()
   const organizationId = params.id as string
 
   const [organization, setOrganization] = useState<Organization | null>(null)
@@ -220,8 +223,47 @@ export default function OrganizationDetailPage() {
     )
   }
 
+  // Get master name and setup navigation
+  const masterName = user?.fullName || user?.firstName || 'Master'
+  
+  // Top navigation per pagesContentOutline specification
+  const topNav = [
+    { 
+      label: 'Master', 
+      href: '/dashboard',
+      isActive: false
+    },
+    { 
+      label: 'Organization', 
+      href: `/organizations/${organizationId}`,
+      isActive: true  // Current page
+    },
+    { 
+      label: 'Drivers', 
+      href: `/organizations/${organizationId}/drivers`,
+      isActive: false
+    },
+    { 
+      label: 'Equipment', 
+      href: `/organizations/${organizationId}/equipment`,
+      isActive: false
+    },
+    { 
+      label: 'Settings', 
+      href: '/settings',
+      isActive: false
+    }
+  ]
+
   return (
-    <div className="min-h-screen p-6">
+    <AppLayout
+      name={masterName}
+      topNav={topNav}
+      showOrgSelector={true}
+      showDriverEquipmentSelector={true}
+      sidebarMenu="organization"
+      className="p-6"
+    >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -613,6 +655,6 @@ export default function OrganizationDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AppLayout>
   )
 } 

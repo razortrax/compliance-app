@@ -1,0 +1,149 @@
+"use client"
+
+import { useUser, UserButton } from '@clerk/nextjs'
+import { Badge } from '@/components/ui/badge'
+import { Building, Users, MapPin } from 'lucide-react'
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
+
+interface TopNavItem {
+  label: string
+  href: string
+  isActive?: boolean
+}
+
+interface AppHeaderProps {
+  name?: string
+  topNav?: TopNavItem[]
+}
+
+interface UserRole {
+  roleType: string
+  organizationId?: string
+}
+
+export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
+  const { user } = useUser()
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
+
+  useEffect(() => {
+    if (user) {
+      fetchUserRole()
+    }
+  }, [user])
+
+  const fetchUserRole = async () => {
+    try {
+      const response = await fetch('/api/user/role')
+      if (response.ok) {
+        const data = await response.json()
+        setUserRole(data.role)
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error)
+    }
+  }
+
+  const getRoleDisplay = (roleType: string) => {
+    switch (roleType) {
+      case 'master':
+        return {
+          label: 'MASTER',
+          icon: <Building className="h-3 w-3" />,
+          color: 'bg-blue-100 text-blue-700 border-blue-200'
+        }
+      case 'organization':
+        return {
+          label: 'ORGANIZATION',
+          icon: <Users className="h-3 w-3" />,
+          color: 'bg-green-100 text-green-700 border-green-200'
+        }
+      case 'location':
+        return {
+          label: 'LOCATION',
+          icon: <MapPin className="h-3 w-3" />,
+          color: 'bg-orange-100 text-orange-700 border-orange-200'
+        }
+      default:
+        return {
+          label: 'USER',
+          icon: <Users className="h-3 w-3" />,
+          color: 'bg-gray-100 text-gray-700 border-gray-200'
+        }
+    }
+  }
+
+  const getFirstName = () => {
+    return user?.firstName || user?.fullName?.split(' ')[0] || 'User'
+  }
+
+  return (
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+        {/* Left side: Logo + Name + TopNav */}
+        <div className="flex items-center space-x-6">
+          {/* Logo */}
+          <div className="text-xl font-bold text-gray-900">
+            ComplianceApp
+          </div>
+          
+          {/* Name */}
+          {name && (
+            <div className="text-lg font-semibold text-gray-700">
+              {name}
+            </div>
+          )}
+          
+          {/* Top Navigation */}
+          {topNav.length > 0 && (
+            <nav className="flex items-center space-x-4">
+              {topNav.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.href}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    item.isActive
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
+        
+        {/* Right side: Greeting + Account */}
+        <div className="flex items-center space-x-4">
+          {/* Greeting + Role Badge */}
+          {user && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-gray-700">
+                Hello, {getFirstName()}
+              </span>
+              {userRole && (
+                <Badge 
+                  variant="outline" 
+                  className={`${getRoleDisplay(userRole.roleType).color} border-current flex items-center gap-1`}
+                >
+                  {getRoleDisplay(userRole.roleType).icon}
+                  <span>{getRoleDisplay(userRole.roleType).label}</span>
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          {/* Account (Clerk UserButton) */}
+          <UserButton 
+            appearance={{
+              elements: {
+                avatarBox: "h-8 w-8"
+              }
+            }}
+          />
+        </div>
+      </div>
+    </header>
+  )
+} 
