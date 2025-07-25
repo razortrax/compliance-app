@@ -41,6 +41,9 @@ interface AppSidebarProps {
   showOrgSelector?: boolean
   showDriverEquipmentSelector?: boolean
   menuType?: 'organization' | 'driver' | 'equipment'
+  // Context IDs for dynamic navigation
+  driverId?: string
+  equipmentId?: string
   // Props for working organization selector
   organizations?: Organization[]
   currentOrgId?: string
@@ -53,6 +56,8 @@ export function AppSidebar({
   showOrgSelector = false,
   showDriverEquipmentSelector = false,
   menuType,
+  driverId,
+  equipmentId,
   organizations = [],
   currentOrgId,
   isSheetOpen = false,
@@ -239,11 +244,17 @@ export function AppSidebar({
       <h3 className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
         Drivers
       </h3>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={driverId ? `/drivers/${driverId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <BarChart3 className="mr-3 h-4 w-4" />
         Overview
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={driverId ? `/drivers/${driverId}/licenses` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Clipboard className="mr-3 h-4 w-4" />
         Licenses
       </Link>

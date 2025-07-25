@@ -123,15 +123,53 @@ model issue {
   inspection_issue inspection_issue?
   party            party             @relation(fields: [partyId], references: [id])
   license_issue    license_issue?
+  attachments      attachment[]      // Issue can have multiple attachments
 }
 
 model license_issue {
-  id             String    @id
+  id             String    @id @default(cuid())
   issueId        String    @unique
-  licenseType    String
-  expirationDate DateTime
-  renewalDate    DateTime?
+  
+  // Core license information
+  licenseType    String    // CDL Class A/B/C, Non-CDL, permits, etc.
+  licenseState   String    // State that issued the license (2 char code)
+  licenseNumber  String    // Actual license number
+  certification  String    // NonExcepted Interstate, Excepted Interstate, etc.
+  
+  // Expiration tracking
+  expirationDate DateTime  // Base license expiration
+  startDate      DateTime? // When license becomes effective
+  renewalDate    DateTime? // When renewed
+  
+  // Complex data as JSON
+  endorsements   Json      @default("[]") // Array of endorsement objects with expiration dates
+  restrictions   Json      @default("[]") // Array of license restrictions
+  
+  // Additional information
+  notes          String?   // Additional notes about the license
+  
+  // Timestamps
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  // Relationship
   issue          issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model attachment {
+  id           String   @id @default(cuid())
+  issueId      String   // Links to any issue (license, inspection, etc.)
+  fileName     String   // Original filename
+  fileType     String   // MIME type (image/jpeg, application/pdf, etc.)
+  fileSize     Int      // File size in bytes
+  filePath     String   // Storage path/URL
+  attachmentType String // 'license_front', 'license_back', 'endorsement_doc', 'general', etc.
+  description  String?  // Optional description
+  uploadedBy   String   // User ID who uploaded
+  createdAt    DateTime @default(now())
+  
+  // Relationships
+  issue        issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model location {

@@ -50,7 +50,7 @@ async function handleDeleteTestData() {
     console.log(`📊 Found ${userParties.length} parties to delete`)
 
     // Delete in the correct order to avoid foreign key constraints
-    let deletedCounts = {
+    const deletedCounts = {
       licenseIssues: 0,
       accidentIssues: 0,
       inspectionIssues: 0,

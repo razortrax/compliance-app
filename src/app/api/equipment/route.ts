@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get ALL organizations that the user has access to
-    let allOrgIds: string[] = []
+    const allOrgIds: string[] = []
 
     // 1. Organizations the user directly owns/created
     const ownedOrgs = await db.organization.findMany({

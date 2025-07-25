@@ -16,7 +16,8 @@ import {
   Plus, 
   Edit, 
   MapPin,
-  Hash
+  Hash,
+  Eye
 } from 'lucide-react'
 
 interface Equipment {
@@ -186,7 +187,6 @@ export default function EquipmentPage() {
       topNav={topNav}
       showOrgSelector={true}
       showDriverEquipmentSelector={true}
-      sidebarMenu="organization"
       className="p-6"
       organizations={organizations}
       currentOrgId={organizationId}
@@ -296,6 +296,14 @@ export default function EquipmentPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.location.href = `/equipment/${item.id}`}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm"

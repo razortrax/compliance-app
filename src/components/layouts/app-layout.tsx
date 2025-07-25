@@ -28,6 +28,9 @@ interface AppLayoutProps {
   showOrgSelector?: boolean
   showDriverEquipmentSelector?: boolean
   sidebarMenu?: 'organization' | 'driver' | 'equipment'
+  // Context IDs for dynamic navigation
+  driverId?: string
+  equipmentId?: string
   // Organization selector props
   organizations?: Organization[]
   currentOrgId?: string
@@ -45,6 +48,8 @@ export function AppLayout({
   showOrgSelector = false,
   showDriverEquipmentSelector = false,
   sidebarMenu,
+  driverId,
+  equipmentId,
   organizations,
   currentOrgId,
   isSheetOpen,
@@ -69,6 +74,8 @@ export function AppLayout({
             showOrgSelector={showOrgSelector}
             showDriverEquipmentSelector={showDriverEquipmentSelector}
             menuType={sidebarMenu}
+            driverId={driverId}
+            equipmentId={equipmentId}
             organizations={organizations}
             currentOrgId={currentOrgId}
             isSheetOpen={isSheetOpen}

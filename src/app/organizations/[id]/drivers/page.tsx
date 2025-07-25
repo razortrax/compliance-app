@@ -27,7 +27,8 @@ import {
   MapPin,
   Calendar,
   IdCard,
-  CalendarIcon
+  CalendarIcon,
+  User
 } from 'lucide-react'
 
 interface Person {
@@ -246,7 +247,6 @@ export default function DriversPage() {
       topNav={topNav}
       showOrgSelector={true}
       showDriverEquipmentSelector={true}
-      sidebarMenu="organization"
       className="p-6"
       organizations={organizations}
       currentOrgId={organizationId}
@@ -370,10 +370,10 @@ export default function DriversPage() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleEditPerson(person)}
+                          onClick={() => window.location.href = `/drivers/${person.id}`}
                         >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                          <User className="h-4 w-4 mr-1" />
+                          View
                         </Button>
                       </div>
                     </div>

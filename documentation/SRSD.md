@@ -11,7 +11,7 @@ ComplianceApp is a cloud-based compliance management platform that supports orga
 - **Database**: PostgreSQL on DigitalOcean
 - **Authentication**: Clerk (JWT with RBAC)
 - **Realtime**: WebSocket support
-- **File Storage**: DigitalOcean Spaces (planned)
+- **File Storage**: DigitalOcean Spaces (S3-compatible with CDN support)
 - **State Management**: Zustand
 - **Form Handling**: React Hook Form
 - **Data Fetching**: TanStack Query

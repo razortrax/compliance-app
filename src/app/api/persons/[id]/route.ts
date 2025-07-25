@@ -37,6 +37,20 @@ export async function GET(
       return NextResponse.json({ error: 'Person not found' }, { status: 404 })
     }
 
+    // Manually fetch organization data for each role
+    if (person.party.role && person.party.role.length > 0) {
+      for (const role of person.party.role) {
+        if (role.organizationId) {
+          const organization = await db.organization.findUnique({
+            where: { id: role.organizationId },
+            select: { id: true, name: true }
+          })
+          // Add organization to role object
+          ;(role as any).organization = organization
+        }
+      }
+    }
+
     // TODO: Add access control logic similar to /api/persons GET
     // For now, allowing if user has any relationship to the person's organization
 

@@ -3,12 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs"
 import { SmartRedirect } from "@/components/routing/smart-redirect"
+import Header from "@/components/layout/header"
 import { Building, Users, Shield, Truck, CheckCircle, ArrowRight, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Header with sign-in button */}
+      <Header />
+      
       {/* Smart redirect for signed-in users */}
       <SignedIn>
         <SmartRedirect />

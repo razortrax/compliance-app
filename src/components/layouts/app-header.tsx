@@ -2,7 +2,8 @@
 
 import { useUser, UserButton } from '@clerk/nextjs'
 import { Badge } from '@/components/ui/badge'
-import { Building, Users, MapPin } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Building, Users, MapPin, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
@@ -140,6 +141,20 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
               )}
             </div>
           )}
+          
+          {/* Get Help Button */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // Placeholder for future implementation
+              alert('Get Help feature coming soon! This will connect you with a compliance consultant.')
+            }}
+            className="flex items-center gap-2"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Get Help
+          </Button>
           
           {/* Account (Clerk UserButton) */}
           <UserButton 
