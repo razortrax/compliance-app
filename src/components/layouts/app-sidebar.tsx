@@ -24,7 +24,8 @@ import {
   ShieldCheck,
   Car,
   Clipboard,
-  Settings
+  Settings,
+  GraduationCap
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -270,8 +271,11 @@ export function AppSidebar({
         <Users className="mr-3 h-4 w-4" />
         Physicals
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
-        <Clipboard className="mr-3 h-4 w-4" />
+      <Link 
+        href={driverId ? `/drivers/${driverId}/training` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <GraduationCap className="mr-3 h-4 w-4" />
         Training
       </Link>
       <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">

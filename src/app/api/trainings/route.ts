@@ -1,40 +1,31 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
-import { createId } from '@paralleldrive/cuid2'
 
-// Define types for license data
-interface Endorsement {
-  code: string
-  name: string
-  expirationDate?: string | null
-  renewalRequired?: boolean
-  certificationNumber?: string
+function createId() {
+  return `training_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-interface Restriction {
-  code: string
-  description: string
-}
-
-interface LicenseIssueData {
-  licenseType: string
-  licenseState: string
-  licenseNumber: string
-  certification: string
+interface TrainingIssueData {
+  trainingType: string
+  provider?: string
+  instructor?: string
+  location?: string
+  startDate?: string
+  completionDate: string
   expirationDate: string
-  renewalDate?: string
-  endorsements: Endorsement[]
-  restrictions: Restriction[]
+  certificateNumber?: string
+  hours?: number
+  isRequired?: boolean
+  competencies?: any[]
   notes?: string
   partyId: string
   title: string
   description?: string
   priority?: string
-  startDate?: string
 }
 
-// GET /api/licenses - List licenses with filtering
+// GET /api/trainings - List training records
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -43,22 +34,29 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const partyId = searchParams.get('partyId')
-    const licenseType = searchParams.get('licenseType')
+    const driverId = searchParams.get('driverId')
     const status = searchParams.get('status')
 
     // Build where clause for filtering
     const where: any = {}
     
-    if (partyId) {
-      where.issue = { partyId }
-    }
-    
-    if (licenseType) {
-      where.licenseType = licenseType
+    // If driverId is provided, convert it to partyId filter
+    if (driverId) {
+      // First get the driver to find their partyId
+      const driver = await db.person.findUnique({
+        where: { id: driverId },
+        select: { partyId: true }
+      })
+      
+      if (driver) {
+        where.issue = { partyId: driver.partyId }
+      } else {
+        // Driver not found, return empty result
+        return Response.json([])
+      }
     }
 
-    // Access control - support Master, Organization, and Location managers (same as POST endpoint)
+    // Access control - support Master, Organization, and Location managers (same as licenses)
     let accessFilter = {}
     
     // Get user's role to determine access
@@ -77,7 +75,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (userMasterOrg) {
-      // Master user - can see licenses for all organizations they manage
+      // Master user - can see trainings for all organizations they manage
       const managedOrgs = await db.role.findMany({
         where: {
           roleType: 'master',
@@ -96,9 +94,9 @@ export async function GET(request: NextRequest) {
         issue: {
           party: {
             OR: [
-              // Personal licenses
+              // Personal trainings
               { userId },
-              // Licenses for people in organizations they manage
+              // Trainings for people in organizations they manage
               {
                 role: {
                   some: {
@@ -107,7 +105,7 @@ export async function GET(request: NextRequest) {
                   }
                 }
               },
-              // Organization licenses for orgs they manage
+              // Organization trainings for orgs they manage
               {
                 organization: {
                   id: { in: allManagedOrgIds }
@@ -153,9 +151,9 @@ export async function GET(request: NextRequest) {
         issue: {
           party: {
             OR: [
-              // Personal licenses
+              // Personal trainings
               { userId },
-              // Licenses for people in organizations they manage
+              // Trainings for people in organizations they manage
               userOrgIds.length > 0 && {
                 role: {
                   some: {
@@ -164,7 +162,7 @@ export async function GET(request: NextRequest) {
                   }
                 }
               },
-              // Licenses for people at locations they manage
+              // Trainings for people at locations they manage
               userLocationIds.length > 0 && {
                 role: {
                   some: {
@@ -173,7 +171,7 @@ export async function GET(request: NextRequest) {
                   }
                 }
               },
-              // Organization licenses for orgs they manage
+              // Organization trainings for orgs they manage
               userOrgIds.length > 0 && {
                 organization: {
                   id: { in: userOrgIds }
@@ -184,7 +182,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } else {
-      // No role found - only their personal licenses
+      // No role found - only their personal trainings
       accessFilter = {
         issue: {
           party: { userId }
@@ -192,10 +190,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Combine filters
+    // Combine filters (exact same pattern as licenses)
     const finalWhere = { ...where, ...accessFilter }
 
-    const licenses = await db.license_issue.findMany({
+    const trainings = await db.training_issue.findMany({
       where: finalWhere,
       include: {
         issue: {
@@ -224,10 +222,10 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // Add calculated status to each license
-    const licensesWithStatus = licenses.map(license => {
+    // Add calculated status similar to licenses
+    const trainingsWithStatus = trainings.map(training => {
       const today = new Date()
-      const expirationDate = new Date(license.expirationDate)
+      const expirationDate = new Date(training.expirationDate)
       const daysUntilExpiry = Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
       
       let calculatedStatus = 'current'
@@ -240,26 +238,26 @@ export async function GET(request: NextRequest) {
       }
 
       return {
-        ...license,
+        ...training,
         calculatedStatus,
         daysUntilExpiry
       }
     })
 
     // Filter by status if requested
-    let filteredLicenses = licensesWithStatus
+    let filteredTrainings = trainingsWithStatus
     if (status) {
-      filteredLicenses = licensesWithStatus.filter(license => license.calculatedStatus === status)
+      filteredTrainings = trainingsWithStatus.filter(training => training.calculatedStatus === status)
     }
 
-    return Response.json(filteredLicenses)
+    return Response.json(filteredTrainings)
   } catch (error) {
-    console.error('Error fetching licenses:', error)
+    console.error('Error fetching trainings:', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST /api/licenses - Create new license
+// POST /api/trainings - Create new training
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -267,15 +265,14 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body: LicenseIssueData = await request.json()
+    const body: TrainingIssueData = await request.json()
     
     // Validate required fields
-    if (!body.licenseType || !body.licenseState || !body.licenseNumber || 
-        !body.certification || !body.expirationDate || !body.partyId) {
+    if (!body.trainingType || !body.completionDate || !body.expirationDate || !body.partyId) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Check if user has access to the party
+    // Check if user has access to the party (same logic as licenses)
     const party = await db.party.findUnique({
       where: { id: body.partyId },
       include: {
@@ -376,14 +373,14 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Create license in transaction
+    // Create training in transaction
     const result = await db.$transaction(async (tx) => {
       // Create the base issue
       const issue = await tx.issue.create({
         data: {
           id: createId(),
-          issueType: 'license',
-          status: 'open',
+          issueType: 'training',
+          status: 'active',
           priority: body.priority || 'medium',
           partyId: body.partyId,
           title: body.title,
@@ -393,19 +390,21 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Create the license issue
-      const licenseIssue = await tx.license_issue.create({
+      // Create the training issue
+      const trainingIssue = await tx.training_issue.create({
         data: {
           issueId: issue.id,
-          licenseType: body.licenseType,
-          licenseState: body.licenseState,
-          licenseNumber: body.licenseNumber,
-          certification: body.certification,
+          trainingType: body.trainingType,
+          provider: body.provider,
+          instructor: body.instructor,
+          location: body.location,
           startDate: body.startDate ? new Date(body.startDate) : null,
+          completionDate: new Date(body.completionDate),
           expirationDate: new Date(body.expirationDate),
-          renewalDate: body.renewalDate ? new Date(body.renewalDate) : null,
-          endorsements: (body.endorsements || []) as any,
-          restrictions: (body.restrictions || []) as any,
+          certificateNumber: body.certificateNumber,
+          hours: body.hours,
+          isRequired: body.isRequired || false,
+          competencies: (body.competencies || []) as any,
           notes: body.notes
         },
         include: {
@@ -422,12 +421,12 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      return licenseIssue
+      return trainingIssue
     })
 
     return Response.json(result, { status: 201 })
   } catch (error) {
-    console.error('Error creating license:', error)
+    console.error('Error creating training:', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

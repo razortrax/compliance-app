@@ -1,6 +1,6 @@
 # Glossary
 
-*Updated: January 24, 2025*
+*Updated: January 25, 2025*
 
 ## Compliance Terminology
 
@@ -13,6 +13,14 @@
 **Role**: Defines the relationship between two parties, including the type of relationship and permissions within organizational hierarchy.
 
 **Issue**: Any compliance-related item that requires tracking, has expiration dates, or needs management workflow (licenses, certifications, violations, etc.).
+
+**Training Issue**: Certification or training record that tracks completion, expiration, and renewal for compliance requirements (e.g., HazMat annual training, defensive driving).
+
+**License Issue**: Driver license or certification with expiration tracking and renewal workflow.
+
+**HazMat Compliance**: Automatic requirement checking where drivers with HazMat endorsements must maintain current annual training certifications.
+
+**Renewal Workflow**: System process that deactivates expired items and creates new ones with auto-populated dates while preserving historical records.
 
 ## System Architecture
 

@@ -284,10 +284,27 @@ export function LicenseForm({ license, driverId, organizationId, renewingLicense
         description: formData.description,
         priority: formData.priority,
         ...(isRenewal && { 
-          isRenewal: true,
-          previousLicenseId: renewingLicense?.id 
+          // For renewals, only send minimal data - API will duplicate everything else
+          previousLicenseId: renewingLicense?.id,
+          startDate: formData.startDate?.toISOString(),
+          expirationDate: formData.expirationDate.toISOString(),
+          renewalDate: formData.renewalDate?.toISOString(),
+          notes: formData.notes,
+          title: formData.title,
+          description: formData.description
         })
       }
+      
+      // For renewals, only send the minimal renewal data
+      const finalRequestData = isRenewal ? {
+        previousLicenseId: renewingLicense?.id,
+        startDate: formData.startDate?.toISOString(),
+        expirationDate: formData.expirationDate.toISOString(),
+        renewalDate: formData.renewalDate?.toISOString(),
+        notes: formData.notes,
+        title: formData.title,
+        description: formData.description
+      } : requestData
       
       let url, method
       if (isRenewal) {
@@ -307,7 +324,7 @@ export function LicenseForm({ license, driverId, organizationId, renewingLicense
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(finalRequestData)
       })
       
       if (response.ok) {

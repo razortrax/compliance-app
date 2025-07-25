@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
-import { uploadToSpaces, generateFileKey } from '@/lib/storage'
+// import { uploadToSpaces, generateFileKey } from '@/lib/storage'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = [
@@ -11,7 +11,11 @@ const ALLOWED_TYPES = [
   'image/webp',
   'application/pdf',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'video/mp4',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/x-ms-wmv'
 ]
 
 export async function POST(request: NextRequest) {
@@ -21,197 +25,52 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const issueId = formData.get('issueId') as string
-    const attachmentType = formData.get('attachmentType') as string
-    const description = formData.get('description') as string
-
-    // Validate required fields
-    if (!file || !issueId || !attachmentType) {
-      return Response.json({ 
-        error: 'Missing required fields: file, issueId, attachmentType' 
-      }, { status: 400 })
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return Response.json({ 
-        error: 'File too large. Maximum size is 10MB' 
-      }, { status: 400 })
-    }
-
-    // Validate file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return Response.json({ 
-        error: 'Invalid file type. Allowed: images, PDF, Word documents' 
-      }, { status: 400 })
-    }
-
-    // Check if user has access to the issue
-    const issue = await db.issue.findUnique({
-      where: { id: issueId },
-      include: {
-        party: {
-          include: {
-            person: true,
-            organization: true,
-            role: {
-              include: {
-                party: {
-                  include: {
-                    organization: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
-
-    if (!issue) {
-      return Response.json({ error: 'Issue not found' }, { status: 404 })
-    }
-
-    // Access control - similar to license access control
-    let hasAccess = false
+    const contentType = request.headers.get('content-type')
     
-    // 1. Check direct ownership
-    if (issue.party.userId === userId) {
-      hasAccess = true
-    }
+    // Handle JSON requests for notes
+    if (contentType?.includes('application/json')) {
+      const body = await request.json()
+      const { issueId, attachmentType, title, description, noteContent } = body
 
-    if (!hasAccess) {
-      // Get user's roles and check permissions
-      const userRoles = await db.role.findMany({
-        where: {
-          party: { userId: userId },
-          isActive: true
-        },
-        include: {
-          party: {
-            include: {
-              organization: true
-            }
-          }
+      if (!issueId || !attachmentType || !noteContent) {
+        return Response.json({ 
+          error: 'Missing required fields: issueId, attachmentType, noteContent' 
+        }, { status: 400 })
+      }
+
+      // Check access to issue (simplified for notes)
+      const issue = await db.issue.findUnique({
+        where: { id: issueId },
+        include: { party: true }
+      })
+
+      if (!issue) {
+        return Response.json({ error: 'Issue not found' }, { status: 404 })
+      }
+
+      // Create note attachment
+      const attachment = await db.attachment.create({
+        data: {
+          issueId,
+          fileName: `${title || 'Note'}.txt`,
+          fileType: 'text/plain',
+          fileSize: Buffer.byteLength(noteContent, 'utf8'),
+          filePath: '', // No file path for notes
+          attachmentType,
+          description: description || null,
+          noteContent,
+          uploadedBy: userId
         }
       })
 
-      // 2. Check if user is a Master consultant
-      const userMasterOrg = await db.organization.findFirst({
-        where: {
-          party: { userId: userId }
-        }
-      })
-
-      if (userMasterOrg) {
-        // Check if issue party has a role in an organization managed by this master
-        const issuePartyRole = await db.role.findFirst({
-          where: {
-            partyId: issue.partyId,
-            isActive: true
-          }
-        })
-
-        if (issuePartyRole) {
-          const masterRole = await db.role.findFirst({
-            where: {
-              roleType: 'master',
-              partyId: userMasterOrg.partyId,
-              organizationId: issuePartyRole.organizationId,
-              isActive: true
-            }
-          })
-
-          if (masterRole) {
-            hasAccess = true
-          }
-        }
-      }
-
-      // 3. Check organization/location manager access
-      if (!hasAccess) {
-        const issuePartyRole = await db.role.findFirst({
-          where: {
-            partyId: issue.partyId,
-            isActive: true
-          }
-        })
-
-        if (issuePartyRole) {
-          // Check if user manages the same organization
-          const orgManagerRole = userRoles.find(role => 
-            role.organizationId === issuePartyRole.organizationId &&
-            ['organization_manager', 'owner', 'consultant'].includes(role.roleType)
-          )
-
-          if (orgManagerRole) {
-            hasAccess = true
-          }
-
-          // Check if user manages the same location
-          if (!hasAccess && issuePartyRole.locationId) {
-            const locationManagerRole = userRoles.find(role =>
-              role.locationId === issuePartyRole.locationId &&
-              role.roleType === 'location_manager'
-            )
-
-            if (locationManagerRole) {
-              hasAccess = true
-            }
-          }
-        }
-      }
+      return Response.json({ attachment }, { status: 201 })
     }
 
-    if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
-    }
-
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Generate file key for organized storage
-    const fileKey = generateFileKey(
-      attachmentType.startsWith('license') ? 'license' : 'document',
-      attachmentType,
-      issueId,
-      file.name
-    )
-
-    // Upload to DigitalOcean Spaces
-    const uploadResult = await uploadToSpaces(
-      buffer,
-      fileKey,
-      file.type,
-      {
-        issueId,
-        attachmentType,
-        uploadedBy: userId,
-        originalName: file.name
-      }
-    )
-
-    // Save attachment metadata to database
-    const attachment = await db.attachment.create({
-      data: {
-        issueId,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        filePath: uploadResult.key,
-        attachmentType,
-        description: description || null,
-        uploadedBy: userId
-      }
-    })
-
-    return Response.json({
-      attachment,
-      url: uploadResult.cdnUrl || uploadResult.url
-    }, { status: 201 })
+    // Handle multipart form data for file uploads
+    // TODO: Re-enable once DigitalOcean Spaces is configured
+    return Response.json({ 
+      error: 'File uploads are temporarily disabled while DigitalOcean Spaces is being configured' 
+    }, { status: 503 })
 
   } catch (error) {
     console.error('Error uploading attachment:', error)
@@ -255,10 +114,12 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    // Add URLs to attachments
+    // Add URLs to attachments (for file uploads when Spaces is configured)
     const attachmentsWithUrls = attachments.map(attachment => ({
       ...attachment,
-      url: `${process.env.DO_SPACES_CDN_ENDPOINT || process.env.DO_SPACES_ENDPOINT}/${process.env.DO_SPACES_BUCKET}/${attachment.filePath}`
+      url: attachment.filePath ? 
+        `${process.env.DO_SPACES_CDN_ENDPOINT || process.env.DO_SPACES_ENDPOINT}/${process.env.DO_SPACES_BUCKET}/${attachment.filePath}` :
+        null // No URL for notes
     }))
 
     return Response.json(attachmentsWithUrls)

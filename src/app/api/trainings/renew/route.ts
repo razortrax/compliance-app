@@ -2,16 +2,19 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 
-interface LicenseRenewalData {
-  previousLicenseId: string // Required: which license we're renewing
-  startDate?: string        // New start date (defaults to old expiration)
-  expirationDate: string    // Required: new expiration date  
-  renewalDate?: string      // Renewal/processing date (defaults to today)
+interface TrainingRenewalData {
+  previousTrainingId: string // Required: which training we're renewing
+  startDate?: string         // Optional: new start date
+  completionDate?: string    // New completion date
+  expirationDate: string     // Required: new expiration date  
+  certificateNumber?: string // Optional: new certificate number
+  hours?: number            // Optional: training hours
   notes?: string           // Optional: updated notes
   title?: string           // Optional: updated title
   description?: string     // Optional: updated description
 }
 
+// POST /api/trainings/renew - Renew training
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -19,16 +22,16 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body: LicenseRenewalData = await request.json()
+    const body: TrainingRenewalData = await request.json()
     
     // Validate required fields
-    if (!body.previousLicenseId || !body.expirationDate) {
+    if (!body.previousTrainingId || !body.expirationDate) {
       return Response.json({ error: 'Missing required fields for renewal' }, { status: 400 })
     }
 
-    // Check if user has access to the party (get from existing license)
-    const existingLicense = await db.license_issue.findUnique({
-      where: { id: body.previousLicenseId },
+    // Check if user has access to the party (get from existing training)
+    const existingTraining = await db.training_issue.findUnique({
+      where: { id: body.previousTrainingId },
       include: {
         issue: {
           include: {
@@ -52,11 +55,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (!existingLicense) {
-      return Response.json({ error: 'License to renew not found' }, { status: 404 })
+    if (!existingTraining) {
+      return Response.json({ error: 'Training to renew not found' }, { status: 404 })
     }
 
-    const party = existingLicense.issue.party
+    const party = existingTraining.issue.party
 
     // Access control check - support Master, Organization, and Location managers
     let hasAccess = false
@@ -139,9 +142,9 @@ export async function POST(request: NextRequest) {
 
     // Perform renewal in a transaction
     const result = await db.$transaction(async (tx) => {
-      // 1. Fetch the existing license to get all current data
-      const existingLicense = await tx.license_issue.findUnique({
-        where: { id: body.previousLicenseId },
+      // 1. Fetch the existing training to get all current data
+      const existingTraining = await tx.training_issue.findUnique({
+        where: { id: body.previousTrainingId },
         include: {
           issue: {
             include: {
@@ -156,13 +159,13 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      if (!existingLicense) {
-        throw new Error('Previous license not found')
+      if (!existingTraining) {
+        throw new Error('Previous training not found')
       }
 
-      // 2. Mark the old license as renewed/inactive
+      // 2. Mark the old training as renewed/inactive
       await tx.issue.update({
-        where: { id: existingLicense.issueId },
+        where: { id: existingTraining.issueId },
         data: {
           status: 'RENEWED',
           resolvedAt: new Date()
@@ -174,32 +177,34 @@ export async function POST(request: NextRequest) {
         data: {
           id: `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           updatedAt: new Date(),
-          issueType: existingLicense.issue.issueType, // Duplicate from old
+          issueType: existingTraining.issue.issueType, // Duplicate from old
           status: 'active', // New status
-          priority: existingLicense.issue.priority, // Duplicate from old
-          partyId: existingLicense.issue.partyId, // Same party
-          title: body.title || `${existingLicense.licenseType} - ${existingLicense.licenseNumber} (Renewed)`,
-          description: body.description || existingLicense.issue.description,
+          priority: existingTraining.issue.priority, // Duplicate from old
+          partyId: existingTraining.issue.partyId, // Same party
+          title: body.title || `${existingTraining.trainingType} (Renewed)`,
+          description: body.description || existingTraining.issue.description,
           dueDate: new Date(body.expirationDate) // New expiration date
         }
       })
 
-      // 4. Create the new license issue (duplicating all data, updating only dates)
-      const newLicenseIssue = await tx.license_issue.create({
+      // 4. Create the new training issue (duplicating all data, updating only specific fields)
+      const newTrainingIssue = await tx.training_issue.create({
         data: {
           issueId: newIssue.id,
-          // Duplicate all existing license data
-          licenseType: existingLicense.licenseType,
-          licenseState: existingLicense.licenseState,
-          licenseNumber: existingLicense.licenseNumber,
-          certification: existingLicense.certification,
-          endorsements: existingLicense.endorsements as any, // Keep existing endorsements
-          restrictions: existingLicense.restrictions as any, // Keep existing restrictions
-          notes: body.notes || existingLicense.notes, // Allow notes update
-          // Update only the dates
-          startDate: body.startDate ? new Date(body.startDate) : null,
+          // Duplicate all existing training data
+          trainingType: existingTraining.trainingType,
+          provider: existingTraining.provider,
+          instructor: existingTraining.instructor,
+          location: existingTraining.location,
+          startDate: body.startDate ? new Date(body.startDate) : existingTraining.startDate, // Use new or keep existing
+          isRequired: existingTraining.isRequired,
+          competencies: existingTraining.competencies as any, // Keep existing competencies
+          notes: body.notes || existingTraining.notes, // Allow notes update
+          // Update specific fields for renewal
+          completionDate: body.completionDate ? new Date(body.completionDate) : new Date(), // Default to today
           expirationDate: new Date(body.expirationDate),
-          renewalDate: body.renewalDate ? new Date(body.renewalDate) : new Date() // Default to today
+          certificateNumber: body.certificateNumber || existingTraining.certificateNumber,
+          hours: body.hours || existingTraining.hours
         },
         include: {
           issue: {
@@ -215,12 +220,12 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      return newLicenseIssue
+      return newTrainingIssue
     })
 
     return Response.json(result, { status: 201 })
   } catch (error) {
-    console.error('Error renewing license:', error)
+    console.error('Error renewing training:', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 
