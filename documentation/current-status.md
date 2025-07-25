@@ -88,12 +88,21 @@
 - [x] Sidebar menu structure with compliance categories
 - [x] **NEW: Comprehensive compliance requirements documentation** - Complete breakdown of all issue types for organizations, drivers, and equipment
 - [x] **NEW: Issue type architecture fully documented** - Specific tracking requirements for each entity type
+- [x] **NEW: Contact system architecture designed** - Flexible personal vs work contact linking strategy
 
 ### 🟡 In Progress - Base Issue System
 - [x] Prisma schema with issue tables (issue, license_issue, accident_issue, inspection_issue)
 - [x] Party-to-issue relationships established
 - [ ] **API endpoints for issue management** (next priority)
 - [ ] **Frontend issue tracking components** (next priority)
+
+### 🟡 Planned - Contact Management System
+- [x] **Contact system architecture fully designed** - Personal (party) vs work (role) linking strategy
+- [x] **Database schema designed** - Base contact table with extended phone/email/address/social tables
+- [x] **Migration strategy documented** - Clean migration from existing contact fields
+- [ ] **Contact database tables implementation** (high priority after licenses)
+- [ ] **Contact API endpoints** (contacts CRUD, unified contact queries)
+- [ ] **Contact UI components** (ContactList, ContactForm, contact tabs)
 
 ### 🔴 Not Started - Specific Compliance Management
 - [ ] License management API and UI (CDL, DOT Physical, Insurance, etc.)
@@ -200,7 +209,7 @@ See `documentation/compliance-requirements.md` for complete breakdown:
 ### **🚀 Short-term (Core Compliance)**
 5. **Registration System**: Vehicle registration and permit tracking
 6. **Inspection Management**: AIN annual inspections and RSIN incident workflows
-7. **Contact System**: Multiple phone/email/address management per entity
+7. **Contact System**: Multiple phone/email/address management per entity (architecture complete)
 8. **Document Storage**: File upload system for certificates and documentation
 
 ### **📊 Medium-term (Workflow & Alerts)**
