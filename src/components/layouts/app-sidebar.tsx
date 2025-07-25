@@ -223,6 +223,10 @@ export function AppSidebar({
         Accidents
       </Link>
       <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+        <Clipboard className="mr-3 h-4 w-4" />
+        Audit
+      </Link>
+      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
         <Settings className="mr-3 h-4 w-4" />
         Preferences
       </Link>

@@ -16,9 +16,7 @@ import {
   Plus, 
   Edit, 
   MapPin,
-  Calendar,
-  Hash,
-  Car
+  Hash
 } from 'lucide-react'
 
 interface Equipment {
@@ -28,8 +26,6 @@ interface Equipment {
   model?: string | null
   year?: number | null
   vinNumber?: string | null
-  plateNumber?: string | null
-  registrationExpiry?: Date | null
   locationId?: string | null
   location?: { id: string; name: string } | null
   party?: {
@@ -57,6 +53,8 @@ export default function EquipmentPage() {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
@@ -118,6 +116,16 @@ export default function EquipmentPage() {
   const handleOrganizationSelect = (selectedOrg: Organization) => {
     setIsSheetOpen(false)
     router.push(`/organizations/${selectedOrg.id}/equipment`)
+  }
+
+  const handleEditEquipment = (item: Equipment) => {
+    setSelectedEquipment(item)
+    setShowEditModal(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setSelectedEquipment(null)
   }
 
   const getVehicleTypeLabel = (type: string) => {
@@ -224,6 +232,29 @@ export default function EquipmentPage() {
           }
         />
 
+        {/* Edit Equipment Modal */}
+        <Dialog open={showEditModal} onOpenChange={handleCloseEditModal}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Equipment</DialogTitle>
+              <DialogDescription>
+                Update equipment details
+              </DialogDescription>
+            </DialogHeader>
+            {selectedEquipment && (
+              <EquipmentForm
+                organizationId={organizationId}
+                equipment={selectedEquipment}
+                onSuccess={() => {
+                  handleCloseEditModal()
+                  fetchEquipment()
+                }}
+                onCancel={handleCloseEditModal}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Equipment List */}
         {isLoading ? (
           <div className="text-center py-12">
@@ -255,50 +286,21 @@ export default function EquipmentPage() {
                         </div>
 
                         {/* Vehicle Details */}
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                          {item.vinNumber && (
-                            <div className="flex items-center gap-1">
-                              <Hash className="h-4 w-4" />
-                              VIN: {item.vinNumber}
-                            </div>
-                          )}
-                          {item.plateNumber && (
-                            <div className="flex items-center gap-1">
-                              <Car className="h-4 w-4" />
-                              Plate: {item.plateNumber}
-                            </div>
-                          )}
-                          {item.registrationExpiry && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              Registration expires: {new Date(item.registrationExpiry).toLocaleDateString()}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Registration Status */}
-                        {item.registrationExpiry && (
-                          <div className="flex items-center gap-2">
-                            {(() => {
-                              const expiry = new Date(item.registrationExpiry)
-                              const now = new Date()
-                              const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-                              
-                              if (daysUntilExpiry < 0) {
-                                return <Badge className="bg-red-100 text-red-700">Registration Expired</Badge>
-                              } else if (daysUntilExpiry <= 30) {
-                                return <Badge className="bg-yellow-100 text-yellow-700">Expires Soon ({daysUntilExpiry} days)</Badge>
-                              } else {
-                                return <Badge className="bg-green-100 text-green-700">Registration Current</Badge>
-                              }
-                            })()}
+                        {item.vinNumber && (
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <Hash className="h-4 w-4" />
+                            VIN: {item.vinNumber}
                           </div>
                         )}
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditEquipment(item)}
+                        >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>

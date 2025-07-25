@@ -11,28 +11,49 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's organizations (master or managed)
-    const userOrganizations = await db.organization.findMany({
+    // Get ALL organizations that the user has access to
+    let allOrgIds: string[] = []
+
+    // 1. Organizations the user directly owns/created
+    const ownedOrgs = await db.organization.findMany({
+      where: { party: { userId } },
+      select: { id: true }
+    })
+    allOrgIds.push(...ownedOrgs.map(org => org.id))
+
+    // 2. Organizations the user manages through consultant roles
+    const consultantOrgs = await db.organization.findMany({
       where: {
-        OR: [
-          { party: { userId } }, // Master organizations
-          { 
-            party: { 
-              role: { 
-                some: { 
-                  party: { userId },
-                  roleType: 'CONSULTANT_OF',
-                  isActive: true 
-                } 
-              } 
-            } 
-          } // Organizations user consults for
-        ]
+        party: {
+          role: {
+            some: {
+              party: { userId },
+              roleType: 'CONSULTANT_OF',
+              isActive: true
+            }
+          }
+        }
       },
       select: { id: true }
     })
+    allOrgIds.push(...consultantOrgs.map(org => org.id))
 
-    const orgIds = userOrganizations.map(org => org.id)
+    // 3. Get ALL organizations in the system (since master users can manage any org)
+    // Find user's master organization first
+    const userMasterOrg = await db.organization.findFirst({
+      where: { party: { userId } }
+    })
+
+    if (userMasterOrg) {
+      // If user has a master org, they can access ALL organizations
+      const allOrgs = await db.organization.findMany({
+        select: { id: true }
+      })
+      allOrgIds.push(...allOrgs.map(org => org.id))
+    }
+
+    // Remove duplicates
+    const orgIds = Array.from(new Set(allOrgIds))
     
     // Get all equipment assigned to these organizations
     const equipment = await db.equipment.findMany({
@@ -92,8 +113,6 @@ export async function POST(req: NextRequest) {
       model, 
       year, 
       vinNumber, 
-      plateNumber, 
-      registrationExpiry,
       organizationId,
       locationId 
     } = body
@@ -196,8 +215,6 @@ export async function POST(req: NextRequest) {
           model: model || null,
           year: year ? parseInt(year) : null,
           vinNumber: vinNumber || null,
-          plateNumber: plateNumber || null,
-          registrationExpiry: registrationExpiry ? new Date(registrationExpiry) : null,
           locationId: locationId || null
         }
       })

@@ -6,11 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Loader2, X } from 'lucide-react'
-import { format } from 'date-fns'
-import { cn } from "@/lib/utils"
+import { Loader2, X } from 'lucide-react'
 
 interface Equipment {
   id: string
@@ -19,8 +15,6 @@ interface Equipment {
   model?: string | null
   year?: number | null
   vinNumber?: string | null
-  plateNumber?: string | null
-  registrationExpiry?: Date | null
   locationId?: string | null
   location?: { id: string; name: string } | null
 }
@@ -54,8 +48,6 @@ const YEARS = Array.from({ length: 50 }, (_, i) => CURRENT_YEAR - i)
 export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }: EquipmentFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
-  const [registrationExpiry, setRegistrationExpiry] = useState<Date>()
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   
   const [formData, setFormData] = useState({
     vehicleType: equipment?.vehicleType || 'TRUCK',
@@ -63,7 +55,6 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
     model: equipment?.model || '',
     year: equipment?.year?.toString() || '',
     vinNumber: equipment?.vinNumber || '',
-    plateNumber: equipment?.plateNumber || '',
     locationId: equipment?.locationId || 'none'
   })
 
@@ -82,11 +73,6 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
     }
 
     fetchLocations()
-
-    // Set initial registration expiry if editing
-    if (equipment?.registrationExpiry) {
-      setRegistrationExpiry(new Date(equipment.registrationExpiry))
-    }
   }, [organizationId, equipment])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,9 +81,11 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
 
     try {
       const payload = {
-        ...formData,
+        vehicleType: formData.vehicleType,
+        make: formData.make || null,
+        model: formData.model || null,
         year: formData.year ? parseInt(formData.year) : null,
-        registrationExpiry: registrationExpiry?.toISOString(),
+        vinNumber: formData.vinNumber || null,
         organizationId,
         // Convert "none" to null for locationId
         locationId: formData.locationId === 'none' ? null : formData.locationId
@@ -191,67 +179,16 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Registration Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registration & Identification</CardTitle>
-          <CardDescription>
-            Legal registration and identification numbers
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="vinNumber">VIN Number</Label>
-              <Input
-                id="vinNumber"
-                value={formData.vinNumber}
-                onChange={(e) => handleInputChange('vinNumber', e.target.value)}
-                placeholder="17-character VIN"
-                maxLength={17}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="plateNumber">License Plate</Label>
-              <Input
-                id="plateNumber"
-                value={formData.plateNumber}
-                onChange={(e) => handleInputChange('plateNumber', e.target.value)}
-                placeholder="ABC-1234"
-              />
-            </div>
-          </div>
 
           <div className="space-y-2">
-            <Label>Registration Expiry</Label>
-            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !registrationExpiry && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {registrationExpiry ? format(registrationExpiry, "PPP") : "Pick expiry date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={registrationExpiry}
-                  onSelect={(date: Date | undefined) => {
-                    setRegistrationExpiry(date)
-                    setIsDatePickerOpen(false)
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="vinNumber">VIN Number</Label>
+            <Input
+              id="vinNumber"
+              value={formData.vinNumber}
+              onChange={(e) => handleInputChange('vinNumber', e.target.value)}
+              placeholder="17-character VIN"
+              maxLength={17}
+            />
           </div>
         </CardContent>
       </Card>
