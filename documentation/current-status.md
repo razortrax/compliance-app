@@ -82,23 +82,29 @@
 - [x] `/api/user/role` - User role detection for navigation
 - [x] Comprehensive access control logic for master/org/consultant relationships
 
-### 🟡 In Progress - Compliance Framework Setup
+### 🟢 Complete - Documentation & Compliance Framework
 - [x] Standardized terminology: AIN (Annual Inspections) vs RSIN (Roadside Inspections)
 - [x] Party model architecture ready for compliance entities
 - [x] Sidebar menu structure with compliance categories
+- [x] **NEW: Comprehensive compliance requirements documentation** - Complete breakdown of all issue types for organizations, drivers, and equipment
+- [x] **NEW: Issue type architecture fully documented** - Specific tracking requirements for each entity type
 
-### 🔴 Not Started - Compliance Management
-- [ ] License management system (license_issue table)
-- [ ] Annual Inspection (AIN) tracking
-- [ ] Roadside Inspection (RSIN) incident management
-- [ ] MVR (Motor Vehicle Record) tracking
-- [ ] Drug & Alcohol compliance
-- [ ] Physical/Medical certificate tracking
-- [ ] Training record management
-- [ ] Accident incident management
-- [ ] Registration management (registration_issue table)
-- [ ] Maintenance tracking
-- [ ] Issue expiration alerts and notifications
+### 🟡 In Progress - Base Issue System
+- [x] Prisma schema with issue tables (issue, license_issue, accident_issue, inspection_issue)
+- [x] Party-to-issue relationships established
+- [ ] **API endpoints for issue management** (next priority)
+- [ ] **Frontend issue tracking components** (next priority)
+
+### 🔴 Not Started - Specific Compliance Management
+- [ ] License management API and UI (CDL, DOT Physical, Insurance, etc.)
+- [ ] Annual Inspection (AIN) tracking system
+- [ ] Roadside Inspection (RSIN) incident management workflow
+- [ ] MVR (Motor Vehicle Record) tracking and alerts
+- [ ] Drug & Alcohol compliance tracking
+- [ ] Training record management (ELDT, Hazmat, Safety)
+- [ ] Registration management (registration_issue table and workflows)
+- [ ] Maintenance tracking for equipment
+- [ ] Issue expiration alerts and notification system
 
 ### 🔴 Not Started - Advanced Features
 - [ ] Contact management (multiple phone/email/address entries)
@@ -117,6 +123,7 @@
 - **Role relationships**: Flexible role system for managing relationships between parties
 - **Organization hierarchy**: Master → Organizations → Locations → Drivers/Equipment
 - **Access control**: Comprehensive permission system based on party relationships
+- **Issue tracking**: Base issue system with extensible specific issue types
 
 ### Frontend Architecture
 - **AppLayout pattern**: Consistent layout across all pages
@@ -131,6 +138,33 @@
 - **Party model integration**: All entities properly linked through party relationships
 - **Transaction safety**: Database operations use transactions for data consistency
 
+## Compliance Requirements Documentation
+
+### **📋 NEW: Comprehensive Issue Type Mapping**
+See `documentation/compliance-requirements.md` for complete breakdown:
+
+#### **Organization Issues** (16 specific requirements)
+- Operating Authority & Registration (DOT, MC, State permits)
+- Insurance & Financial Responsibility (Liability, Cargo, Workers Comp)
+- Safety & Compliance Programs (Drug testing, Driver qualification)
+- Regulatory Filings (Biennial updates, Process agents)
+
+#### **Driver Issues** (20+ specific requirements)
+- Commercial Driver's License (CDL with endorsements)
+- Medical Certification (DOT Physical, Medical variance)
+- Drug & Alcohol Compliance (Testing program participation)
+- Training & Qualification Records (ELDT, Hazmat, Safety)
+- Motor Vehicle Record (MVR) monitoring
+- Incident Management (RSIN, Accidents, Citations)
+
+#### **Equipment Issues** (15+ specific requirements)
+- Vehicle Registration & Licensing (State registration, IFTA)
+- Annual Inspections (AIN) (DOT annual, State inspections)
+- Insurance & Financial Requirements (Vehicle, Cargo coverage)
+- Maintenance & Safety Records (Preventive maintenance)
+- Specialized Equipment Compliance (Tank, Crane, Reefer)
+- Roadside Inspection Results (RSIN violations and corrections)
+
 ## User Experience Patterns
 
 ### Navigation Contexts
@@ -142,6 +176,7 @@
 - **Organization Page**: Name row + Tabs (Details | Locations | Staff) + KPIs
 - **Location Page**: Name row + Tabs (Details | Drivers | Equipment) + KPIs
 - **Management Pages**: Add button + List/Grid + Edit modals
+- **Future Issue Pages**: Issue lists + Detail modals + Corrective action workflows
 
 ### Data Filtering
 - **Organization level**: All drivers/equipment for the organization
@@ -155,11 +190,24 @@
 - **TypeScript interfaces**: Some type conflicts between different Organization interfaces need cleanup
 
 ## Next Development Priorities
-1. **License Management**: Implement license_issue table and tracking system
-2. **Inspection Framework**: Build AIN and RSIN systems with violation workflows  
-3. **Contact Management**: Multiple phone/email/address tables
-4. **Document Storage**: File upload and attachment system
-5. **Compliance Alerts**: Expiration tracking and notification system
+
+### **🎯 Immediate (License Management)**
+1. **License API Development**: `/api/licenses` endpoints for CRUD operations
+2. **License UI Components**: License list, add/edit modals, expiration tracking
+3. **CDL Management**: Commercial driver's license tracking with endorsements
+4. **DOT Physical Tracking**: Medical certificate management with alerts
+
+### **🚀 Short-term (Core Compliance)**
+5. **Registration System**: Vehicle registration and permit tracking
+6. **Inspection Management**: AIN annual inspections and RSIN incident workflows
+7. **Contact System**: Multiple phone/email/address management per entity
+8. **Document Storage**: File upload system for certificates and documentation
+
+### **📊 Medium-term (Workflow & Alerts)**
+9. **Alert System**: Automated expiration notifications and escalation
+10. **Training Records**: Training certificate and qualification tracking
+11. **Maintenance System**: Equipment maintenance scheduling and tracking
+12. **Corrective Actions**: Violation workflow and resolution tracking
 
 ## Testing Status
 - [x] Manual testing of all CRUD operations
@@ -171,5 +219,6 @@
 
 ---
 
-**Ready for**: Compliance feature development on solid foundation  
-**Recommended next**: Start with license management as it's core to driver compliance 
+**Ready for**: License management implementation as first compliance feature  
+**Recommended next**: Start with CDL and DOT Physical tracking for drivers  
+**Foundation**: Solid entity management with comprehensive compliance requirements documented 
