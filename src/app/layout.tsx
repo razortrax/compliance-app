@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ComplianceApp",
-  description: "Fleet DOT Compliance Management",
+  title: "Fleetrax",
+  description: "DOT compliance management platform for fleet operators",
 };
 
 export default function RootLayout({

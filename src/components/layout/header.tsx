@@ -105,8 +105,12 @@ export default function Header() {
     <header className="border-b bg-white">
       <div className="flex justify-between items-center p-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-xl font-semibold">
-            ComplianceApp
+          <Link href="/" className="flex items-center">
+            <img 
+              src="/fleetrax-logo.png" 
+              alt="Fleetrax" 
+              className="h-8 w-auto"
+            />
           </Link>
           <SignedIn>
             {userRole?.roleType === 'master' && (

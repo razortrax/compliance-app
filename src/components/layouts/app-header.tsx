@@ -89,16 +89,18 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Left side: Logo + Name + TopNav */}
-        <div className="flex items-center space-x-6">
-          {/* Logo */}
-          <div className="text-xl font-bold text-gray-900">
-            ComplianceApp
-          </div>
-          
-          {/* Name */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center">
+            <img 
+              src="/fleetrax-logo.png" 
+              alt="Fleetrax" 
+              className="h-8 w-auto"
+            />
+          </Link>
           {name && (
-            <div className="text-lg font-semibold text-gray-700">
-              {name}
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-700">
+              <span className="text-gray-400">|</span>
+              <span>{name}</span>
             </div>
           )}
           

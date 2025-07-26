@@ -13,6 +13,7 @@ import { AddAddonModal } from '@/components/licenses/add-addon-modal'
 import {
   Edit, Plus, FileText, GraduationCap, ArrowLeft, Loader2, CheckCircle, AlertCircle
 } from 'lucide-react'
+import type { Organization } from '@/components/layouts/app-layout'
 
 interface Person {
   id: string
@@ -67,17 +68,9 @@ interface Training {
   }
 }
 
-interface Organization {
-  id: string
-  name: string
-  party: {
-    id: string
-  }
-}
-
 export default function DriverTrainingPage() {
   const params = useParams()
-  const { user, masterOrg } = useMasterOrg()
+  const { masterOrg, loading } = useMasterOrg()
   
   const driverId = params.id as string
   
@@ -148,12 +141,29 @@ export default function DriverTrainingPage() {
     }
   }
 
+  // Robust mapping for sidebar/layout: always provide a fallback party object.
+  // This ensures the UI does not break if a master user has not yet created an organization.
+  const mapToSidebarOrg = (org: any): Organization => ({
+    id: org?.id || '',
+    name: org?.name || 'No Organization',
+    dotNumber: org?.dotNumber || null,
+    party: org?.party
+      ? {
+          userId: org.party.userId || null,
+          status: org.party.status || '', // always a string
+        }
+      : {
+          userId: null,
+          status: '', // always a string
+        },
+  })
+
   const fetchOrganizations = async () => {
     try {
       const response = await fetch('/api/organizations')
       if (response.ok) {
         const data = await response.json()
-        setOrganizations(data)
+        setOrganizations(data.map(mapToSidebarOrg))
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
@@ -226,8 +236,8 @@ export default function DriverTrainingPage() {
         sidebarMenu="driver" 
         driverId={driverId}
         topNav={[]}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
+        organizations={organizations as Organization[]}
+        onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
       >
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin" />
@@ -242,8 +252,8 @@ export default function DriverTrainingPage() {
         sidebarMenu="driver" 
         driverId={driverId}
         topNav={[]}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
+        organizations={organizations as Organization[]}
+        onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
       >
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -287,11 +297,11 @@ export default function DriverTrainingPage() {
         sidebarMenu="driver" 
         driverId={driverId}
         className="p-6"
-        organizations={organizations}
+        organizations={organizations as Organization[]}
         currentOrgId={organization?.id}
         isSheetOpen={isSheetOpen}
         onSheetOpenChange={setIsSheetOpen}
-        onOrganizationSelect={handleOrganizationSelect}
+        onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
       >
         <div className="max-w-7xl mx-auto h-full">
           {/* Driver and Training Header */}

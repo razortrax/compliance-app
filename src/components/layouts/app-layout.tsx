@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs'
 import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
 
-interface Organization {
+export interface Organization {
   id: string
   name: string
   dotNumber?: string | null

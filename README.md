@@ -1,8 +1,8 @@
-# ComplianceApp 🚛
+# Fleetrax 🚛
 
-**Modern Fleet DOT Compliance Management Platform**
+*Fleet DOT Compliance Management SaaS Platform*
 
-ComplianceApp is a comprehensive web-based SaaS platform designed to simplify DOT record-keeping, automate expiration tracking, and manage compliance workflows for fleet operators. Built with modern technologies and a flexible party-model architecture, it provides scalable solutions for tracking driver, equipment, and organizational compliance across multiple fleets.
+Fleetrax is a comprehensive web-based SaaS platform designed to simplify DOT record-keeping, automate expiration tracking, and manage compliance workflows for fleet operators. Built with modern technologies and a flexible party-model architecture.
 
 ## ✨ Key Features
 

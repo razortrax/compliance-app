@@ -40,7 +40,7 @@ Organization Manager:
 
 ### Welcome Screen
 ```
-🎉 Welcome to ComplianceApp!
+🎉 Welcome to Fleetrax!
 Let's get your fleet compliance tracking set up.
 
 Choose your setup path:

@@ -24,9 +24,13 @@ export default function LandingPage() {
           <Badge variant="secondary" className="mb-4">
             Fleet Compliance Made Simple
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Stay DOT Compliant with
-            <span className="text-blue-600"> ComplianceApp</span>
+          <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
+            DOT Compliance Made Simple with{' '}
+            <img 
+              src="/fleetrax-logo.png" 
+              alt="Fleetrax" 
+              className="inline-block h-12 sm:h-16 w-auto align-baseline"
+            />
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Streamline your fleet's compliance tracking, automate expiration notifications, 

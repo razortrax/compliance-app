@@ -43,21 +43,15 @@ import { LocationForm } from "@/components/locations/location-form"
 import { SectionHeader } from "@/components/ui/section-header"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import type { Organization } from '@/components/layouts/app-layout'
 
-interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
+interface ExtendedOrganization extends Organization {
   einNumber?: string | null
   phone?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
   zipCode?: string | null
-  party?: {
-    status: string
-    userId?: string | null
-  }
 }
 
 interface Location {
@@ -84,11 +78,11 @@ export default function OrganizationDetailPage() {
   const { masterOrg } = useMasterOrg()
   const organizationId = params.id as string
 
-  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [organization, setOrganization] = useState<ExtendedOrganization | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [editedOrg, setEditedOrg] = useState<Organization | null>(null)
+  const [editedOrg, setEditedOrg] = useState<ExtendedOrganization | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('details')

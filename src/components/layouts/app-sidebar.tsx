@@ -259,7 +259,10 @@ export function AppSidebar({
         <Clipboard className="mr-3 h-4 w-4" />
         Licenses
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={driverId ? `/mvr_issues?driverId=${driverId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Car className="mr-3 h-4 w-4" />
         MVRs
       </Link>
@@ -267,7 +270,10 @@ export function AppSidebar({
         <ShieldCheck className="mr-3 h-4 w-4" />
         Drug & Alcohol
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={driverId ? `/physical_issues?driverId=${driverId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Users className="mr-3 h-4 w-4" />
         Physicals
       </Link>

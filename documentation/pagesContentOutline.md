@@ -2,7 +2,7 @@ This is an outline of pages content applied persistently and consistently throug
 
 Component definitions:
 
-* Logo \- in header. static. TBD content, logo not established so use “ComplianceApp” text in proper sized text in style compliant font aligned left  
+* Logo \- in header. static. Uses PNG logo file (`public/fleetrax-logo.png`) with direct img tags for reliable display across all pages
 * Name \- in header. populate contextually as specified below. Aligned left with proper padding to right of Logo  
 * TopNav \- in header. populate contextually as specified below. Aligned left with proper padding to right of Name  
 * Account \- in header. account icon from clerk for managing logged in user. Aligned left.  

@@ -121,10 +121,112 @@ model issue {
   resolvedAt       DateTime?
   accident_issue   accident_issue?
   inspection_issue inspection_issue?
+  mvr_issue        mvr_issue?
+  physical_issue   physical_issue?
   party            party             @relation(fields: [partyId], references: [id])
   license_issue    license_issue?
   training_issue   training_issue?
   attachments      attachment[]      // Issue can have multiple attachments
+}
+
+enum MvrType {
+  PreHire_Check
+  Annual_Review
+  Drug_Testing_Clearinghouse
+  After_Accident
+  Reasonable_Suspicion
+  Endorsement_Update
+  Med_Cert_Update
+}
+
+enum MvrResult {
+  Pass
+  Fail
+  Scheduled
+  Old_Certificate
+  Inactive
+}
+
+enum MvrResultDach {
+  Pass
+  Fail
+  Not_Required
+}
+
+enum MvrResultStatus {
+  Result_Meets
+  Result_Does_Not_Meet
+  Result_Disqualified
+}
+
+enum MvrCertification {
+  NonExcepted_Interstate
+  Excepted_Interstate
+  NonExcepted_Intrastate
+  ExceptedIntrastate
+  None
+}
+
+enum MvrStatus {
+  Not_Released
+  Active
+  Inactive
+  Disqualified
+  Not_Driver
+  One_Time_Training
+}
+
+enum PhysicalType {
+  Annual
+  Bi_Annual
+  Return_to_Duty
+  Post_Accident
+  One_Month
+  Three_Month
+  Six_Month
+  Pre_Hire
+  No_Physical_Issue
+}
+
+model mvr_issue {
+  id               String           @id @default(cuid())
+  issueId          String           @unique
+  state            String           // VARCHAR(2)
+  violationsCount  Int              @default(0)
+  cleanRecord      Boolean          @default(true)
+  notes            String?
+  type             MvrType?
+  result           MvrResult?
+  result_dach      MvrResultDach?
+  result_status    MvrResultStatus?
+  reviewedBy       Json?
+  certification    MvrCertification?
+  status           MvrStatus?
+  startDate        DateTime?        // When MVR period started
+  expirationDate   DateTime?        // When MVR expires (typically 1 year from start)
+  renewalDate      DateTime?        // When MVR was renewed/processed
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  issue            issue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model physical_issue {
+  id               String           @id @default(cuid())
+  issueId          String           @unique
+  type             PhysicalType?
+  medicalExaminer  String?          // VARCHAR(255)
+  selfCertified    Boolean          @default(false)
+  nationalRegistry Boolean          @default(false)
+  startDate        DateTime?        // When physical period started
+  expirationDate   DateTime?        // When physical expires
+  renewalDate      DateTime?        // When physical was renewed/processed
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  issue            issue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model license_issue {

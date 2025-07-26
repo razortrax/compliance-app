@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       if (!consultantParty) {
         consultantParty = await tx.party.create({
           data: {
+            id: createId(),
             status: 'active',
             updatedAt: new Date()
           }
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: 'Invalid data provided',
-        details: error.errors 
+        details: Array.isArray((error as any).issues) ? (error as any).issues : error.message
       }, { status: 400 })
     }
 
