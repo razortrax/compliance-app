@@ -220,7 +220,10 @@ export function AppSidebar({
         <AlertTriangle className="mr-3 h-4 w-4" />
         Issues
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId ? `/roadside_inspections?organizationId=${currentOrgId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>
@@ -266,16 +269,19 @@ export function AppSidebar({
         <Car className="mr-3 h-4 w-4" />
         MVRs
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
-        <ShieldCheck className="mr-3 h-4 w-4" />
-        Drug & Alcohol
-      </Link>
-      <Link 
-        href={driverId ? `/physical_issues?driverId=${driverId}` : "#"} 
+      <Link
+        href={driverId ? `/physical_issues?driverId=${driverId}` : "#"}
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <Users className="mr-3 h-4 w-4" />
         Physicals
+      </Link>
+      <Link
+        href={driverId ? `/drugalcohol_issues?driverId=${driverId}` : "#"}
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Users className="mr-3 h-4 w-4" />
+        Drug & Alcohol
       </Link>
       <Link 
         href={driverId ? `/drivers/${driverId}/training` : "#"} 
@@ -284,7 +290,10 @@ export function AppSidebar({
         <GraduationCap className="mr-3 h-4 w-4" />
         Training
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={driverId ? `/roadside_inspections?driverId=${driverId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>

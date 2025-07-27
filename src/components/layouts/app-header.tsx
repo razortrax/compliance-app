@@ -26,10 +26,12 @@ interface UserRole {
 export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
   const { user } = useUser()
   const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
       fetchUserRole()
+      fetchUserName()
     }
   }, [user])
 
@@ -42,6 +44,20 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
       }
     } catch (error) {
       console.error('Error fetching user role:', error)
+    }
+  }
+
+  const fetchUserName = async () => {
+    try {
+      const response = await fetch('/api/user/profile')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.person) {
+          setUserName(data.person.firstName)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user name:', error)
     }
   }
 
@@ -75,6 +91,9 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
   }
 
   const getFirstName = () => {
+    // Use database name first, then fall back to Clerk data
+    if (userName) return userName
+    
     // Try different name sources from Clerk user object
     if (user?.firstName) return user.firstName
     if (user?.fullName) return user.fullName.split(' ')[0]  

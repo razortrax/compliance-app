@@ -10,33 +10,24 @@ export async function GET() {
   }
 
   try {
-    // Find the user's person record
-    const userPerson = await db.person.findFirst({
-      where: {
-        party: {
-          userId: userId
-        }
-      },
-      select: {
-        firstName: true,
-        lastName: true,
-        email: true
+    // Find the user's party and person record
+    const party = await db.party.findFirst({
+      where: { userId: userId },
+      include: {
+        person: true,
+        organization: true
       }
     })
 
-    if (userPerson) {
-      return NextResponse.json({
-        profile: {
-          firstName: userPerson.firstName,
-          lastName: userPerson.lastName,
-          email: userPerson.email
-        }
-      })
+    if (!party) {
+      return NextResponse.json({ 
+        error: 'User profile not found' 
+      }, { status: 404 })
     }
 
-    // No person record found
     return NextResponse.json({
-      profile: null
+      person: party.person,
+      organization: party.organization
     })
 
   } catch (error) {

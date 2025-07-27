@@ -123,6 +123,8 @@ model issue {
   inspection_issue inspection_issue?
   mvr_issue        mvr_issue?
   physical_issue   physical_issue?
+  drugalcohol_issue drugalcohol_issue?
+  roadside_inspection_issue roadside_inspection_issue?
   party            party             @relation(fields: [partyId], references: [id])
   license_issue    license_issue?
   training_issue   training_issue?
@@ -188,6 +190,30 @@ enum PhysicalType {
   No_Physical_Issue
 }
 
+enum DrugAlcoholResult {
+  Negative
+  Positive
+  Negative_Dilute
+}
+
+enum DrugAlcoholReason {
+  PreEmployment
+  Random
+  Reasonable_Suspicion
+  Post_Accident
+  Return_to_Duty
+  FollowUp
+  Other
+}
+
+enum DrugAlcoholAgency {
+  FMCSA
+  PHMSA
+  Non_DOT
+  Drug_Testing_Clearinghouse
+  Water_Tech_Energy
+}
+
 model mvr_issue {
   id               String           @id @default(cuid())
   issueId          String           @unique
@@ -227,6 +253,27 @@ model physical_issue {
 
   // Relations
   issue            issue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model drugalcohol_issue {
+  id              String                 @id @default(cuid())
+  issueId         String                 @unique
+  result          DrugAlcoholResult?     // Test result
+  substance       String?                // Substance tested for (VARCHAR(50))
+  lab             String?                // Testing laboratory (VARCHAR(255))
+  accreditedBy    String?                // Accrediting body (VARCHAR(100))
+  notes           String?                // Additional notes about the test
+  reason          DrugAlcoholReason?     // Reason for test
+  agency          DrugAlcoholAgency?     // Testing agency
+  specimenNumber  String?                // Number specimen (renamed from number_specimen)
+  isDrug          Boolean                @default(false) // is_drug
+  isAlcohol       Boolean                @default(false) // is_alcohol
+  clinic          Json?                  // Clinic information (JSON)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  // Relations
+  issue           issue                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model license_issue {
@@ -373,4 +420,134 @@ model role {
   consultationId String?
   party          party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
   location       location? @relation(fields: [locationId], references: [id])
+}
+
+enum RinsLevel {
+  Level_I
+  Level_II
+  Level_III
+  Level_IV
+  Level_V
+  Level_VI
+}
+
+enum RinsResult {
+  Pass
+  Warning
+  Out_Of_Service
+}
+
+enum DverSource {
+  Driver_Reported
+  FMCSA_Portal_Check
+  Third_Party_Report
+}
+
+enum EntryMethod {
+  Manual_Entry
+  OCR_Upload
+  API_Import
+}
+
+enum ViolationType {
+  Company
+  Driver_Qualification
+  Driver_Performance
+  Equipment
+}
+
+enum ViolationSeverity {
+  Warning
+  Citation
+  Out_Of_Service
+}
+
+model roadside_inspection_issue {
+  id                    String                 @id @default(cuid())
+  issueId               String                 @unique
+  
+  // DVER Header Information
+  reportNumber          String?                // USP070000063
+  inspectionDate        DateTime               // Date of inspection
+  inspectionTime        String?                // Time of inspection
+  inspectorName         String                 // Inspector name
+  inspectorBadge        String?                // Badge number
+  
+  // Location Details
+  inspectionLocation    String                 // NEWBERRY SC
+  facilityName          String?                // WATER TECH TRANSPORTATION LLC
+  facilityAddress       String?
+  facilityCity          String?
+  facilityState         String?
+  facilityZip           String?
+  
+  // Inspection Details
+  inspectionLevel       RinsLevel?             // Level I-VI
+  overallResult         RinsResult?            // Pass/Warning/OOS
+  
+  // Driver Information (from DVER)
+  driverLicense         String?                // License number
+  driverLicenseState    String?                // License state
+  driverDOB             DateTime?              // Date of birth
+  
+  // DVER Processing
+  dverReceived          Boolean                @default(false)
+  dverSource            DverSource?            // How we got the DVER
+  entryMethod           EntryMethod            @default(Manual_Entry)
+  
+  // Relationships
+  equipment             rins_equipment_involvement[]
+  violations            rins_violation[]
+  
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  // Relations
+  issue                 issue                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model rins_equipment_involvement {
+  id              String                 @id @default(cuid())
+  rinsId          String                 // FK to roadside_inspection_issue
+  unitNumber      Int                    // 1, 2, or 3
+  unitType        String?                // TT, TLR, etc.
+  make            String?                // PTRB, UTIL
+  model           String?
+  year            Int?
+  plateNumber     String?
+  plateState      String?
+  vin             String?
+  equipmentId     String?                // FK to equipment party if exists
+  cvsaSticker     String?
+  oosSticker      String?
+  
+  createdAt       DateTime               @default(now())
+  
+  // Relations
+  roadside_inspection roadside_inspection_issue @relation(fields: [rinsId], references: [id], onDelete: Cascade)
+}
+
+model rins_violation {
+  id                    String                 @id @default(cuid())
+  rinsId                String                 // FK to roadside_inspection_issue
+  violationCode         String                 // 392.2A(1)
+  section               String?                // Full section reference
+  unitNumber            Int?                   // Which equipment unit (1,2,3) or null for driver
+  outOfService          Boolean                @default(false)
+  outOfServiceDate      DateTime?              // When placed out of service
+  backInServiceDate     DateTime?              // When returned to service
+  citationNumber        String?
+  severity              ViolationSeverity?
+  description           String
+  inspectorComments     String?
+  
+  // For assignment (Phase 1B)
+  violationType         ViolationType?         // Driver, Equipment, Company
+  assignedPartyId       String?                // FK to responsible party
+  
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  
+  // Relations
+  roadside_inspection   roadside_inspection_issue @relation(fields: [rinsId], references: [id], onDelete: Cascade)
 }
