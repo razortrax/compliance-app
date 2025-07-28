@@ -33,8 +33,11 @@ async function handleDeleteTestData() {
         issue: {
           include: {
             license_issue: true,
-            accident_issue: true,
-            inspection_issue: true
+            training_issue: true,
+            mvr_issue: true,
+            physical_issue: true,
+            drugalcohol_issue: true,
+            roadside_inspection_issue: true
           }
         }
       }
@@ -52,8 +55,11 @@ async function handleDeleteTestData() {
     // Delete in the correct order to avoid foreign key constraints
     const deletedCounts = {
       licenseIssues: 0,
-      accidentIssues: 0,
-      inspectionIssues: 0,
+      trainingIssues: 0,
+      mvrIssues: 0,
+      physicalIssues: 0,
+      drugAlcoholIssues: 0,
+      roadsideInspectionIssues: 0,
       issues: 0,
       roles: 0,
       organizations: 0,
@@ -70,13 +76,25 @@ async function handleDeleteTestData() {
           await prisma.license_issue.delete({ where: { id: issue.license_issue.id } })
           deletedCounts.licenseIssues++
         }
-        if (issue.accident_issue) {
-          await prisma.accident_issue.delete({ where: { id: issue.accident_issue.id } })
-          deletedCounts.accidentIssues++
+        if (issue.training_issue) {
+          await prisma.training_issue.delete({ where: { id: issue.training_issue.id } })
+          deletedCounts.trainingIssues++
         }
-        if (issue.inspection_issue) {
-          await prisma.inspection_issue.delete({ where: { id: issue.inspection_issue.id } })
-          deletedCounts.inspectionIssues++
+        if (issue.mvr_issue) {
+          await prisma.mvr_issue.delete({ where: { id: issue.mvr_issue.id } })
+          deletedCounts.mvrIssues++
+        }
+        if (issue.physical_issue) {
+          await prisma.physical_issue.delete({ where: { id: issue.physical_issue.id } })
+          deletedCounts.physicalIssues++
+        }
+        if (issue.drugalcohol_issue) {
+          await prisma.drugalcohol_issue.delete({ where: { id: issue.drugalcohol_issue.id } })
+          deletedCounts.drugAlcoholIssues++
+        }
+        if (issue.roadside_inspection_issue) {
+          await prisma.roadside_inspection_issue.delete({ where: { id: issue.roadside_inspection_issue.id } })
+          deletedCounts.roadsideInspectionIssues++
         }
         
         // Delete the issue

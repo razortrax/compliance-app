@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
+import type { Prisma } from '@prisma/client'
 
 // GET /api/persons - List all persons for current user's organizations
 export async function GET(req: NextRequest) {
@@ -11,58 +12,112 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get query parameters
+    const { searchParams } = new URL(req.url)
+    const organizationId = searchParams.get('organizationId')
+    const roleType = searchParams.get('roleType') // New filter for role type
+
     // Get ALL organizations that the user has access to
     const allOrgIds: string[] = []
 
-    // 1. Organizations the user directly owns/created
-    const ownedOrgs = await db.organization.findMany({
-      where: { party: { userId } },
-      select: { id: true }
-    })
-    allOrgIds.push(...ownedOrgs.map(org => org.id))
+    // If specific organizationId requested, use that; otherwise get all accessible orgs
+    if (organizationId) {
+      // Verify user has access to this specific organization
+      const userMasterOrg = await db.organization.findFirst({
+        where: { party: { userId } }
+      })
 
-    // 2. Organizations the user manages through consultant roles
-    const consultantOrgs = await db.organization.findMany({
-      where: {
-        party: { 
-          role: { 
-            some: { 
+      let hasAccess = false
+
+      if (userMasterOrg) {
+        hasAccess = true // Master users can access any org
+      } else {
+        // Check if user owns this organization or has a role in it
+        const organization = await db.organization.findFirst({
+          where: {
+            id: organizationId,
+            party: { userId }
+          }
+        })
+
+        if (organization) {
+          hasAccess = true
+        } else {
+          const hasRole = await db.role.findFirst({
+            where: {
               party: { userId },
-              roleType: 'CONSULTANT_OF',
-              isActive: true 
-            } 
-          } 
+              organizationId: organizationId,
+              isActive: true
+            }
+          })
+          hasAccess = !!hasRole
         }
-      },
-      select: { id: true }
-    })
-    allOrgIds.push(...consultantOrgs.map(org => org.id))
+      }
 
-    // 3. Get ALL organizations in the system (since master users can manage any org)
-    // Find user's master organization first
-    const userMasterOrg = await db.organization.findFirst({
-      where: { party: { userId } }
-    })
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 })
+      }
 
-    if (userMasterOrg) {
-      // If user has a master org, they can access ALL organizations
-      const allOrgs = await db.organization.findMany({
+      allOrgIds.push(organizationId)
+    } else {
+      // Original logic for getting all accessible organizations
+      // 1. Organizations the user directly owns/created
+      const ownedOrgs = await db.organization.findMany({
+        where: { party: { userId } },
         select: { id: true }
       })
-      allOrgIds.push(...allOrgs.map(org => org.id))
+      allOrgIds.push(...ownedOrgs.map((org: { id: string }) => org.id))
+
+      // 2. Organizations the user manages through consultant roles
+      const consultantOrgs = await db.organization.findMany({
+        where: {
+          party: { 
+            role: { 
+              some: { 
+                party: { userId },
+                roleType: 'CONSULTANT_OF',
+                isActive: true 
+              } 
+            } 
+          }
+        },
+        select: { id: true }
+      })
+      allOrgIds.push(...consultantOrgs.map((org: { id: string }) => org.id))
+
+      // 3. Get ALL organizations in the system (since master users can manage any org)
+      const userMasterOrg = await db.organization.findFirst({
+        where: { party: { userId } }
+      })
+
+      if (userMasterOrg) {
+        const allOrgs = await db.organization.findMany({
+          select: { id: true }
+        })
+        allOrgIds.push(...allOrgs.map((org: { id: string }) => org.id))
+      }
     }
 
     // Remove duplicates
     const orgIds = Array.from(new Set(allOrgIds))
+
+    // Build where clause for role filtering
+    const roleWhere: any = {
+      organizationId: { in: orgIds },
+      isActive: true
+    }
+
+    // Add roleType filter if specified
+    if (roleType) {
+      roleWhere.roleType = roleType
+    }
+
     // Get all persons assigned to these organizations
     const persons = await db.person.findMany({
       where: {
         party: {
           role: {
-            some: {
-              organizationId: { in: orgIds },
-              isActive: true
-            }
+            some: roleWhere
           }
         }
       },
@@ -197,7 +252,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create person with party model
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Create party record
       const party = await tx.party.create({
         data: {

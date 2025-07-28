@@ -40,6 +40,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { EmptyState } from "@/components/ui/empty-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { LocationForm } from "@/components/locations/location-form"
+import { StaffForm } from "@/components/staff/staff-form"
 import { SectionHeader } from "@/components/ui/section-header"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -100,6 +101,10 @@ export default function OrganizationDetailPage() {
   const [showLocationForm, setShowLocationForm] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
+  
+  // Staff management state
+  const [showStaffForm, setShowStaffForm] = useState(false)
+  const [editingStaff, setEditingStaff] = useState<any>(null)
 
   const fetchOrganizations = async () => {
     try {
@@ -131,6 +136,27 @@ export default function OrganizationDetailPage() {
     }
   }
 
+  // Staff management functions
+  const handleAddStaff = () => {
+    setEditingStaff(null)
+    setShowStaffForm(true)
+  }
+
+  const handleEditStaff = (staffMember: any) => {
+    setEditingStaff(staffMember)
+    setShowStaffForm(true)
+  }
+
+  const handleCloseStaffForm = () => {
+    setShowStaffForm(false)
+    setEditingStaff(null)
+  }
+
+  const handleStaffSuccess = () => {
+    setShowStaffForm(false)
+    setEditingStaff(null)
+    fetchStaff() // Refresh staff list
+  }
 
 
   useEffect(() => {
@@ -259,20 +285,15 @@ export default function OrganizationDetailPage() {
   // Fetch staff data (STAFF role type)
   const fetchStaff = async () => {
     try {
-      const response = await fetch('/api/persons')
+      const response = await fetch(`/api/staff?organizationId=${organizationId}`)
       if (response.ok) {
         const data = await response.json()
-        const orgStaff = data.filter((person: any) => 
-          person.party?.role?.some((role: any) => 
-            role.organizationId === organizationId && role.roleType === 'STAFF'
-          )
-        )
-        setStaff(orgStaff)
+        setStaff(data)
       }
-         } catch (error) {
-       console.error('Error fetching staff:', error)
-     }
-   }
+    } catch (error) {
+      console.error('Error fetching staff:', error)
+    }
+  }
 
    // Location handlers
    const handleEditLocation = (location: Location) => {
@@ -652,7 +673,7 @@ export default function OrganizationDetailPage() {
                       Administrative and management staff for {organization.name}
                     </CardDescription>
                   </div>
-                  <Button>
+                  <Button onClick={handleAddStaff}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Staff
                   </Button>
@@ -661,16 +682,33 @@ export default function OrganizationDetailPage() {
               <CardContent>
                 {staff.length > 0 ? (
                   <div className="space-y-4">
-                    {staff.map((person) => (
-                      <Card key={person.id} className="hover:shadow-md transition-shadow">
+                    {staff.map((staffMember) => (
+                      <Card key={staffMember.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="font-semibold">{person.firstName} {person.lastName}</h3>
-                              <p className="text-sm text-gray-600">{person.role || 'Staff'}</p>
+                              <h3 className="font-semibold">
+                                {staffMember.party?.person?.firstName} {staffMember.party?.person?.lastName}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {staffMember.position || 'Staff Member'}
+                                {staffMember.department && ` • ${staffMember.department}`}
+                              </p>
+                              <div className="flex gap-2 mt-1">
+                                {staffMember.canSignCAFs && (
+                                  <Badge variant="secondary" className="text-xs">Can Sign CAFs</Badge>
+                                )}
+                                {staffMember.canApproveCAFs && (
+                                  <Badge variant="default" className="text-xs">Can Approve CAFs</Badge>
+                                )}
+                              </div>
                             </div>
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleEditStaff(staffMember)}
+                              >
                                 <Edit className="h-4 w-4 mr-1" />
                                 Edit
                               </Button>
@@ -684,11 +722,7 @@ export default function OrganizationDetailPage() {
                   <EmptyState
                     icon={Users}
                     title="No staff yet"
-                    description="Add staff members to manage administrative roles"
-                    action={{
-                      label: "Add First Staff Member",
-                      onClick: () => {}
-                    }}
+                    description="Add staff members to manage administrative roles and CAF workflows"
                   />
                 )}
               </CardContent>
@@ -718,6 +752,29 @@ export default function OrganizationDetailPage() {
                 fetchLocations()
               }}
               onCancel={handleCloseLocationForm}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Staff Form Modal */}
+        <Dialog open={showStaffForm} onOpenChange={handleCloseStaffForm}>
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
+              </DialogTitle>
+              <DialogDescription>
+                {editingStaff 
+                  ? `Update staff details and permissions` 
+                  : `Add a new staff member to ${organization?.name} with appropriate permissions`
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <StaffForm
+              organizationId={organizationId}
+              staff={editingStaff}
+              onSuccess={handleStaffSuccess}
+              onCancel={handleCloseStaffForm}
             />
           </DialogContent>
         </Dialog>

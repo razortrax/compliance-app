@@ -97,16 +97,6 @@ model equipment {
   location           location? @relation(fields: [locationId], references: [id])
 }
 
-model inspection_issue {
-  id             String   @id
-  issueId        String   @unique
-  inspectionDate DateTime
-  inspectorName  String?
-  violationCount Int      @default(0)
-  outOfService   Boolean  @default(false)
-  issue          issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
-}
-
 model issue {
   id               String            @id
   createdAt        DateTime          @default(now())
@@ -120,7 +110,6 @@ model issue {
   dueDate          DateTime?
   resolvedAt       DateTime?
   accident_issue   accident_issue?
-  inspection_issue inspection_issue?
   mvr_issue        mvr_issue?
   physical_issue   physical_issue?
   drugalcohol_issue drugalcohol_issue?
@@ -320,19 +309,21 @@ model training_issue {
 
 model attachment {
   id           String   @id @default(cuid())
-  issueId      String   // Links to any issue (license, inspection, etc.)
+  issueId      String?  // Links to any issue (license, inspection, etc.) - now optional
+  cafId        String?  // Links to CAF - new for Phase 2
   fileName     String   // Original filename
   fileType     String   // MIME type (image/jpeg, application/pdf, etc.)
   fileSize     Int      // File size in bytes
   filePath     String   // Storage path/URL (empty for notes)
-  attachmentType String // 'license_front', 'license_back', 'note', 'endorsement_doc', etc.
+  attachmentType String // 'license_front', 'license_back', 'note', 'endorsement_doc', 'caf_evidence', etc.
   description  String?  // Optional description
   noteContent  String?  // For text-based addons (notes)
   uploadedBy   String   // User ID who uploaded
   createdAt    DateTime @default(now())
   
   // Relationships
-  issue        issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue        issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  corrective_action_form corrective_action_form? @relation("CAFAttachments", fields: [cafId], references: [id], onDelete: Cascade)
 }
 
 model location {
@@ -372,6 +363,7 @@ model organization {
   phone        String?
   consultation consultation[]
   location     location[]
+  corrective_action_forms corrective_action_form[] // CAF system support
   party        party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
@@ -388,6 +380,7 @@ model party {
   location     location?     // NEW: Location can be a party
   person       person?
   role         role[]
+  staff        staff?        // CAF system support
 }
 
 model person {
@@ -550,4 +543,120 @@ model rins_violation {
   
   // Relations
   roadside_inspection   roadside_inspection_issue @relation(fields: [rinsId], references: [id], onDelete: Cascade)
+  corrective_action_forms corrective_action_form[]
+}
+
+// CAF System - Phase 2 Implementation
+model staff {
+  id                    String                 @id @default(cuid())
+  partyId               String                 @unique
+  employeeId            String?                // Company employee ID
+  position              String?                // Job title/position
+  department            String?                // Department/division
+  supervisorId          String?                // FK to supervisor staff record
+  isActive              Boolean                @default(true)
+  canApproveCAFs        Boolean                @default(false)
+  canSignCAFs           Boolean                @default(false)
+  
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  
+  // Relations
+  party                 party                  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  supervisor            staff?                 @relation("StaffSupervisor", fields: [supervisorId], references: [id])
+  subordinates          staff[]                @relation("StaffSupervisor")
+  assigned_cafs         corrective_action_form[] @relation("AssignedStaff")
+  created_cafs          corrective_action_form[] @relation("CreatedByStaff")
+  signatures            caf_signature[]
+}
+
+model corrective_action_form {
+  id                    String                 @id @default(cuid())
+  cafNumber             String                 @unique // Auto-generated CAF-YYYY-NNNN
+  rinsViolationId       String?                // FK to originating violation (optional)
+  accidentViolationId   String?                // FK to future accident violations
+  
+  // Basic Information
+  title                 String                 // "Driver Performance - 392.2A(1)"
+  description           String                 // Detailed description of required action
+  correctiveActions     String?                // Manual entry of specific corrective actions required
+  notes                 String?                // Additional notes or special instructions
+  priority              CafPriority            @default(MEDIUM)
+  category              CafCategory            // DRIVER_PERFORMANCE, EQUIPMENT_MAINTENANCE, etc.
+  
+  // Assignment
+  assignedStaffId       String                 // FK to responsible staff member
+  assignedBy            String                 // FK to staff who assigned
+  organizationId        String                 // FK to organization
+  dueDate               DateTime?              // When CAF must be completed
+  
+  // Status and Completion
+  status                CafStatus              @default(ASSIGNED)
+  completionNotes       String?                // Staff notes on completion
+  completedAt           DateTime?              // When marked complete
+  
+  // Approval and Signatures
+  requiresApproval      Boolean                @default(true)
+  approvedAt            DateTime?              // When approved
+  approvedBy            String?                // FK to approving staff
+  
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  
+  // Relations
+  rins_violation        rins_violation?        @relation(fields: [rinsViolationId], references: [id])
+  assigned_staff        staff                  @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
+  created_by_staff      staff                  @relation("CreatedByStaff", fields: [assignedBy], references: [id])
+  organization          organization           @relation(fields: [organizationId], references: [id])
+  signatures            caf_signature[]
+  attachments           attachment[]           @relation("CAFAttachments")
+}
+
+model caf_signature {
+  id                    String                 @id @default(cuid())
+  cafId                 String                 // FK to corrective_action_form
+  staffId               String                 // FK to staff member who signed
+  signatureType         SignatureType          // COMPLETION, APPROVAL, WITNESS
+  signedAt              DateTime               @default(now())
+  digitalSignature      String?                // Encrypted signature data
+  ipAddress             String?                // IP where signature was made
+  notes                 String?                // Optional signature notes
+  
+  // Relations
+  corrective_action_form corrective_action_form @relation(fields: [cafId], references: [id], onDelete: Cascade)
+  staff                 staff                  @relation(fields: [staffId], references: [id])
+  
+  @@unique([cafId, staffId, signatureType]) // Prevent duplicate signatures
+}
+
+// Enums for CAF System
+enum CafPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CafCategory {
+  DRIVER_PERFORMANCE      // 391.x, 392.x violations
+  DRIVER_QUALIFICATION    // 391.x violations
+  EQUIPMENT_MAINTENANCE   // 393.x, 396.x violations
+  COMPANY_OPERATIONS      // 390.x violations
+  SAFETY_MANAGEMENT       // General safety issues
+  OTHER                   // Miscellaneous
+}
+
+enum CafStatus {
+  ASSIGNED               // CAF assigned to staff
+  IN_PROGRESS           // Work has begun
+  COMPLETED             // Work complete, awaiting approval
+  APPROVED              // Approved and closed
+  REJECTED              // Rejected, needs rework
+  CANCELLED             // CAF cancelled
+}
+
+enum SignatureType {
+  COMPLETION            // Staff completing the CAF
+  APPROVAL              // Supervisor approving completion
+  WITNESS               // Witness to completion (if required)
 }

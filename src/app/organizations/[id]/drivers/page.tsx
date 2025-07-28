@@ -100,18 +100,14 @@ export default function DriversPage() {
     fetchOrganization()
   }, [organizationId])
 
-  // Fetch persons (drivers/staff)
+  // Fetch persons (drivers only)
   const fetchPersons = async () => {
           try {
         setIsLoading(true)
-        const response = await fetch('/api/persons')
+        const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`)
         if (response.ok) {
           const data = await response.json()
-          // Filter for this organization
-          const orgPersons = data.filter((person: Person) => 
-            person.party?.role?.some(role => role.organizationId === organizationId)
-          )
-          setPersons(orgPersons)
+          setPersons(data)
         }
       } catch (error) {
       console.error('Error fetching persons:', error)
