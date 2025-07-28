@@ -398,7 +398,7 @@ export default function RoadsideInspectionsPage() {
         },
         body: JSON.stringify({
           ...cafFormData,
-          status: isDraft ? 'PENDING' : 'ASSIGNED'
+          status: isDraft ? 'ASSIGNED' : 'IN_PROGRESS' // Use correct enum values
         })
       })
 
@@ -1029,6 +1029,22 @@ export default function RoadsideInspectionsPage() {
             {/* CAF Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Driver</label>
+                <p className="text-sm text-gray-600">
+                  {selectedInspection?.issue?.party?.person ? 
+                    `${selectedInspection.issue.party.person.firstName} ${selectedInspection.issue.party.person.lastName}` : 
+                    'Not specified'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Equipment</label>
+                <p className="text-sm text-gray-600">
+                  {selectedInspection?.equipment && selectedInspection.equipment.length > 0 ? 
+                    `${selectedInspection.equipment[0].make || ''} ${selectedInspection.equipment[0].model || ''} (${selectedInspection.equipment[0].year || ''})`.trim() : 
+                    'Not specified'}
+                </p>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                 <p className="text-sm text-gray-600">{selectedCAF.category?.replace('_', ' ')}</p>
               </div>
@@ -1094,8 +1110,12 @@ export default function RoadsideInspectionsPage() {
                       dueDate: selectedCAF.dueDate ? new Date(selectedCAF.dueDate).toISOString().split('T')[0] : ''
                     })
                     // Fetch staff for the organization
-                    if (selectedInspection?.issue?.party?.role?.find((r: any) => r.isActive)?.organizationId) {
-                      fetchOrganizationStaff(selectedInspection.issue.party.role.find((r: any) => r.isActive).organizationId)
+                    const orgId = selectedCAF.organizationId || contextOrganization?.id
+                    if (orgId) {
+                      console.log('Fetching staff for organization:', orgId)
+                      fetchOrganizationStaff(orgId)
+                    } else {
+                      console.log('No organization ID found for staff fetching')
                     }
                   }}
                 >
@@ -1165,16 +1185,18 @@ export default function RoadsideInspectionsPage() {
             )}
 
             {/* Equipment Information (if applicable) */}
-            {selectedInspection?.equipment && (
+            {selectedInspection?.equipment && selectedInspection.equipment.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Equipment Involved</label>
                 <div className="bg-blue-50 p-3 rounded border">
-                  <div className="font-medium">{selectedInspection.equipment.make} {selectedInspection.equipment.model} ({selectedInspection.equipment.year})</div>
-                  {selectedInspection.equipment.vin && (
-                    <div className="text-sm text-gray-600">VIN: {selectedInspection.equipment.vin}</div>
+                  <div className="font-medium">
+                    {selectedInspection.equipment[0].make} {selectedInspection.equipment[0].model} ({selectedInspection.equipment[0].year})
+                  </div>
+                  {selectedInspection.equipment[0].vin && (
+                    <div className="text-sm text-gray-600">VIN: {selectedInspection.equipment[0].vin}</div>
                   )}
-                  {selectedInspection.equipment.unitNumber && (
-                    <div className="text-sm text-gray-600">Unit: {selectedInspection.equipment.unitNumber}</div>
+                  {selectedInspection.equipment[0].unitNumber && (
+                    <div className="text-sm text-gray-600">Unit: {selectedInspection.equipment[0].unitNumber}</div>
                   )}
                 </div>
               </div>
