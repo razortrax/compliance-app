@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const rinsId = searchParams.get('rinsId')
 
-    let whereClause: any = {}
+    const whereClause: any = {}
 
     if (organizationId) {
       whereClause.organizationId = organizationId

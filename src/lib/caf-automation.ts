@@ -106,7 +106,7 @@ const generateCAFDescription = (violation: any): string => {
 
 // Find appropriate staff to assign CAF based on violation type and organization structure
 const findAssignedStaff = async (organizationId: string, violationType: ViolationType | null): Promise<string | null> => {
-  let staffCriteria: any = {
+  const staffCriteria: any = {
     party: {
       role: {
         some: {

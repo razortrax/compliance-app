@@ -79,7 +79,7 @@ export default function RoadsideInspectionsPage() {
   
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [roadsideInspections, setRoadsideInspections] = useState<RoadsideInspection[]>([])
-  const [selectedInspection, setSelectedInspection] = useState<RoadsideInspection | null>(null)
+  const [selectedRoadsideInspection, setSelectedRoadsideInspection] = useState<RoadsideInspection | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -158,11 +158,11 @@ export default function RoadsideInspectionsPage() {
 
   // Fetch attachments when inspection is selected
   useEffect(() => {
-    if (selectedInspection) {
+    if (selectedRoadsideInspection) {
       fetchAttachments()
       fetchCAFs()
     }
-  }, [selectedInspection])
+  }, [selectedRoadsideInspection])
 
   const fetchOrganization = async () => {
     try {
@@ -216,8 +216,8 @@ export default function RoadsideInspectionsPage() {
         setRoadsideInspections(data)
         
         // Auto-select first inspection
-        if (data.length > 0 && !selectedInspection) {
-          setSelectedInspection(data[0])
+        if (data.length > 0 && !selectedRoadsideInspection) {
+          setSelectedRoadsideInspection(data[0])
         }
       } else {
         console.error('RINS fetch failed:', response.status, response.statusText)
@@ -230,10 +230,10 @@ export default function RoadsideInspectionsPage() {
   }
 
   const fetchAttachments = async () => {
-    if (!selectedInspection) return
+    if (!selectedRoadsideInspection) return
     
     try {
-      const response = await fetch(`/api/attachments?issueId=${selectedInspection.issue.id}`)
+      const response = await fetch(`/api/attachments?issueId=${selectedRoadsideInspection.issue.id}`)
       if (response.ok) {
         const data = await response.json()
         setAttachments(data)
@@ -255,7 +255,7 @@ export default function RoadsideInspectionsPage() {
       if (response.ok) {
         const newInspection = await response.json()
         setRoadsideInspections(prev => [newInspection, ...prev])
-        setSelectedInspection(newInspection)
+        setSelectedRoadsideInspection(newInspection)
         setShowCreateModal(false)
       } else {
         const error = await response.json()
@@ -270,11 +270,11 @@ export default function RoadsideInspectionsPage() {
   }
 
   const handleUpdateInspection = async (data: any) => {
-    if (!selectedInspection) return
+    if (!selectedRoadsideInspection) return
 
     try {
       setFormLoading(true)
-      const response = await fetch(`/api/roadside_inspections/${selectedInspection.id}`, {
+      const response = await fetch(`/api/roadside_inspections/${selectedRoadsideInspection.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -284,10 +284,10 @@ export default function RoadsideInspectionsPage() {
         const updatedInspection = await response.json()
         setRoadsideInspections(prev => 
           prev.map(inspection => 
-            inspection.id === selectedInspection.id ? updatedInspection : inspection
+            inspection.id === selectedRoadsideInspection.id ? updatedInspection : inspection
           )
         )
-        setSelectedInspection(updatedInspection)
+        setSelectedRoadsideInspection(updatedInspection)
         setIsEditing(false)
       } else {
         const error = await response.json()
@@ -301,14 +301,14 @@ export default function RoadsideInspectionsPage() {
     }
   }
 
-  const refreshSelectedInspectionAfterEdit = async () => {
-    if (!selectedInspection) return
+  const refreshSelectedRoadsideInspectionAfterEdit = async () => {
+    if (!selectedRoadsideInspection) return
     
     try {
-      const response = await fetch(`/api/roadside_inspections/${selectedInspection.id}`)
+      const response = await fetch(`/api/roadside_inspections/${selectedRoadsideInspection.id}`)
       if (response.ok) {
         const updatedInspection = await response.json()
-        setSelectedInspection(updatedInspection)
+        setSelectedRoadsideInspection(updatedInspection)
         await fetchAttachments()
         await fetchCAFs()
       }
@@ -319,11 +319,11 @@ export default function RoadsideInspectionsPage() {
 
   // CAF management functions
   const fetchCAFs = async () => {
-    if (!selectedInspection) return
+    if (!selectedRoadsideInspection) return
     
     try {
       // Fetch CAFs directly for this RINS using the rinsId parameter
-      const response = await fetch(`/api/cafs?rinsId=${selectedInspection.id}`)
+      const response = await fetch(`/api/cafs?rinsId=${selectedRoadsideInspection.id}`)
       if (response.ok) {
         const rinsCAFs = await response.json()
         setCafs(rinsCAFs)
@@ -336,11 +336,11 @@ export default function RoadsideInspectionsPage() {
   }
 
   const generateCAFs = async () => {
-    if (!selectedInspection) return
+    if (!selectedRoadsideInspection) return
     
     try {
       setGeneratingCAFs(true)
-      const response = await fetch(`/api/roadside_inspections/${selectedInspection.id}/generate-cafs`, {
+      const response = await fetch(`/api/roadside_inspections/${selectedRoadsideInspection.id}/generate-cafs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -522,7 +522,7 @@ export default function RoadsideInspectionsPage() {
             {roadsideInspections.length > 0 && (
               <Button 
                 onClick={() => {
-                  setSelectedInspection(null)
+                  setSelectedRoadsideInspection(null)
                   setIsEditing(false)
                   setShowCreateModal(true)
                 }}
@@ -558,7 +558,7 @@ export default function RoadsideInspectionsPage() {
                       </p>
                       <Button 
                         onClick={() => {
-                          setSelectedInspection(null)
+                          setSelectedRoadsideInspection(null)
                           setIsEditing(false)
                           setShowCreateModal(true)
                         }}
@@ -573,10 +573,10 @@ export default function RoadsideInspectionsPage() {
                       <div
                         key={inspection.id}
                         className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                          selectedInspection?.id === inspection.id ? 'bg-blue-50 border-r-4 border-blue-500' : ''
+                          selectedRoadsideInspection?.id === inspection.id ? 'bg-blue-50 border-r-4 border-blue-500' : ''
                         }`}
                         onClick={() => {
-                          setSelectedInspection(inspection)
+                          setSelectedRoadsideInspection(inspection)
                         }}
                       >
                         <div className="flex justify-between items-start mb-2">
@@ -621,17 +621,17 @@ export default function RoadsideInspectionsPage() {
 
             {/* Right Pane - Details Panel */}
             <div className="flex-1">
-            {selectedInspection ? (
+            {selectedRoadsideInspection ? (
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle>
-                        Roadside Inspection - {selectedInspection.inspectionLocation}
+                        Roadside Inspection - {selectedRoadsideInspection.inspectionLocation}
                       </CardTitle>
                       <p className="text-sm text-gray-600 mt-1">
-                        {new Date(selectedInspection.inspectionDate).toLocaleDateString()} 
-                        {selectedInspection.inspectionTime && ` at ${selectedInspection.inspectionTime}`}
+                        {new Date(selectedRoadsideInspection.inspectionDate).toLocaleDateString()} 
+                        {selectedRoadsideInspection.inspectionTime && ` at ${selectedRoadsideInspection.inspectionTime}`}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -649,7 +649,7 @@ export default function RoadsideInspectionsPage() {
                 <CardContent className="p-6">
                   {isEditing ? (
                     <RoadsideInspectionForm
-                      initialData={selectedInspection}
+                      initialData={selectedRoadsideInspection}
                       isEditing={true}
                       onSubmit={handleUpdateInspection}
                       onCancel={() => setIsEditing(false)}
@@ -663,57 +663,57 @@ export default function RoadsideInspectionsPage() {
                       <div>
                         <h3 className="text-lg font-medium text-gray-900 mb-4">DVER Information</h3>
                         <div className="grid grid-cols-2 gap-4">
-                          {selectedInspection.reportNumber && (
+                          {selectedRoadsideInspection.reportNumber && (
                             <div>
                               <span className="font-medium text-gray-700">Report Number:</span>
-                              <p className="text-gray-900">{selectedInspection.reportNumber}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.reportNumber}</p>
                             </div>
                           )}
                           <div>
                             <span className="font-medium text-gray-700">Inspector:</span>
-                            <p className="text-gray-900">{selectedInspection.inspectorName}</p>
+                            <p className="text-gray-900">{selectedRoadsideInspection.inspectorName}</p>
                           </div>
-                          {selectedInspection.inspectorBadge && (
+                          {selectedRoadsideInspection.inspectorBadge && (
                             <div>
                               <span className="font-medium text-gray-700">Inspector Badge:</span>
-                              <p className="text-gray-900">{selectedInspection.inspectorBadge}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.inspectorBadge}</p>
                             </div>
                           )}
                           <div>
                             <span className="font-medium text-gray-700">Inspection Date:</span>
-                            <p className="text-gray-900">{new Date(selectedInspection.inspectionDate).toLocaleDateString()}</p>
+                            <p className="text-gray-900">{new Date(selectedRoadsideInspection.inspectionDate).toLocaleDateString()}</p>
                           </div>
-                          {selectedInspection.inspectionTime && (
+                          {selectedRoadsideInspection.inspectionTime && (
                             <div>
                               <span className="font-medium text-gray-700">Inspection Time:</span>
-                              <p className="text-gray-900">{selectedInspection.inspectionTime}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.inspectionTime}</p>
                             </div>
                           )}
-                          {selectedInspection.inspectionLevel && (
+                          {selectedRoadsideInspection.inspectionLevel && (
                             <div>
                               <span className="font-medium text-gray-700">Inspection Level:</span>
-                              <p className="text-gray-900">{selectedInspection.inspectionLevel.replace('_', ' ')}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.inspectionLevel.replace('_', ' ')}</p>
                             </div>
                           )}
-                          {selectedInspection.overallResult && (
+                          {selectedRoadsideInspection.overallResult && (
                             <div>
                               <span className="font-medium text-gray-700">Overall Result:</span>
-                              <p className="text-gray-900">{selectedInspection.overallResult.replace('_', ' ')}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.overallResult.replace('_', ' ')}</p>
                             </div>
                           )}
                           <div>
                             <span className="font-medium text-gray-700">DVER Received:</span>
-                            <p className="text-gray-900">{selectedInspection.dverReceived ? 'Yes' : 'No'}</p>
+                            <p className="text-gray-900">{selectedRoadsideInspection.dverReceived ? 'Yes' : 'No'}</p>
                           </div>
-                          {selectedInspection.dverSource && (
+                          {selectedRoadsideInspection.dverSource && (
                             <div>
                               <span className="font-medium text-gray-700">DVER Source:</span>
-                              <p className="text-gray-900">{selectedInspection.dverSource.replace('_', ' ')}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.dverSource.replace('_', ' ')}</p>
                             </div>
                           )}
                           <div>
                             <span className="font-medium text-gray-700">Entry Method:</span>
-                            <p className="text-gray-900">{selectedInspection.entryMethod?.replace('_', ' ') || 'Manual Entry'}</p>
+                            <p className="text-gray-900">{selectedRoadsideInspection.entryMethod?.replace('_', ' ') || 'Manual Entry'}</p>
                           </div>
                         </div>
                       </div>
@@ -724,25 +724,25 @@ export default function RoadsideInspectionsPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <span className="font-medium text-gray-700">Inspection Location:</span>
-                            <p className="text-gray-900">{selectedInspection.inspectionLocation}</p>
+                            <p className="text-gray-900">{selectedRoadsideInspection.inspectionLocation}</p>
                           </div>
-                          {selectedInspection.facilityName && (
+                          {selectedRoadsideInspection.facilityName && (
                             <div>
                               <span className="font-medium text-gray-700">Facility Name:</span>
-                              <p className="text-gray-900">{selectedInspection.facilityName}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.facilityName}</p>
                             </div>
                           )}
-                          {selectedInspection.facilityAddress && (
+                          {selectedRoadsideInspection.facilityAddress && (
                             <div>
                               <span className="font-medium text-gray-700">Facility Address:</span>
-                              <p className="text-gray-900">{selectedInspection.facilityAddress}</p>
+                              <p className="text-gray-900">{selectedRoadsideInspection.facilityAddress}</p>
                             </div>
                           )}
-                          {(selectedInspection.facilityCity || selectedInspection.facilityState || selectedInspection.facilityZip) && (
+                          {(selectedRoadsideInspection.facilityCity || selectedRoadsideInspection.facilityState || selectedRoadsideInspection.facilityZip) && (
                             <div>
                               <span className="font-medium text-gray-700">Facility Location:</span>
                               <p className="text-gray-900">
-                                {[selectedInspection.facilityCity, selectedInspection.facilityState, selectedInspection.facilityZip]
+                                {[selectedRoadsideInspection.facilityCity, selectedRoadsideInspection.facilityState, selectedRoadsideInspection.facilityZip]
                                   .filter(Boolean).join(', ')}
                               </p>
                             </div>
@@ -756,8 +756,8 @@ export default function RoadsideInspectionsPage() {
                         <div>
                           <span className="font-medium text-gray-700">Driver:</span>
                           <p className="text-gray-900">
-                            {selectedInspection.issue.party.person 
-                              ? `${selectedInspection.issue.party.person.firstName} ${selectedInspection.issue.party.person.lastName}`
+                            {selectedRoadsideInspection.issue.party.person 
+                              ? `${selectedRoadsideInspection.issue.party.person.firstName} ${selectedRoadsideInspection.issue.party.person.lastName}`
                               : 'Unknown Driver'
                             }
                           </p>
@@ -765,11 +765,11 @@ export default function RoadsideInspectionsPage() {
                       </div>
 
                       {/* Equipment Involved */}
-                      {selectedInspection.equipment.length > 0 && (
+                      {selectedRoadsideInspection.equipment.length > 0 && (
                         <div>
                           <h3 className="text-lg font-medium text-gray-900 mb-4">Equipment Involved</h3>
                           <div className="space-y-2">
-                            {selectedInspection.equipment.map((equipment, index) => (
+                            {selectedRoadsideInspection.equipment.map((equipment, index) => (
                               <div key={equipment.id} className="border rounded-lg p-3">
                                 <div className="font-medium">
                                   Unit {equipment.unitNumber}
@@ -788,11 +788,11 @@ export default function RoadsideInspectionsPage() {
                       )}
 
                       {/* Violations */}
-                      {selectedInspection.violations.length > 0 && (
+                      {selectedRoadsideInspection.violations.length > 0 && (
                         <div>
                           <h3 className="text-lg font-medium text-gray-900 mb-4">Violations Found</h3>
                           <div className="space-y-2">
-                            {selectedInspection.violations.map((violation) => (
+                            {selectedRoadsideInspection.violations.map((violation) => (
                               <div key={violation.id} className="border rounded-lg p-3">
                                 <div className="flex justify-between items-start mb-2">
                                   <div className="font-medium">{violation.violationCode}</div>
@@ -818,7 +818,7 @@ export default function RoadsideInspectionsPage() {
                       )}
 
                       {/* Corrective Action Forms (CAFs) */}
-                      {selectedInspection.violations.length > 0 && (
+                      {selectedRoadsideInspection.violations.length > 0 && (
                         <div>
                           <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-medium text-gray-900">Corrective Action Forms</h3>
@@ -1031,16 +1031,16 @@ export default function RoadsideInspectionsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Driver</label>
                 <p className="text-sm text-gray-600">
-                  {selectedInspection?.issue?.party?.person ? 
-                    `${selectedInspection.issue.party.person.firstName} ${selectedInspection.issue.party.person.lastName}` : 
+                  {selectedRoadsideInspection?.issue?.party?.person ? 
+                    `${selectedRoadsideInspection.issue.party.person.firstName} ${selectedRoadsideInspection.issue.party.person.lastName}` : 
                     'Not specified'}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Equipment</label>
                 <p className="text-sm text-gray-600">
-                  {selectedInspection?.equipment && selectedInspection.equipment.length > 0 ? 
-                    `${selectedInspection.equipment[0].make || ''} ${selectedInspection.equipment[0].model || ''} (${selectedInspection.equipment[0].year || ''})`.trim() : 
+                  {selectedRoadsideInspection?.equipment && selectedRoadsideInspection.equipment.length > 0 ? 
+                    `${selectedRoadsideInspection.equipment[0].make || ''} ${selectedRoadsideInspection.equipment[0].model || ''} (${selectedRoadsideInspection.equipment[0].year || ''})`.trim() : 
                     'Not specified'}
                 </p>
               </div>
@@ -1185,18 +1185,18 @@ export default function RoadsideInspectionsPage() {
             )}
 
             {/* Equipment Information (if applicable) */}
-            {selectedInspection?.equipment && selectedInspection.equipment.length > 0 && (
+            {selectedRoadsideInspection?.equipment && selectedRoadsideInspection.equipment.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Equipment Involved</label>
                 <div className="bg-blue-50 p-3 rounded border">
                   <div className="font-medium">
-                    {selectedInspection.equipment[0].make} {selectedInspection.equipment[0].model} ({selectedInspection.equipment[0].year})
+                    {selectedRoadsideInspection.equipment[0].make} {selectedRoadsideInspection.equipment[0].model} ({selectedRoadsideInspection.equipment[0].year})
                   </div>
-                  {selectedInspection.equipment[0].vin && (
-                    <div className="text-sm text-gray-600">VIN: {selectedInspection.equipment[0].vin}</div>
+                  {selectedRoadsideInspection.equipment[0].vin && (
+                    <div className="text-sm text-gray-600">VIN: {selectedRoadsideInspection.equipment[0].vin}</div>
                   )}
-                  {selectedInspection.equipment[0].unitNumber && (
-                    <div className="text-sm text-gray-600">Unit: {selectedInspection.equipment[0].unitNumber}</div>
+                  {selectedRoadsideInspection.equipment[0].unitNumber && (
+                    <div className="text-sm text-gray-600">Unit: {selectedRoadsideInspection.equipment[0].unitNumber}</div>
                   )}
                 </div>
               </div>
