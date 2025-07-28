@@ -233,7 +233,8 @@ export const generateCAFsFromRINSViolations = async (rinsId: string, createdBySt
                   }
                 }
               }
-            }
+            },
+            equipment: true // Include equipment for Equipment CAFs
           }
         }
       }
@@ -251,56 +252,66 @@ export const generateCAFsFromRINSViolations = async (rinsId: string, createdBySt
 
     const createdCAFs = []
 
-    // Generate CAF for each violation
+    // Group violations by entity type
+    const violationGroups = {
+      driver: [] as any[],
+      equipment: [] as any[],
+      company: [] as any[]
+    }
+
+    // Categorize violations by entity type
     for (const violation of violations) {
-      const assignedStaffId = await findAssignedStaff(organizationId, violation.violationType)
+      const violationCode = violation.violationCode
       
-      if (!assignedStaffId) {
-        console.warn(`Could not find appropriate staff to assign CAF for violation ${violation.id}`)
-        continue
+      if (violationCode.startsWith('391') || violationCode.startsWith('392')) {
+        // Driver violations (Driver Qualification & Performance)
+        violationGroups.driver.push(violation)
+      } else if (violationCode.startsWith('393') || violationCode.startsWith('396')) {
+        // Equipment violations (Equipment & Inspection/Repair/Maintenance)
+        violationGroups.equipment.push(violation)
+      } else if (violationCode.startsWith('390')) {
+        // Company violations (General/Company Operations)
+        violationGroups.company.push(violation)
+      } else {
+        // Default to company for unknown codes
+        violationGroups.company.push(violation)
       }
+    }
 
-      const cafNumber = await generateCAFNumber()
-      const title = generateCAFTitle(violation.violationType, violation.violationCode, violation.description)
-      const description = generateCAFDescription(violation)
-      const priority = getCAFPriority(violation.outOfService, violation.violationCode)
-      const category = getCAFCategoryFromViolationType(violation.violationType, violation.violationCode)
-      
-      // Calculate due date (30 days for most violations, 15 days for critical/OOS)
-      const daysToComplete = priority === CafPriority.CRITICAL ? 15 : 30
-      const dueDate = new Date()
-      dueDate.setDate(dueDate.getDate() + daysToComplete)
+    // Generate CAF for Driver violations (if any)
+    if (violationGroups.driver.length > 0) {
+      const driverCAF = await createGroupedCAF(
+        violationGroups.driver,
+        'DRIVER',
+        organizationId,
+        createdByStaffId,
+        rinsId
+      )
+      if (driverCAF) createdCAFs.push(driverCAF)
+    }
 
-      const caf = await db.corrective_action_form.create({
-        data: {
-          id: createId(),
-          cafNumber,
-          rinsViolationId: violation.id,
-          title,
-          description,
-          priority,
-          category,
-          assignedStaffId,
-          assignedBy: createdByStaffId,
-          organizationId,
-          dueDate,
-          requiresApproval: true
-        },
-        include: {
-          assigned_staff: {
-            include: {
-              party: {
-                include: {
-                  person: true
-                }
-              }
-            }
-          },
-          rins_violation: true
-        }
-      })
+    // Generate CAF for Equipment violations (if any)
+    if (violationGroups.equipment.length > 0) {
+      const equipmentCAF = await createGroupedCAF(
+        violationGroups.equipment,
+        'EQUIPMENT',
+        organizationId,
+        createdByStaffId,
+        rinsId
+      )
+      if (equipmentCAF) createdCAFs.push(equipmentCAF)
+    }
 
-      createdCAFs.push(caf)
+    // Generate CAF for Company violations (if any)
+    if (violationGroups.company.length > 0) {
+      const companyCAF = await createGroupedCAF(
+        violationGroups.company,
+        'COMPANY',
+        organizationId,
+        createdByStaffId,
+        rinsId
+      )
+      if (companyCAF) createdCAFs.push(companyCAF)
     }
 
     return createdCAFs
@@ -308,6 +319,164 @@ export const generateCAFsFromRINSViolations = async (rinsId: string, createdBySt
     console.error('Error generating CAFs from RINS violations:', error)
     throw error
   }
+}
+
+// Helper function to create a grouped CAF for multiple violations of the same entity type
+const createGroupedCAF = async (
+  violations: any[],
+  entityType: 'DRIVER' | 'EQUIPMENT' | 'COMPANY',
+  organizationId: string,
+  createdByStaffId: string,
+  rinsId: string
+): Promise<any | null> => {
+  if (violations.length === 0) return null
+
+  try {
+    // Determine violation type for staff assignment
+    const violationType = entityType === 'DRIVER' ? ViolationType.Driver_Performance :
+                         entityType === 'EQUIPMENT' ? ViolationType.Equipment :
+                         ViolationType.Company
+
+    // Find appropriate staff for this entity type
+    const assignedStaffId = await findAssignedStaff(organizationId, violationType)
+    if (!assignedStaffId) {
+      console.warn(`Could not find appropriate staff to assign ${entityType} CAF`)
+      return null
+    }
+
+    // Generate CAF details
+    const cafNumber = await generateCAFNumber()
+    const title = generateGroupedCAFTitle(entityType, violations)
+    const description = generateGroupedCAFDescription(entityType, violations)
+    const priority = getGroupedCAFPriority(violations)
+    const category = getCAFCategoryFromViolationType(violationType, violations[0].violationCode)
+    
+    // Calculate due date (15 days for critical/OOS, 30 days for others)
+    const daysToComplete = priority === CafPriority.CRITICAL ? 15 : 30
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + daysToComplete)
+
+    // Create the CAF
+    const caf = await db.corrective_action_form.create({
+      data: {
+        id: createId(),
+        cafNumber,
+        rinsViolationId: violations[0].id, // Link to primary violation in group
+        title,
+        description,
+        priority,
+        category,
+        assignedStaffId,
+        assignedBy: createdByStaffId,
+        organizationId,
+        dueDate,
+        requiresApproval: true
+      },
+      include: {
+        assigned_staff: {
+          include: {
+            party: {
+              include: {
+                person: true
+              }
+            }
+          }
+        },
+        rins_violation: true
+      }
+    })
+
+    return caf
+  } catch (error) {
+    console.error(`Error creating ${entityType} CAF:`, error)
+    return null
+  }
+}
+
+// Generate title for grouped CAF
+const generateGroupedCAFTitle = (entityType: 'DRIVER' | 'EQUIPMENT' | 'COMPANY', violations: any[]): string => {
+  const entityName = entityType === 'DRIVER' ? 'Driver Performance' :
+                    entityType === 'EQUIPMENT' ? 'Equipment Maintenance' :
+                    'Company Operations'
+  
+  const violationCount = violations.length
+  const primaryCode = violations[0].violationCode
+  
+  if (violationCount === 1) {
+    return `${entityName} - ${primaryCode}: ${violations[0].description.substring(0, 50)}${violations[0].description.length > 50 ? '...' : ''}`
+  } else {
+    return `${entityName} - Multiple Violations (${violationCount} issues)`
+  }
+}
+
+// Generate description for grouped CAF
+const generateGroupedCAFDescription = (entityType: 'DRIVER' | 'EQUIPMENT' | 'COMPANY', violations: any[]): string => {
+  const entityName = entityType === 'DRIVER' ? 'driver performance' :
+                    entityType === 'EQUIPMENT' ? 'equipment maintenance' :
+                    'company operations'
+  
+  let description = `This Corrective Action Form addresses ${violations.length} ${entityName} violation${violations.length > 1 ? 's' : ''} identified during the roadside inspection:\n\n`
+  
+  // List all violations
+  violations.forEach((violation, index) => {
+    description += `${index + 1}. **${violation.violationCode}** - ${violation.description}\n`
+    if (violation.severity) description += `   Severity: ${violation.severity}\n`
+    if (violation.outOfService) description += `   ⚠️ OUT OF SERVICE VIOLATION\n`
+    description += '\n'
+  })
+
+  // Add entity-specific guidance
+  if (entityType === 'DRIVER') {
+    description += '\n**Driver Performance Requirements:**\n'
+    description += '• Review driver qualification files\n'
+    description += '• Provide additional training if necessary\n'
+    description += '• Document corrective actions taken\n'
+    description += '• Schedule follow-up review within 30 days\n'
+  } else if (entityType === 'EQUIPMENT') {
+    description += '\n**Equipment Maintenance Requirements:**\n'
+    description += '• Inspect and repair all identified defects\n'
+    description += '• Document all repairs with receipts/work orders\n'
+    description += '• Ensure equipment meets all safety standards\n'
+    description += '• Schedule follow-up inspection within 30 days\n'
+    
+    // Include equipment information if available
+    const inspection = violations[0].roadside_inspection
+    if (inspection.equipment && inspection.equipment.length > 0) {
+      description += '\n**Equipment Involved:**\n'
+      inspection.equipment.forEach((equipment: any, index: number) => {
+        description += `${index + 1}. ${equipment.make || ''} ${equipment.model || ''} (${equipment.year || ''})\n`
+        if (equipment.vin) description += `   VIN: ${equipment.vin}\n`
+        if (equipment.unitNumber) description += `   Unit: ${equipment.unitNumber}\n`
+      })
+    }
+  } else if (entityType === 'COMPANY') {
+    description += '\n**Company Operations Requirements:**\n'
+    description += '• Review and update company policies\n'
+    description += '• Ensure compliance with all regulations\n'
+    description += '• Train staff on corrective procedures\n'
+    description += '• Schedule compliance audit within 30 days\n'
+  }
+
+  description += '\n**Important:** All violations must be corrected and documented before this CAF can be closed.'
+
+  return description
+}
+
+// Determine priority for grouped CAF (highest priority violation wins)
+const getGroupedCAFPriority = (violations: any[]): CafPriority => {
+  let highestPriority = CafPriority.MEDIUM
+
+  for (const violation of violations) {
+    const priority = getCAFPriority(violation.outOfService, violation.violationCode)
+    
+    if (priority === CafPriority.CRITICAL) {
+      return CafPriority.CRITICAL // Immediate return for critical
+    } else if (priority === CafPriority.HIGH) {
+      highestPriority = CafPriority.HIGH
+    }
+  }
+
+  return highestPriority
 }
 
 // Helper function to generate a single CAF from a violation (for manual creation)
