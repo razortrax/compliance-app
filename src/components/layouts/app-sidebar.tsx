@@ -45,6 +45,7 @@ interface AppSidebarProps {
   // Context IDs for dynamic navigation
   driverId?: string
   equipmentId?: string
+  masterOrgId?: string  // Add master organization ID for URL context
   // Props for working organization selector
   organizations?: Organization[]
   currentOrgId?: string
@@ -59,6 +60,7 @@ export function AppSidebar({
   menuType,
   driverId,
   equipmentId,
+  masterOrgId,  // Add to destructured props
   organizations = [],
   currentOrgId,
   isSheetOpen = false,
@@ -249,7 +251,7 @@ export function AppSidebar({
         Drivers
       </h3>
       <Link 
-        href={driverId ? `/drivers/${driverId}` : "#"} 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/drivers/${driverId}` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <BarChart3 className="mr-3 h-4 w-4" />

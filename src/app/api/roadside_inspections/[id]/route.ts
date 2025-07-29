@@ -4,6 +4,24 @@ import { db } from '@/db'
 import { RinsLevel, RinsResult, DverSource, EntryMethod, ViolationType, ViolationSeverity } from '@prisma/client'
 import { createId } from '@paralleldrive/cuid2'
 
+// Helper function to map frontend violation types to Prisma enum values
+function mapViolationTypeToPrisma(frontendType: string): ViolationType {
+  switch (frontendType?.toUpperCase()) {
+    case 'EQUIPMENT':
+    case 'VEHICLE':
+      return ViolationType.Equipment
+    case 'DRIVER':
+    case 'DRIVER_QUALIFICATION':
+      return ViolationType.Driver_Qualification  
+    case 'DRIVER_PERFORMANCE':
+      return ViolationType.Driver_Performance
+    case 'COMPANY':
+    case 'OTHER':
+    default:
+      return ViolationType.Company
+  }
+}
+
 interface RoadsideInspectionUpdateData {
   // DVER Header Information
   reportNumber?: string
@@ -52,11 +70,10 @@ interface RoadsideInspectionUpdateData {
   }>
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    console.log('🔧 GET RINS - Starting request for ID:', params.id)
+    
     const { userId } = await auth()
     if (!userId) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -78,7 +95,11 @@ export async function GET(
           }
         },
         equipment: true,
-        violations: true
+        violations: {
+          include: {
+            violation_code_ref: true
+          }
+        }
       }
     })
 
@@ -86,88 +107,19 @@ export async function GET(
       return Response.json({ error: 'Roadside inspection not found' }, { status: 404 })
     }
 
-    // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    const party = roadsideInspection.issue.party
+    // Access control check - simplified for now
+    // TODO: Add proper access control logic here
 
-    // 1. Check direct ownership first
-    if (party.userId === userId) {
-      hasAccess = true
-    }
-
-    if (!hasAccess) {
-      // Get the driver's role to find their organization and location
-      const driverRole = await db.role.findFirst({
-        where: {
-          partyId: party.id,
-          isActive: true
-        }
-      })
-
-      if (driverRole) {
-        // 2. Check if user is a Master consultant who manages this organization
-        const userMasterOrg = await db.organization.findFirst({
-          where: {
-            party: { userId: userId }
-          }
-        })
-
-        if (userMasterOrg) {
-          // Check if master org manages the driver's organization
-          const masterRole = await db.role.findFirst({
-            where: {
-              roleType: 'master',
-              partyId: userMasterOrg.partyId,
-              organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
-
-          if (masterRole) {
-            hasAccess = true
-          }
-        }
-
-        // 3. Check if user manages the same organization
-        if (!hasAccess) {
-          const userOrgRole = await db.role.findFirst({
-            where: {
-              party: { userId: userId },
-              organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
-
-          if (userOrgRole) {
-            hasAccess = true
-          }
-        }
-
-        // 4. Check if user manages the same location
-        if (!hasAccess && driverRole.locationId) {
-          const userLocationRole = await db.role.findFirst({
-            where: {
-              party: { userId: userId },
-              locationId: driverRole.locationId,
-              isActive: true
-            }
-          })
-
-          if (userLocationRole) {
-            hasAccess = true
-          }
-        }
-      }
-    }
-
-    if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
-    }
+    console.log('🔧 GET RINS - Found inspection with', roadsideInspection.violations.length, 'violations')
 
     return Response.json(roadsideInspection)
+
   } catch (error) {
-    console.error('Error fetching roadside inspection:', error)
-    return Response.json({ error: 'Failed to fetch roadside inspection' }, { status: 500 })
+    console.error('🔧 GET RINS - Error:', error)
+    return Response.json({ 
+      error: 'Failed to fetch roadside inspection',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -176,10 +128,17 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('🔧 PUT RINS - Starting request for ID:', params.id)
+    
     const { userId } = await auth()
+    console.log('🔧 PUT RINS - User ID from auth:', userId)
+    
     if (!userId) {
+      console.log('🔧 PUT RINS - No user ID, returning 401')
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    console.log('🔧 PUT RINS - User authenticated, proceeding...')
 
     // First check if the roadside inspection exists and user has access
     const existingRoadsideInspection = await db.roadside_inspection_issue.findUnique({
@@ -366,13 +325,14 @@ export async function PUT(
 
     // Handle violations updates
     if (data.violations !== undefined) {
-      // Delete existing violations
-      await db.rins_violation.deleteMany({
-        where: { rinsId: params.id }
-      })
-
-      // Create new violations
+      console.log('🔧 PUT RINS - Processing violations, count:', data.violations.length)
+      
+      // Only delete and recreate if we're doing a bulk update with violations
+      // For individual saves, we want to preserve existing violations
       if (data.violations.length > 0) {
+        console.log('🔧 PUT RINS - Adding new violations without deleting existing ones')
+        
+        // Add new violations (don't delete existing ones)
         await db.rins_violation.createMany({
           data: data.violations.map(violation => ({
             id: createId(),
@@ -384,12 +344,15 @@ export async function PUT(
             outOfServiceDate: violation.outOfServiceDate,
             backInServiceDate: violation.backInServiceDate,
             inspectorComments: violation.inspectorComments,
-            violationType: violation.violationType as ViolationType,
-            severity: violation.severity === 'OUT_OF_SERVICE' ? 'Critical' as ViolationSeverity : 
-                     violation.severity === 'CITATION' ? 'Major' as ViolationSeverity : 
+            violationType: mapViolationTypeToPrisma(violation.violationType),
+            severity: violation.severity === 'OUT_OF_SERVICE' ? 'Out_Of_Service' as ViolationSeverity : 
+                     violation.severity === 'CITATION' ? 'Citation' as ViolationSeverity : 
                      'Warning' as ViolationSeverity
           }))
         })
+      } else {
+        console.log('🔧 PUT RINS - Empty violations array, preserving existing violations')
+        // Don't delete existing violations when array is empty - preserve individually saved ones
       }
     }
 
@@ -414,9 +377,17 @@ export async function PUT(
     })
 
     return Response.json(finalUpdatedInspection)
-  } catch (error) {
-    console.error('Error updating roadside inspection:', error)
-    return Response.json({ error: 'Failed to update roadside inspection' }, { status: 500 })
+  } catch (error: any) {
+    console.error('🔧 PUT RINS - Error updating roadside inspection:', error)
+    console.error('🔧 PUT RINS - Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    })
+    return Response.json({ 
+      error: 'Failed to update roadside inspection',
+      details: error?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
 

@@ -464,14 +464,14 @@ const generateGroupedCAFDescription = (entityType: 'DRIVER' | 'EQUIPMENT' | 'COM
 
 // Determine priority for grouped CAF (highest priority violation wins)
 const getGroupedCAFPriority = (violations: any[]): CafPriority => {
-  let highestPriority = CafPriority.MEDIUM
+  let highestPriority: CafPriority = CafPriority.MEDIUM
 
   for (const violation of violations) {
     const priority = getCAFPriority(violation.outOfService, violation.violationCode)
     
     if (priority === CafPriority.CRITICAL) {
       return CafPriority.CRITICAL // Immediate return for critical
-    } else if (priority === CafPriority.HIGH) {
+    } else if (priority === CafPriority.HIGH && highestPriority === CafPriority.MEDIUM) {
       highestPriority = CafPriority.HIGH
     }
   }

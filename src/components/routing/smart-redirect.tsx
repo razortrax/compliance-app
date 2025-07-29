@@ -29,36 +29,64 @@ export function SmartRedirect() {
         if (!roleResponse.ok) return
 
         const { role } = await roleResponse.json()
+        console.log('🔍 SmartRedirect - User role:', role)
+        
+        // Get profile data for master org ID
+        const profileResponse = await fetch('/api/user/profile')
+        let profileData = null
+        if (profileResponse.ok) {
+          profileData = await profileResponse.json()
+          console.log('🔍 SmartRedirect - Profile data:', profileData)
+          
+          // If we have a master organization, redirect directly
+          if (profileData.masterOrganization?.id) {
+            console.log('🔄 Direct redirect to master dashboard')
+            router.push(`/master/${profileData.masterOrganization.id}`)
+            setHasRedirected(true)
+            return
+          }
+        }
         
         // Smart redirect based on existing user role
         switch (role.roleType) {
           case 'master':
-            console.log('🔄 Redirecting master user to dashboard')
-            router.push('/dashboard')
+            console.log('🔄 Redirecting master user to master dashboard')
+            router.push(`/master/${profileData?.masterOrganization?.id || 'unknown'}`)
             setHasRedirected(true)
             break
             
           case 'organization':
-            if (role.organizationId) {
-              console.log('🔄 Redirecting org user to their organization')
-              router.push(`/organizations/${role.organizationId}`)
-            } else {
-              console.log('🔄 Redirecting org user to organizations list')
-              router.push('/organizations')
+            // For organization users, we need to find their master organization
+            const orgProfileResponse = await fetch('/api/user/profile')
+            if (orgProfileResponse.ok) {
+              const { masterOrganization } = await orgProfileResponse.json()
+              if (masterOrganization?.id && role.organizationId) {
+                console.log('🔄 Redirecting org user to their organization')
+                router.push(`/master/${masterOrganization.id}/organization/${role.organizationId}`)
+                setHasRedirected(true)
+              } else {
+                console.log('🔄 Redirecting org user to organization list')
+                // Fallback to generic org list (this shouldn't happen in normal flow)
+                router.push('/complete-profile')
+                setHasRedirected(true)
+              }
             }
-            setHasRedirected(true)
             break
             
           case 'location':
             // For location users, we need to find their specific location
-            if (role.organizationId) {
-              // You could enhance this to find the specific location
-              console.log('🔄 Redirecting location user to their organization')
-              router.push(`/organizations/${role.organizationId}`)
-            } else {
-              router.push('/organizations')
+            const locProfileResponse = await fetch('/api/user/profile')
+            if (locProfileResponse.ok) {
+              const { masterOrganization } = await locProfileResponse.json()
+              if (masterOrganization?.id && role.organizationId) {
+                console.log('🔄 Redirecting location user to their organization')
+                router.push(`/master/${masterOrganization.id}/organization/${role.organizationId}`)
+                setHasRedirected(true)
+              } else {
+                router.push('/complete-profile')
+                setHasRedirected(true)
+              }
             }
-            setHasRedirected(true)
             break
             
           case 'consultant':

@@ -1,22 +1,41 @@
 'use client'
 
-import { AppLayout } from '@/components/layouts/app-layout'
-import { MasterOverviewDashboard } from "@/components/dashboard/master-overview-dashboard"
-import { useMasterOrg } from '@/hooks/use-master-org'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-export default function DashboardPage() {
-  const { masterOrg, loading } = useMasterOrg()
+export default function DashboardRedirect() {
+  const router = useRouter()
   
-  // Use master organization name in header
-  const masterName = masterOrg?.name || 'Master'
-  
+  useEffect(() => {
+    // Fetch user's master organization and redirect
+    const redirectToMaster = async () => {
+      try {
+        const response = await fetch('/api/user/profile')
+        if (response.ok) {
+          const { masterOrganization } = await response.json()
+          if (masterOrganization?.id) {
+            router.replace(`/master/${masterOrganization.id}`)
+          } else {
+            router.replace('/complete-profile')
+          }
+        } else {
+          router.replace('/complete-profile')
+        }
+      } catch (error) {
+        console.error('Error redirecting to master:', error)
+        router.replace('/complete-profile')
+      }
+    }
+    
+    redirectToMaster()
+  }, [router])
+
   return (
-    <AppLayout
-      name={masterName}
-      topNav={[]}  // Empty as specified in pagesContentOutline
-      className="px-6 py-8 max-w-7xl mx-auto"
-    >
-      <MasterOverviewDashboard />
-    </AppLayout>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Redirecting...</h2>
+        <p className="text-gray-600">Taking you to your dashboard</p>
+      </div>
+    </div>
   )
 } 

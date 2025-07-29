@@ -79,7 +79,11 @@ interface Organization {
   }
 }
 
-export function MasterOverviewDashboard() {
+interface MasterOverviewDashboardProps {
+  masterOrgId: string
+}
+
+export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboardProps) {
   const router = useRouter()
   const { userId, getToken } = useAuth()
   const [selectedCompany, setSelectedCompany] = useState("all")
@@ -443,7 +447,7 @@ export function MasterOverviewDashboard() {
             <Card 
               key={org.id} 
               className="relative hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push(`/organizations/${org.id}`)}
+              onClick={() => router.push(`/master/${masterOrgId}/organization/${org.id}`)}
             >
                            <CardHeader className="pb-3">
                  <div className="flex items-center justify-between">
@@ -505,7 +509,7 @@ export function MasterOverviewDashboard() {
                     className="flex-1" 
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/organizations/${org.id}`)
+                      router.push(`/master/${masterOrgId}/organization/${org.id}`)
                     }}
                   >
                     <Eye className="h-4 w-4 mr-1" />

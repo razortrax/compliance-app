@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/card"
 import { OrganizationForm } from "./organization-form"
 // Removed onboarding wizard - users complete profile during signup
-import { SmartRedirect } from "../routing/smart-redirect"
+
 import { Search, Plus, Building2 } from "lucide-react"
 
 interface Organization {
@@ -39,7 +39,11 @@ interface Organization {
   }
 }
 
-export function OrganizationList() {
+interface OrganizationListProps {
+  masterOrgId: string
+}
+
+export function OrganizationList({ masterOrgId }: OrganizationListProps) {
   const searchParams = useSearchParams()
   const userRole = searchParams.get('role') as 'master' | 'organization' | null
   
@@ -137,8 +141,7 @@ export function OrganizationList() {
 
   return (
     <div className="space-y-4">
-      {/* Smart routing component */}
-      <SmartRedirect />
+
       
       <Card>
         <CardHeader>

@@ -24,7 +24,6 @@ export async function GET(
             role: {
               where: { isActive: true },
               include: {
-                organization: true,
                 location: {
                   select: { id: true, name: true }
                 }
@@ -51,7 +50,7 @@ export async function GET(
     }
 
     // Verify user has access to this staff member's organization
-    const organizationId = staff.party.role[0]?.organizationId
+    const organizationId = staff.party?.role?.[0]?.organizationId
     if (!organizationId) {
       return NextResponse.json({ error: 'Staff member has no organization' }, { status: 400 })
     }

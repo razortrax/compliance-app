@@ -213,6 +213,9 @@ export default function RoadsideInspectionsPage() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('🔧 RINS - Fetched inspections:', data.length)
+        console.log('🔧 RINS - First inspection violations:', data[0]?.violations)
+        
         setRoadsideInspections(data)
         
         // Auto-select first inspection
@@ -226,6 +229,36 @@ export default function RoadsideInspectionsPage() {
       console.error('Error fetching roadside inspections:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Refresh the selected RINS data after individual violation saves
+  const refreshSelectedRINS = async () => {
+    if (!selectedRoadsideInspection?.id) return
+
+    try {
+      console.log('🔧 REFRESH - Starting refresh for RINS:', selectedRoadsideInspection.id)
+      
+      // Simpler approach: refresh the entire list
+      const selectedId = selectedRoadsideInspection.id
+      await fetchRoadsideInspections()
+      
+      // Re-select the same RINS after refresh
+      setTimeout(() => {
+        setRoadsideInspections(prev => {
+          const updatedRINS = prev.find(r => r.id === selectedId)
+          if (updatedRINS) {
+            console.log('🔧 REFRESH - Re-selected RINS violations:', updatedRINS.violations?.length)
+            setSelectedRoadsideInspection(updatedRINS)
+          }
+          return prev
+        })
+      }, 100)
+      
+      // Also refresh CAFs
+      fetchCAFs()
+    } catch (error) {
+      console.error('Error refreshing RINS data:', error)
     }
   }
 
@@ -273,6 +306,10 @@ export default function RoadsideInspectionsPage() {
     if (!selectedRoadsideInspection) return
 
     try {
+      console.log('🔧 CLIENT - Starting RINS update for ID:', selectedRoadsideInspection.id)
+      console.log('🔧 CLIENT - Data being sent:', data)
+      console.log('🔧 CLIENT - Violations details:', data.violations)
+      
       setFormLoading(true)
       const response = await fetch(`/api/roadside_inspections/${selectedRoadsideInspection.id}`, {
         method: 'PUT',
@@ -280,8 +317,12 @@ export default function RoadsideInspectionsPage() {
         body: JSON.stringify(data)
       })
 
+      console.log('🔧 CLIENT - Response status:', response.status)
+      console.log('🔧 CLIENT - Response headers:', response.headers)
+
       if (response.ok) {
         const updatedInspection = await response.json()
+        console.log('🔧 CLIENT - Success:', updatedInspection)
         setRoadsideInspections(prev => 
           prev.map(inspection => 
             inspection.id === selectedRoadsideInspection.id ? updatedInspection : inspection
@@ -291,10 +332,15 @@ export default function RoadsideInspectionsPage() {
         setIsEditing(false)
       } else {
         const error = await response.json()
+        console.error('🔧 CLIENT - Error updating roadside inspection:', error)
         alert(`Error updating roadside inspection: ${error.error}`)
       }
-    } catch (error) {
-      console.error('Error updating roadside inspection:', error)
+    } catch (error: any) {
+      console.error('🔧 CLIENT - Exception during update:', error)
+      console.error('🔧 CLIENT - Exception details:', {
+        message: error?.message,
+        stack: error?.stack
+      })
       alert('Error updating roadside inspection')
     } finally {
       setFormLoading(false)
@@ -656,6 +702,7 @@ export default function RoadsideInspectionsPage() {
                       loading={formLoading}
                       organizationId={organizationId || contextOrganization?.id}
                       driverId={driverId || undefined}
+                      onViolationSaved={refreshSelectedRINS}
                     />
                   ) : (
                     <div className="space-y-6">

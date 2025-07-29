@@ -7,6 +7,7 @@ export interface ViolationCode {
   severity: 'WARNING' | 'OUT_OF_SERVICE' | 'CITATION'
 }
 
+// Keep a few hardcoded examples for fallback/testing
 export const VIOLATION_CODES: ViolationCode[] = [
   // 390.x - General Company/Administrative Violations
   {
@@ -111,136 +112,89 @@ export const VIOLATION_CODES: ViolationCode[] = [
     violationType: 'DRIVER',
     severity: 'OUT_OF_SERVICE'
   },
-  {
-    code: '392.7',
-    section: '49 CFR 392.7',
-    description: 'Equipment, inspection and use',
-    violationType: 'EQUIPMENT',
-    severity: 'WARNING'
-  },
-  {
-    code: '392.8',
-    section: '49 CFR 392.8',
-    description: 'Emergency equipment',
-    violationType: 'EQUIPMENT',
-    severity: 'WARNING'
-  },
-  {
-    code: '392.9',
-    section: '49 CFR 392.9',
-    description: 'Inspection of cargo, cargo securement devices and systems',
-    violationType: 'EQUIPMENT',
-    severity: 'WARNING'
-  },
-  {
-    code: '392.14',
-    section: '49 CFR 392.14',
-    description: 'Hazardous conditions; extreme caution',
-    violationType: 'DRIVER',
-    severity: 'WARNING'
-  },
-  {
-    code: '392.16',
-    section: '49 CFR 392.16',
-    description: 'Use of seat belts',
-    violationType: 'DRIVER',
-    severity: 'WARNING'
-  },
-  {
-    code: '392.22',
-    section: '49 CFR 392.22',
-    description: 'Emergency signals; stopped commercial motor vehicles',
-    violationType: 'EQUIPMENT',
-    severity: 'WARNING'
-  },
 
-  // 393.x/396.x - Equipment/Vehicle Violations
+  // 393.x - Equipment Violations
   {
-    code: '393.11',
-    section: '49 CFR 393.11',
-    description: 'No or defective lighting devices',
+    code: '393.5',
+    section: '49 CFR 393.5',
+    description: 'Brakes - failure to stop within prescribed distance',
     violationType: 'EQUIPMENT',
     severity: 'OUT_OF_SERVICE'
   },
   {
-    code: '393.13',
-    section: '49 CFR 393.13',
-    description: 'Retroreflective tape',
+    code: '393.9',
+    section: '49 CFR 393.9',
+    description: 'Inoperative required lamp',
     violationType: 'EQUIPMENT',
     severity: 'WARNING'
   },
   {
-    code: '393.19',
-    section: '49 CFR 393.19',
-    description: 'Hazard warning signal flashers',
+    code: '393.11',
+    section: '49 CFR 393.11',
+    description: 'No or improper lighting devices',
     violationType: 'EQUIPMENT',
-    severity: 'WARNING'
+    severity: 'OUT_OF_SERVICE'
   },
   {
     code: '393.25',
     section: '49 CFR 393.25',
-    description: 'Requirements for lamps, reflective devices and electrical equipment',
-    violationType: 'EQUIPMENT',
-    severity: 'WARNING'
-  },
-  {
-    code: '393.40',
-    section: '49 CFR 393.40',
-    description: 'Required brake systems',
-    violationType: 'EQUIPMENT',
-    severity: 'OUT_OF_SERVICE'
-  },
-  {
-    code: '393.43',
-    section: '49 CFR 393.43',
-    description: 'Breakaway and emergency braking',
+    description: 'Tire tread depth less than 2/32 inch',
     violationType: 'EQUIPMENT',
     severity: 'OUT_OF_SERVICE'
   },
   {
     code: '393.45',
     section: '49 CFR 393.45',
-    description: 'Brake tubing and hose adequacy',
-    violationType: 'EQUIPMENT',
-    severity: 'OUT_OF_SERVICE'
-  },
-  {
-    code: '393.47',
-    section: '49 CFR 393.47',
-    description: 'Brake lining/pad thickness',
+    description: 'Brake connections with constrictions',
     violationType: 'EQUIPMENT',
     severity: 'OUT_OF_SERVICE'
   },
   {
     code: '393.53',
     section: '49 CFR 393.53',
-    description: 'Automatic brake adjusters',
+    description: 'CMV-towed unit has inoperative brake system',
     violationType: 'EQUIPMENT',
     severity: 'OUT_OF_SERVICE'
   },
   {
-    code: '393.60',
-    section: '49 CFR 393.60',
-    description: 'Glazing in specified openings',
-    violationType: 'EQUIPMENT',
-    severity: 'WARNING'
-  },
-  {
     code: '393.75',
     section: '49 CFR 393.75',
-    description: 'Tires',
+    description: 'Tire-other tread depth less than 4/32 inch',
     violationType: 'EQUIPMENT',
     severity: 'OUT_OF_SERVICE'
   },
   {
     code: '393.95',
     section: '49 CFR 393.95',
-    description: 'Emergency equipment on all power units',
+    description: 'No/improper emergency equipment',
     violationType: 'EQUIPMENT',
     severity: 'WARNING'
   },
 
-  // 396.x - Inspection, Repair, and Maintenance
+  // 395.x - Hours of Service Violations
+  {
+    code: '395.8',
+    section: '49 CFR 395.8',
+    description: 'Driver\'s record of duty status',
+    violationType: 'DRIVER',
+    severity: 'WARNING'
+  },
+  {
+    code: '395.11',
+    section: '49 CFR 395.11',
+    description: 'No driver record of duty status when one is required',
+    violationType: 'DRIVER',
+    severity: 'OUT_OF_SERVICE'
+  },
+  {
+    code: '395.13',
+    section: '49 CFR 395.13',
+    description: 'Driving beyond 8-hour limit without 30-minute break',
+    violationType: 'DRIVER',
+    severity: 'WARNING'
+  },
+
+  // 396.x - Equipment Maintenance Violations
   {
     code: '396.3',
     section: '49 CFR 396.3',
@@ -259,14 +213,7 @@ export const VIOLATION_CODES: ViolationCode[] = [
     code: '396.11',
     section: '49 CFR 396.11',
     description: 'Driver vehicle inspection report',
-    violationType: 'COMPANY',
-    severity: 'WARNING'
-  },
-  {
-    code: '396.13',
-    section: '49 CFR 396.13',
-    description: 'Driver inspection',
-    violationType: 'DRIVER',
+    violationType: 'EQUIPMENT',
     severity: 'WARNING'
   },
   {
@@ -278,6 +225,7 @@ export const VIOLATION_CODES: ViolationCode[] = [
   }
 ]
 
+// Synchronous function for searching hardcoded violations (fallback)
 export function searchViolations(query: string): ViolationCode[] {
   if (!query || query.length < 2) return []
   
@@ -287,7 +235,7 @@ export function searchViolations(query: string): ViolationCode[] {
     violation.code.toLowerCase().includes(lowerQuery) ||
     violation.description.toLowerCase().includes(lowerQuery) ||
     violation.section.toLowerCase().includes(lowerQuery)
-  ).slice(0, 10) // Limit to 10 results for performance
+  ).slice(0, 25)
 }
 
 export function getViolationByCode(code: string): ViolationCode | undefined {

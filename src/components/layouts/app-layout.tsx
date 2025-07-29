@@ -31,6 +31,7 @@ interface AppLayoutProps {
   // Context IDs for dynamic navigation
   driverId?: string
   equipmentId?: string
+  masterOrgId?: string  // Add master organization ID for URL context
   // Organization selector props
   organizations?: Organization[]
   currentOrgId?: string
@@ -50,6 +51,7 @@ export function AppLayout({
   sidebarMenu,
   driverId,
   equipmentId,
+  masterOrgId,  // Add to destructured props
   organizations,
   currentOrgId,
   isSheetOpen,
@@ -76,6 +78,7 @@ export function AppLayout({
             menuType={sidebarMenu}
             driverId={driverId}
             equipmentId={equipmentId}
+            masterOrgId={masterOrgId}
             organizations={organizations}
             currentOrgId={currentOrgId}
             isSheetOpen={isSheetOpen}

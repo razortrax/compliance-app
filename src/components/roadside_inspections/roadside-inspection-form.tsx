@@ -21,6 +21,7 @@ interface RoadsideInspectionFormProps {
   loading?: boolean
   organizationId?: string
   driverId?: string // Auto-select driver when coming from driver context
+  onViolationSaved?: () => void // Callback when individual violation is saved
 }
 
 interface FormData {
@@ -65,6 +66,7 @@ interface FormData {
     inspectorComments: string
     severity: 'WARNING' | 'OUT_OF_SERVICE' | 'CITATION'
     violationType: 'DRIVER' | 'EQUIPMENT' | 'COMPANY'
+    saved: boolean // New property to indicate if the violation is already saved
   }>
 }
 
@@ -75,7 +77,8 @@ export function RoadsideInspectionForm({
   onCancel,
   loading = false,
   organizationId,
-  driverId
+  driverId,
+  onViolationSaved
 }: RoadsideInspectionFormProps) {
   const [formData, setFormData] = useState<FormData>({
     reportNumber: '',
@@ -103,6 +106,7 @@ export function RoadsideInspectionForm({
 
   const [drivers, setDrivers] = useState<any[]>([])
   const [equipment, setEquipment] = useState<any[]>([])
+  const [savingViolationIndex, setSavingViolationIndex] = useState<number | null>(null)
 
   // Load initial data
   useEffect(() => {
@@ -137,7 +141,8 @@ export function RoadsideInspectionForm({
           backInServiceDate: v.backInServiceDate ? new Date(v.backInServiceDate).toISOString().split('T')[0] : undefined,
           inspectorComments: v.inspectorComments || '',
           severity: v.severity || 'WARNING',
-          violationType: v.violationType || 'DRIVER'
+          violationType: v.violationType || 'DRIVER',
+          saved: true // Existing violations are already saved
         })) || []
       })
     } else if (driverId) {
@@ -212,12 +217,23 @@ export function RoadsideInspectionForm({
   const [searchResults, setSearchResults] = useState<ViolationCode[]>([])
   const [selectedViolationForDetails, setSelectedViolationForDetails] = useState<number | null>(null)
 
-  const handleViolationSearch = (query: string) => {
+  const handleViolationSearch = async (query: string) => {
     setFormData(prev => ({ ...prev, violationSearch: query }))
     
     if (query.length >= 2) {
-      const results = searchViolations(query)
-      setSearchResults(results)
+      try {
+        const response = await fetch(`/api/violations/search?q=${encodeURIComponent(query)}`)
+        if (response.ok) {
+          const results = await response.json()
+          setSearchResults(results)
+        } else {
+          console.error('Violation search API failed:', response.statusText)
+          setSearchResults([])
+        }
+      } catch (error) {
+        console.error('Violation search failed:', error)
+        setSearchResults([])
+      }
     } else {
       setSearchResults([])
     }
@@ -233,7 +249,8 @@ export function RoadsideInspectionForm({
       backInServiceDate: undefined,
       inspectorComments: '',
       severity: violation.severity,
-      violationType: violation.violationType
+      violationType: violation.violationType,
+      saved: false // New violations are not saved yet
     }
     
     setFormData(prev => ({
@@ -282,6 +299,75 @@ export function RoadsideInspectionForm({
     return `${eq.year} ${eq.make} ${eq.model} - ${eq.vinNumber || eq.plateNumber}`
   }
 
+  // Save an individual violation to the database
+  const handleSaveViolation = async (index: number) => {
+    const violation = formData.selectedViolations[index]
+    
+    // Only allow individual saves in edit mode
+    if (!isEditing || !initialData?.id) {
+      alert('Individual violation saves are only available when editing an existing roadside inspection. Create the RINS first, then edit to add violations individually.')
+      return
+    }
+    
+    // Validate required fields
+    if (!violation.inspectorComments?.trim()) {
+      alert('Inspector comments are required before saving')
+      return
+    }
+
+    if (violation.outOfService && !violation.outOfServiceDate) {
+      alert('Out of Service date is required when marking as OOS')
+      return
+    }
+
+    try {
+      setSavingViolationIndex(index)
+      
+      // Create a minimal RINS payload with just this violation
+      const violationData = {
+        rinsId: initialData?.id, // Only for updates
+        violation: {
+          violationCode: violation.code,
+          description: violation.description,
+          unitNumber: violation.unitNumber,
+          outOfService: violation.outOfService,
+          outOfServiceDate: violation.outOfServiceDate,
+          backInServiceDate: violation.backInServiceDate,
+          inspectorComments: violation.inspectorComments,
+          violationType: violation.violationType,
+          severity: violation.severity
+        }
+      }
+
+      // Save to database (call API to save single violation)
+      const response = await fetch('/api/violations/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(violationData)
+      })
+
+      if (response.ok) {
+        // Mark violation as saved in local state
+        setFormData(prev => ({
+          ...prev,
+          selectedViolations: prev.selectedViolations.map((v, i) => 
+            i === index ? { ...v, saved: true } : v
+          )
+        }))
+        alert('Violation saved successfully!')
+        onViolationSaved?.() // Call the callback
+      } else {
+        const error = await response.json()
+        alert(`Failed to save violation: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error saving violation:', error)
+      alert('Failed to save violation')
+    } finally {
+      setSavingViolationIndex(null)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -325,18 +411,20 @@ export function RoadsideInspectionForm({
         unitNumber: index + 1,
         equipmentId: id
       })),
-      // Include violations with full details
-      violations: formData.selectedViolations.map(violation => ({
-        violationCode: violation.code,
-        description: violation.description,
-        unitNumber: violation.unitNumber,
-        outOfService: violation.outOfService,
-        outOfServiceDate: violation.outOfServiceDate ? new Date(violation.outOfServiceDate) : null,
-        backInServiceDate: violation.backInServiceDate ? new Date(violation.backInServiceDate) : null,
-        inspectorComments: violation.inspectorComments,
-        severity: violation.severity,
-        violationType: violation.violationType
-      }))
+      // Include violations with full details (only unsaved ones for new/bulk updates)
+      violations: formData.selectedViolations
+        .filter(violation => !violation.saved) // Only include violations that haven't been saved individually
+        .map(violation => ({
+          violationCode: violation.code,
+          description: violation.description,
+          unitNumber: violation.unitNumber,
+          outOfService: violation.outOfService,
+          outOfServiceDate: violation.outOfServiceDate ? new Date(violation.outOfServiceDate) : null,
+          backInServiceDate: violation.backInServiceDate ? new Date(violation.backInServiceDate) : null,
+          inspectorComments: violation.inspectorComments,
+          severity: violation.severity,
+          violationType: violation.violationType
+        }))
     }
 
     onSubmit(submissionData)
@@ -781,6 +869,33 @@ export function RoadsideInspectionForm({
                                 ))}
                               </SelectContent>
                             </Select>
+                          </div>
+
+                          {/* Save Violation Button */}
+                          <div className="flex items-center justify-between pt-4 border-t">
+                            {violation.saved ? (
+                              <div className="flex items-center gap-2 text-green-600">
+                                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                                <span className="text-sm font-medium">Violation Saved</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-amber-600">
+                                <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
+                                <span className="text-sm">Not saved yet</span>
+                              </div>
+                            )}
+                            
+                            {!violation.saved && isEditing && initialData?.id && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleSaveViolation(index)}
+                                disabled={savingViolationIndex === index}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                {savingViolationIndex === index ? 'Saving...' : 'Save Violation'}
+                              </Button>
+                            )}
                           </div>
                         </CardContent>
                       </Card>

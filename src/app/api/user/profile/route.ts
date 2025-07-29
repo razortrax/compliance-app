@@ -25,9 +25,14 @@ export async function GET() {
       }, { status: 404 })
     }
 
+    // For master users, the organization they own is their "master organization"
+    // This is the organization they use to manage other organizations
+    const masterOrganization = party.organization
+
     return NextResponse.json({
       person: party.person,
-      organization: party.organization
+      organization: party.organization, // Keep for backward compatibility
+      masterOrganization: masterOrganization // Add the master organization for new routing
     })
 
   } catch (error) {
