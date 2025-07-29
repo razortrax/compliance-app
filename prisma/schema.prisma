@@ -544,6 +544,55 @@ model rins_violation {
   // Relations
   roadside_inspection   roadside_inspection_issue @relation(fields: [rinsId], references: [id], onDelete: Cascade)
   corrective_action_forms corrective_action_form[]
+  violation_code_ref    violation_code?        @relation(fields: [violationCode], references: [code])
+}
+
+// FMCSA Violation Codes Database (Real-time updated from FMCSA data)
+model violation_code {
+  id                  String   @id @default(cuid())
+  code                String   @unique      // "396.17CPI", "392.2SLLSR"
+  description         String                // Full violation description
+  violationType       String                // "Vehicle", "Driver", "Other" (from FMCSA)
+  
+  // FMCSA Statistics (from monthly snapshots)
+  totalInspections    Int?                  // # of Inspections
+  totalViolations     Int?                  // # of Violations  
+  percentOfTotal      Float?                // % of Total Violations
+  oosViolations       Int?                  // # of OOS Violations
+  oosPercent          Float?                // %OOS Percent
+  
+  // Derived compliance intelligence
+  riskScore           Float?                // Calculated risk assessment
+  isHighRisk          Boolean   @default(false)  // Based on OOS % thresholds
+  isCritical          Boolean   @default(false)  // High OOS or severity
+  
+  // CFR categorization (parsed from code)
+  cfrPart             Int?                  // 390, 391, 392, 393, etc.
+  cfrSection          String?               // Full section reference
+  
+  // Data management
+  effectiveDate       DateTime  @default(now())
+  retiredAt           DateTime?             // NULL = still active
+  lastUpdated         DateTime  @updatedAt
+  dataSource          String    @default("FMCSA_CSV")  // Track source
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations to existing violations
+  rins_violations     rins_violation[]      // Link to actual violations
+}
+
+// Optional: Track violation data snapshots for audit trail
+model violation_snapshot {
+  id              String    @id @default(cuid())
+  monthKey        String    // "2025-01", "2025-02"
+  fileName        String    // Original CSV filename
+  recordCount     Int       // Number of records processed
+  importedAt      DateTime  @default(now())
+  importedBy      String?   // User who triggered import
+  filePath        String?   // Storage path for audit
+  notes           String?   // Import notes/errors
 }
 
 // CAF System - Phase 2 Implementation

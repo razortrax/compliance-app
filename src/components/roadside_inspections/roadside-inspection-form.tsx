@@ -155,39 +155,37 @@ export function RoadsideInspectionForm({
 
   const fetchDriversAndEquipment = async () => {
     try {
-      // Fetch drivers
-      const driversResponse = await fetch(`/api/persons?organizationId=${organizationId}`)
+      // Fetch drivers - use roleType filter for efficiency
+      const driversResponse = await fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`)
       if (driversResponse.ok) {
         const driversData = await driversResponse.json()
         console.log('Drivers raw data:', driversData) // Debug log
         console.log('Driver ID to auto-select:', driverId) // Debug log
         
-        // Filter for drivers only
-        const filteredDrivers = driversData.filter((person: any) => {
-          console.log('Person:', person.firstName, person.lastName, 'Party roles:', person.party?.role)
-          return person.party?.role?.some((r: any) => r.roleType === 'DRIVER')
-        })
-        console.log('Filtered drivers:', filteredDrivers)
-        setDrivers(filteredDrivers)
+        setDrivers(driversData) // No need to filter since API already filters by roleType
         
         // Auto-select driver if driverId matches a person in the list (for new forms)
         if (driverId && !initialData) {
-          const matchingDriver = filteredDrivers.find((person: any) => person.id === driverId)
+          const matchingDriver = driversData.find((person: any) => person.id === driverId)
           if (matchingDriver) {
             console.log('Auto-selecting driver:', matchingDriver.firstName, matchingDriver.lastName, 'PartyId:', matchingDriver.partyId)
             setFormData(prev => ({ ...prev, selectedDriverId: matchingDriver.partyId }))
+          } else {
+            console.warn('Driver ID not found in drivers list:', driverId)
           }
         }
         
         // For edit forms, ensure the driver is selected after drivers are loaded
         if (initialData && initialData.issue?.partyId) {
           const existingDriverPartyId = initialData.issue.partyId
-          const matchingDriver = filteredDrivers.find((person: any) => person.partyId === existingDriverPartyId)
+          const matchingDriver = driversData.find((person: any) => person.partyId === existingDriverPartyId)
           if (matchingDriver) {
             console.log('Re-selecting driver for edit:', matchingDriver.firstName, matchingDriver.lastName, 'PartyId:', matchingDriver.partyId)
             setFormData(prev => ({ ...prev, selectedDriverId: matchingDriver.partyId }))
           }
         }
+      } else {
+        console.error('Failed to fetch drivers:', driversResponse.status)
       }
 
       // Fetch equipment  
@@ -196,6 +194,8 @@ export function RoadsideInspectionForm({
         const equipmentData = await equipmentResponse.json()
         console.log('Equipment data:', equipmentData) // Debug log
         setEquipment(equipmentData)
+      } else {
+        console.error('Failed to fetch equipment:', equipmentResponse.status)
       }
     } catch (error) {
       console.error('Error fetching drivers and equipment:', error)
