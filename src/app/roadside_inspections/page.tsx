@@ -12,6 +12,8 @@ import { Plus, FileText, Eye, Edit } from 'lucide-react'
 import { RoadsideInspectionForm } from '@/components/roadside_inspections/roadside-inspection-form'
 import { useMasterOrg } from '@/hooks/use-master-org'
 import { buildStandardDriverNavigation } from '@/lib/utils'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 interface RoadsideInspection {
   id: string
@@ -67,6 +69,7 @@ interface RoadsideInspection {
     outOfService: boolean
     severity?: string
     unitNumber?: number
+    violationType?: string // Added for CAF filtering
   }>
 }
 
@@ -104,6 +107,9 @@ export default function RoadsideInspectionsPage() {
     dueDate: ''
   })
   const [savingCAF, setSavingCAF] = useState(false)
+
+  // State for individual violation corrective actions
+  const [violationCorrectiveActions, setViolationCorrectiveActions] = useState<Record<string, string>>({})
 
   // Fetch organizations for selector
   useEffect(() => {
@@ -234,10 +240,19 @@ export default function RoadsideInspectionsPage() {
 
   // Refresh the selected RINS data after individual violation saves
   const refreshSelectedRINS = async () => {
-    if (!selectedRoadsideInspection?.id) return
+    if (!selectedRoadsideInspection?.id) {
+      console.log('🔧 REFRESH - No selected RINS to refresh')
+      return
+    }
 
     try {
       console.log('🔧 REFRESH - Starting refresh for RINS:', selectedRoadsideInspection.id)
+      
+      // Check that we have valid parameters before fetching
+      if (!organizationId && (!driverId || !driver?.partyId)) {
+        console.log('🔧 REFRESH - Missing required parameters, skipping refresh')
+        return
+      }
       
       // Simpler approach: refresh the entire list
       const selectedId = selectedRoadsideInspection.id
@@ -250,6 +265,8 @@ export default function RoadsideInspectionsPage() {
           if (updatedRINS) {
             console.log('🔧 REFRESH - Re-selected RINS violations:', updatedRINS.violations?.length)
             setSelectedRoadsideInspection(updatedRINS)
+          } else {
+            console.log('🔧 REFRESH - RINS not found after refresh, keeping current selection')
           }
           return prev
         })
@@ -259,6 +276,7 @@ export default function RoadsideInspectionsPage() {
       fetchCAFs()
     } catch (error) {
       console.error('Error refreshing RINS data:', error)
+      // Don't throw - just log the error to prevent crashes
     }
   }
 
@@ -365,7 +383,7 @@ export default function RoadsideInspectionsPage() {
 
   // CAF management functions
   const fetchCAFs = async () => {
-    if (!selectedRoadsideInspection) return
+    if (!selectedRoadsideInspection) return []
     
     try {
       // Fetch CAFs directly for this RINS using the rinsId parameter
@@ -373,34 +391,100 @@ export default function RoadsideInspectionsPage() {
       if (response.ok) {
         const rinsCAFs = await response.json()
         setCafs(rinsCAFs)
+        return rinsCAFs
       } else {
         console.error('Failed to fetch CAFs:', response.status, response.statusText)
+        return []
       }
     } catch (error) {
       console.error('Error fetching CAFs:', error)
+      return []
     }
   }
 
   const generateCAFs = async () => {
-    if (!selectedRoadsideInspection) return
-    
+    if (!selectedRoadsideInspection?.violations || selectedRoadsideInspection.violations.length === 0) {
+      alert('No violations found to generate CAFs for')
+      return
+    }
+
+    setGeneratingCAFs(true)
     try {
-      setGeneratingCAFs(true)
-      const response = await fetch(`/api/roadside_inspections/${selectedRoadsideInspection.id}/generate-cafs`, {
+      // Check if CAFs already exist
+      const existingCAFs = await fetchCAFs()
+      const hasExistingCAFs = existingCAFs.length > 0
+
+      let shouldProceed = true
+      let action = 'create'
+
+      if (hasExistingCAFs) {
+        // Ask user if they want to recreate (which will delete all existing CAFs)
+        shouldProceed = confirm(
+          `${existingCAFs.length} CAF(s) already exist for this RINS.\n\n` +
+          `Click OK to RECREATE ALL CAFs (this will delete existing CAFs and create new ones based on current violations).\n\n` +
+          `Click Cancel to keep existing CAFs.`
+        )
+        action = 'recreate'
+      }
+
+      if (!shouldProceed) {
+        setGeneratingCAFs(false)
+        return
+      }
+
+      // Call the API with recreate flag if needed
+      const response = await fetch(`/api/roadside_inspections/${selectedRoadsideInspection.id}/generate-cafs?recreate=${hasExistingCAFs}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
-      
+
       if (response.ok) {
         const result = await response.json()
-        alert(`Success: ${result.message}`)
-        // Add a small delay to ensure database transaction is complete, then refresh
-        setTimeout(async () => {
-          await fetchCAFs()
+        
+        // Refresh CAF list
+        setTimeout(() => {
+          fetchCAFs()
         }, 500)
+
+        const actionText = action === 'recreate' ? 'recreated' : 'created'
+        alert(`CAFs ${actionText} successfully! ${result.generated || result.cafs?.length || 0} CAF(s) generated.`)
+
+        // Auto-open first CAF if any were generated
+        if (result.cafs && result.cafs.length > 0) {
+          setTimeout(() => {
+            const firstCAF = result.cafs[0]
+            setEditingCAF(firstCAF)
+            setShowEditCAF(true)
+            setCafFormData({
+              assignedStaffId: firstCAF.assignedStaffId || '',
+              correctiveActions: firstCAF.correctiveActions || '',
+              notes: firstCAF.notes || '',
+              dueDate: firstCAF.dueDate ? new Date(firstCAF.dueDate).toISOString().split('T')[0] : ''
+            })
+            
+            // Initialize violation corrective actions
+            let initialCorrectiveActions = {}
+            try {
+              if (firstCAF.correctiveActions) {
+                initialCorrectiveActions = JSON.parse(firstCAF.correctiveActions)
+              }
+            } catch (e) {
+              console.log('CAF has old format corrective actions')
+            }
+            setViolationCorrectiveActions(initialCorrectiveActions)
+            
+            // Fetch staff for the organization
+            const orgId = firstCAF.organizationId || contextOrganization?.id
+            if (orgId) {
+              fetchOrganizationStaff(orgId)
+            }
+          }, 800)
+        }
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        alert(`Error: ${error.error || 'Failed to generate CAFs'}`)
       }
     } catch (error) {
       console.error('Error generating CAFs:', error)
@@ -431,7 +515,7 @@ export default function RoadsideInspectionsPage() {
     }))
   }
 
-  // Handle CAF update
+  // Handle CAF update with individual violation corrective actions
   const handleUpdateCAF = async (isDraft: boolean = false) => {
     if (!editingCAF) return
     
@@ -444,7 +528,8 @@ export default function RoadsideInspectionsPage() {
         },
         body: JSON.stringify({
           ...cafFormData,
-          status: isDraft ? 'ASSIGNED' : 'IN_PROGRESS' // Use correct enum values
+          violationCorrectiveActions, // Include individual violation corrective actions
+          status: isDraft ? 'ASSIGNED' : 'IN_PROGRESS'
         })
       })
 
@@ -870,18 +955,11 @@ export default function RoadsideInspectionsPage() {
                           <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-medium text-gray-900">Corrective Action Forms</h3>
                             <Button 
-                              size="sm" 
-                              onClick={() => generateCAFs()}
+                              onClick={generateCAFs}
                               disabled={generatingCAFs}
+                              size="sm"
                             >
-                              {generatingCAFs ? (
-                                <>Loading...</>
-                              ) : (
-                                <>
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Generate CAFs
-                                </>
-                              )}
+                              {generatingCAFs ? 'Processing...' : cafs.length > 0 ? 'Recreate CAFs' : 'Create CAFs'}
                             </Button>
                           </div>
                           
@@ -1125,19 +1203,91 @@ export default function RoadsideInspectionsPage() {
               </div>
             </div>
 
-            {/* Related Violation */}
-            {selectedCAF.rins_violation && (
+            {/* Related Violations */}
+            {selectedRoadsideInspection?.violations && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Related Violation</label>
-                <div className="bg-gray-50 p-3 rounded border">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-medium">{selectedCAF.rins_violation.violationCode}</span>
-                    <Badge variant="outline">{selectedCAF.rins_violation.severity}</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">{selectedCAF.rins_violation.description}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Related Violations</label>
+                <div className="space-y-2">
+                  {selectedRoadsideInspection.violations
+                    .filter(violation => {
+                      // Show violations that match this CAF's category
+                      const cafType = selectedCAF.category
+                      const violationType = violation.violationType
+                      
+                      return (
+                        (cafType === 'DRIVER_PERFORMANCE' && violationType === 'Driver_Performance') ||
+                        (cafType === 'DRIVER_QUALIFICATION' && violationType === 'Driver_Qualification') ||
+                        (cafType === 'EQUIPMENT_MAINTENANCE' && violationType === 'Equipment') ||
+                        (cafType === 'COMPANY_OPERATIONS' && violationType === 'Company') ||
+                        violation.id === selectedCAF.rinsViolationId // Always include the primary violation
+                      )
+                    })
+                    .map(violation => (
+                      <div key={violation.id} className="bg-gray-50 p-3 rounded border">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-medium">{violation.violationCode}</span>
+                          <div className="flex gap-1">
+                            {violation.outOfService && (
+                              <Badge variant="destructive">OOS</Badge>
+                            )}
+                            <Badge variant="outline">{violation.severity}</Badge>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600">{violation.description}</p>
+                        {violation.inspectorComments && (
+                          <p className="text-xs text-gray-500 mt-1">Inspector: {violation.inspectorComments}</p>
+                        )}
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
             )}
+
+            {/* Corrective Actions */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Corrective Actions</label>
+              <div className="bg-gray-50 p-3 rounded border">
+                {(() => {
+                  try {
+                    // Try to parse as JSON (new format with individual violations)
+                    if (selectedCAF.correctiveActions) {
+                      const violationActions = JSON.parse(selectedCAF.correctiveActions)
+                      
+                      // If it's an object with violation IDs as keys, display individual actions
+                      if (typeof violationActions === 'object' && !Array.isArray(violationActions)) {
+                        return Object.entries(violationActions).map(([violationId, action]) => {
+                          // Find the violation details
+                          const violation = selectedRoadsideInspection?.violations?.find(v => v.id === violationId)
+                          return (
+                            <div key={violationId} className="mb-3 last:mb-0">
+                              <div className="font-medium text-sm text-gray-700 mb-1">
+                                {violation?.violationCode || violationId}
+                              </div>
+                              <p className="text-sm text-gray-600 whitespace-pre-wrap">{action as string}</p>
+                            </div>
+                          )
+                        })
+                      }
+                    }
+                    
+                    // Fallback to displaying as plain text (old format)
+                    return (
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {selectedCAF.correctiveActions || 'No corrective actions specified'}
+                      </p>
+                    )
+                  } catch (e) {
+                    // If JSON parsing fails, display as plain text
+                    return (
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {selectedCAF.correctiveActions || 'No corrective actions specified'}
+                      </p>
+                    )
+                  }
+                })()}
+              </div>
+            </div>
 
             {/* Action Buttons */}
             <div className="flex justify-between pt-4 border-t">
@@ -1156,6 +1306,18 @@ export default function RoadsideInspectionsPage() {
                       notes: selectedCAF.notes || '',
                       dueDate: selectedCAF.dueDate ? new Date(selectedCAF.dueDate).toISOString().split('T')[0] : ''
                     })
+                    // Initialize violation corrective actions
+                    let initialCorrectiveActions = {}
+                    try {
+                      // Try to parse as JSON (new format)
+                      if (selectedCAF.correctiveActions) {
+                        initialCorrectiveActions = JSON.parse(selectedCAF.correctiveActions)
+                      }
+                    } catch (e) {
+                      // If parsing fails, it's old format - leave empty for now
+                      console.log('CAF has old format corrective actions')
+                    }
+                    setViolationCorrectiveActions(initialCorrectiveActions)
                     // Fetch staff for the organization
                     const orgId = selectedCAF.organizationId || contextOrganization?.id
                     if (orgId) {
@@ -1217,105 +1379,63 @@ export default function RoadsideInspectionsPage() {
               <p className="text-gray-600">{editingCAF.title}</p>
             </div>
 
-            {/* Violation Context (Read-only) */}
-            {editingCAF.rins_violation && (
+            {/* Related Violations for this CAF */}
+            {selectedRoadsideInspection && editingCAF && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Violation Context</label>
-                <div className="bg-gray-50 p-3 rounded border">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-medium">{editingCAF.rins_violation.violationCode}</span>
-                    <Badge variant="outline">{editingCAF.rins_violation.severity}</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">{editingCAF.rins_violation.description}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Violations Addressed by this CAF
+                </label>
+                <div className="space-y-3">
+                  {selectedRoadsideInspection.violations
+                    .filter(violation => {
+                      // Filter violations that match the CAF type
+                      const cafType = editingCAF.category
+                      const violationType = violation.violationType
+                      
+                      return (
+                        (cafType === 'DRIVER_PERFORMANCE' && violationType === 'Driver_Performance') ||
+                        (cafType === 'DRIVER_QUALIFICATION' && violationType === 'Driver_Qualification') ||
+                        (cafType === 'EQUIPMENT_MAINTENANCE' && violationType === 'Equipment') ||
+                        (cafType === 'COMPANY_OPERATIONS' && violationType === 'Company') ||
+                        violation.id === editingCAF.rinsViolationId // Always include the primary violation
+                      )
+                    })
+                    .map((violation, index) => (
+                      <div key={violation.id} className="bg-gray-50 p-4 rounded border">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-medium">{violation.violationCode}</span>
+                          <div className="flex gap-1">
+                            {violation.outOfService && (
+                              <Badge variant="destructive">OOS</Badge>
+                            )}
+                            <Badge variant="outline">{violation.severity}</Badge>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">{violation.description}</p>
+                        
+                        {/* Violation-specific corrective action field */}
+                        <div>
+                          <Label htmlFor={`corrective-action-${violation.id}`}>
+                            Corrective Actions for {violation.violationCode} *
+                          </Label>
+                          <Textarea
+                            id={`corrective-action-${violation.id}`}
+                            placeholder="Enter specific corrective actions required for this violation..."
+                            className="mt-1"
+                            rows={3}
+                            value={violationCorrectiveActions[violation.id] || ''}
+                            onChange={(e) => setViolationCorrectiveActions(prev => ({
+                              ...prev,
+                              [violation.id]: e.target.value
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
             )}
-
-            {/* Equipment Information (if applicable) */}
-            {selectedRoadsideInspection?.equipment && selectedRoadsideInspection.equipment.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Equipment Involved</label>
-                <div className="bg-blue-50 p-3 rounded border">
-                  <div className="font-medium">
-                    {selectedRoadsideInspection.equipment[0].make} {selectedRoadsideInspection.equipment[0].model} ({selectedRoadsideInspection.equipment[0].year})
-                  </div>
-                  {selectedRoadsideInspection.equipment[0].vin && (
-                    <div className="text-sm text-gray-600">VIN: {selectedRoadsideInspection.equipment[0].vin}</div>
-                  )}
-                  {selectedRoadsideInspection.equipment[0].unitNumber && (
-                    <div className="text-sm text-gray-600">Unit: {selectedRoadsideInspection.equipment[0].unitNumber}</div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Staff Assignment */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Staff</label>
-              <select 
-                className="w-full border border-gray-300 rounded-md p-2"
-                value={cafFormData.assignedStaffId}
-                onChange={(e) => handleCafFormChange('assignedStaffId', e.target.value)}
-              >
-                <option value="">Select staff member...</option>
-                {organizationStaff.map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.party?.person?.firstName} {staff.party?.person?.lastName}
-                    {staff.canSignCAFs ? ' (Can Sign CAFs)' : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Staff assignment based on violation type ({editingCAF.rins_violation?.violationCode?.substring(0, 3)} codes)
-              </p>
-            </div>
-
-            {/* Corrective Action Requirements */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Corrective Action Requirements
-                <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                className="w-full border border-gray-300 rounded-md p-3 h-32"
-                placeholder="Enter specific corrective actions required to address this violation...
-
-Example for 392.8 (Emergency equipment):
-1. Ensure all required emergency equipment is present and functional
-2. Replace any missing or defective emergency equipment
-3. Document replacement/repair actions taken
-4. Verify driver understands emergency equipment requirements
-5. Schedule follow-up inspection within 30 days"
-                defaultValue={editingCAF.correctiveActions || ''}
-                onChange={(e) => handleCafFormChange('correctiveActions', e.target.value)}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                These requirements will be included in the PDF CAF sent to the assigned staff member.
-                Future versions will use AI to suggest actions based on violation codes.
-              </p>
-            </div>
-
-            {/* Due Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-              <input
-                type="date"
-                className="border border-gray-300 rounded-md p-2"
-                value={cafFormData.dueDate}
-                onChange={(e) => handleCafFormChange('dueDate', e.target.value)}
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
-              <textarea
-                className="w-full border border-gray-300 rounded-md p-3 h-20"
-                placeholder="Any additional context or special instructions..."
-                defaultValue={editingCAF.notes || ''}
-                onChange={(e) => handleCafFormChange('notes', e.target.value)}
-              />
-            </div>
 
             {/* Action Buttons */}
             <div className="flex justify-between pt-4 border-t">

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       code: v.code,
       section: v.cfrSection || `49 CFR ${v.code}`,
       description: v.description,
-      violationType: mapViolationTypeFromDB(v.violationType),
+      violationType: mapViolationTypeFromDBWithCode(v.violationType, v.code),
       severity: mapSeverityFromDB(v.violationType)
     }))
 
@@ -50,21 +50,43 @@ function mapViolationTypeFromDB(dbType: string): 'DRIVER' | 'EQUIPMENT' | 'COMPA
     case 'VEHICLE':
       return 'EQUIPMENT'
     case 'COMPANY':
+      return 'COMPANY'
     case 'OTHER':
+      // Default OTHER to COMPANY, but this might need refinement based on violation code
+      return 'COMPANY'
     default:
       return 'COMPANY'
   }
 }
 
+// Enhanced mapping that also considers violation code for better accuracy
+function mapViolationTypeFromDBWithCode(dbType: string, violationCode: string): 'DRIVER' | 'EQUIPMENT' | 'COMPANY' {
+  // First try the database type
+  const baseMapping = mapViolationTypeFromDB(dbType)
+  
+  // Override based on violation code patterns for better accuracy
+  if (violationCode.startsWith('391') || violationCode.startsWith('392')) {
+    return 'DRIVER' // Driver qualification and performance violations
+  } else if (violationCode.startsWith('393') || violationCode.startsWith('396')) {
+    return 'EQUIPMENT' // Equipment and maintenance violations
+  } else if (violationCode.startsWith('390')) {
+    return 'COMPANY' // Company/operational violations
+  }
+  
+  // Use the base mapping if no code pattern match
+  return baseMapping
+}
+
 // Helper function to map database/violation type to severity
 function mapSeverityFromDB(violationType: string): 'WARNING' | 'OUT_OF_SERVICE' | 'CITATION' {
-  // Since the imported data doesn't have severity, we'll infer based on violation type and code patterns
+  // Since the imported data doesn't have severity, we'll use more reasonable defaults
+  // Out of Service should be based on specific violations, not all driver violations
   const type = violationType?.toUpperCase()
   
   if (type?.includes('DRIVER')) {
-    return 'OUT_OF_SERVICE' // Most driver violations are OOS
+    return 'CITATION' // Most driver violations are citations, not automatic OOS
   } else if (type?.includes('EQUIPMENT') || type?.includes('VEHICLE')) {
-    return 'WARNING' // Most equipment violations start as warnings
+    return 'WARNING' // Equipment violations often start as warnings
   } else {
     return 'CITATION' // Company violations are typically citations
   }

@@ -25,6 +25,30 @@ const getCAFCategoryFromViolationType = (violationType: ViolationType | null, vi
   }
 }
 
+// Helper function to get CAF category from database violation type
+const getCAFCategoryFromDBViolationType = (dbViolationType: string | null, violationCode: string): CafCategory => {
+  if (!dbViolationType) {
+    return getCAFCategoryFromViolationType(null, violationCode)
+  }
+
+  switch (dbViolationType.toUpperCase()) {
+    case 'DRIVER':
+      // For driver violations, try to differentiate between qualification and performance
+      if (violationCode.startsWith('391')) {
+        return CafCategory.DRIVER_QUALIFICATION
+      } else if (violationCode.startsWith('392')) {
+        return CafCategory.DRIVER_PERFORMANCE
+      }
+      return CafCategory.DRIVER_PERFORMANCE // Default for driver violations
+    case 'VEHICLE':
+      return CafCategory.EQUIPMENT_MAINTENANCE
+    case 'OTHER':
+      return CafCategory.COMPANY_OPERATIONS
+    default:
+      return getCAFCategoryFromViolationType(null, violationCode)
+  }
+}
+
 // Determine CAF priority based on violation severity and out-of-service status
 const getCAFPriority = (outOfService: boolean, violationCode: string): CafPriority => {
   if (outOfService) return CafPriority.CRITICAL
@@ -236,7 +260,8 @@ export const generateCAFsFromRINSViolations = async (rinsId: string, createdBySt
             },
             equipment: true // Include equipment for Equipment CAFs
           }
-        }
+        },
+        violation_code_ref: true // Include violation code data for type mapping
       }
     })
 
@@ -259,22 +284,44 @@ export const generateCAFsFromRINSViolations = async (rinsId: string, createdBySt
       company: [] as any[]
     }
 
-    // Categorize violations by entity type
+    // Categorize violations by their actual violationType from the database
     for (const violation of violations) {
-      const violationCode = violation.violationCode
+      // Use the actual violationType from the violation_code database
+      const dbViolationType = violation.violation_code_ref?.violationType
       
-      if (violationCode.startsWith('391') || violationCode.startsWith('392')) {
-        // Driver violations (Driver Qualification & Performance)
+      // Map database violation type to our categories
+      if (dbViolationType?.toUpperCase() === 'DRIVER') {
+        // Driver violations from database
         violationGroups.driver.push(violation)
-      } else if (violationCode.startsWith('393') || violationCode.startsWith('396')) {
-        // Equipment violations (Equipment & Inspection/Repair/Maintenance)
+      } else if (dbViolationType?.toUpperCase() === 'VEHICLE') {
+        // Equipment/Vehicle violations from database
         violationGroups.equipment.push(violation)
-      } else if (violationCode.startsWith('390')) {
-        // Company violations (General/Company Operations)
+      } else if (dbViolationType?.toUpperCase() === 'OTHER') {
+        // Company/Other violations from database
+        violationGroups.company.push(violation)
+      } else if (violation.violationType === ViolationType.Driver_Performance || violation.violationType === ViolationType.Driver_Qualification) {
+        // Fallback to RINS violation type (Driver Qualification & Performance)
+        violationGroups.driver.push(violation)
+      } else if (violation.violationType === ViolationType.Equipment) {
+        // Fallback to RINS violation type (Equipment)
+        violationGroups.equipment.push(violation)
+      } else if (violation.violationType === ViolationType.Company) {
+        // Fallback to RINS violation type (Company)
         violationGroups.company.push(violation)
       } else {
-        // Default to company for unknown codes
-        violationGroups.company.push(violation)
+        // Final fallback: try to infer from violation code
+        const violationCode = violation.violationCode
+        
+        if (violationCode.startsWith('391') || violationCode.startsWith('392')) {
+          violationGroups.driver.push(violation)
+        } else if (violationCode.startsWith('393') || violationCode.startsWith('396')) {
+          violationGroups.equipment.push(violation)
+        } else if (violationCode.startsWith('390')) {
+          violationGroups.company.push(violation)
+        } else {
+          // Default to company for unknown codes
+          violationGroups.company.push(violation)
+        }
       }
     }
 
@@ -349,8 +396,14 @@ const createGroupedCAF = async (
     const title = generateGroupedCAFTitle(entityType, violations)
     const description = generateGroupedCAFDescription(entityType, violations)
     const priority = getGroupedCAFPriority(violations)
-    const category = getCAFCategoryFromViolationType(violationType, violations[0].violationCode)
     
+    // Use database violation type if available, fallback to Prisma enum
+    const firstViolation = violations[0]
+    const dbViolationType = firstViolation.violation_code_ref?.violationType
+    const category = dbViolationType 
+      ? getCAFCategoryFromDBViolationType(dbViolationType, firstViolation.violationCode)
+      : getCAFCategoryFromViolationType(violationType, firstViolation.violationCode)
+
     // Calculate due date (15 days for critical/OOS, 30 days for others)
     const daysToComplete = priority === CafPriority.CRITICAL ? 15 : 30
     const dueDate = new Date()

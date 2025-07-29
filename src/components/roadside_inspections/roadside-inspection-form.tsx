@@ -13,6 +13,60 @@ import { X, Plus, AlertTriangle } from 'lucide-react'
 import { RinsLevel, RinsResult, DverSource, EntryMethod } from '@prisma/client'
 import { searchViolations, ViolationCode } from '@/lib/violations'
 
+// Helper function to format violation types for display
+const formatViolationType = (violationType: string, violationCode?: string): string => {
+  // Handle Prisma enum values
+  switch (violationType) {
+    case 'Driver_Performance':
+      return 'Driver'
+    case 'Driver_Qualification':
+      return 'Driver'
+    case 'Equipment':
+      return 'Equipment'
+    case 'Company':
+      return 'Company'
+  }
+
+  // Handle frontend string values
+  switch (violationType?.toUpperCase()) {
+    case 'DRIVER':
+      return 'Driver'
+    case 'EQUIPMENT':
+      return 'Equipment'
+    case 'COMPANY':
+      return 'Company'
+    default:
+      // Fallback: infer from violation code if available
+      if (violationCode) {
+        if (violationCode.startsWith('391') || violationCode.startsWith('392')) {
+          return 'Driver'
+        } else if (violationCode.startsWith('393') || violationCode.startsWith('396')) {
+          return 'Equipment'
+        } else if (violationCode.startsWith('390')) {
+          return 'Company'
+        }
+      }
+      return violationType || 'Unknown'
+  }
+}
+
+// Helper function to format severity for display
+const formatSeverity = (severity: string): string => {
+  switch (severity) {
+    case 'OUT_OF_SERVICE':
+    case 'Out_Of_Service':
+      return 'Out of Service'
+    case 'WARNING':
+    case 'Warning':
+      return 'Warning'
+    case 'CITATION':
+    case 'Citation':
+      return 'Citation'
+    default:
+      return severity || 'Unknown'
+  }
+}
+
 interface RoadsideInspectionFormProps {
   initialData?: any
   isEditing?: boolean
@@ -57,6 +111,7 @@ interface FormData {
   hasViolations: boolean
   violationSearch: string
   selectedViolations: Array<{
+    id?: string // Optional ID - exists for saved violations, generated for new ones
     code: string
     description: string
     unitNumber?: number
@@ -66,7 +121,7 @@ interface FormData {
     inspectorComments: string
     severity: 'WARNING' | 'OUT_OF_SERVICE' | 'CITATION'
     violationType: 'DRIVER' | 'EQUIPMENT' | 'COMPANY'
-    saved: boolean // New property to indicate if the violation is already saved
+    saved: boolean
   }>
 }
 
@@ -133,6 +188,7 @@ export function RoadsideInspectionForm({
         hasViolations: initialData.violations?.length > 0 || false,
         violationSearch: '',
         selectedViolations: initialData.violations?.map((v: any) => ({
+          id: v.id, // Preserve database ID for existing violations
           code: v.violationCode,
           description: v.description,
           unitNumber: v.unitNumber,
@@ -239,13 +295,14 @@ export function RoadsideInspectionForm({
     }
   }
 
-  const handleSelectViolationFromSearch = (violation: ViolationCode) => {
+  const handleSelectViolationFromSearch = (violation: any) => {
     const newViolation = {
+      id: `temp_${Date.now()}_${Math.random()}`, // Temporary ID for new violations
       code: violation.code,
       description: violation.description,
       unitNumber: undefined,
-      outOfService: violation.severity === 'OUT_OF_SERVICE',
-      outOfServiceDate: violation.severity === 'OUT_OF_SERVICE' ? new Date().toISOString().split('T')[0] : undefined,
+      outOfService: false,
+      outOfServiceDate: undefined,
       backInServiceDate: undefined,
       inspectorComments: '',
       severity: violation.severity,
@@ -270,7 +327,46 @@ export function RoadsideInspectionForm({
     }))
   }
 
-  const handleRemoveViolation = (index: number) => {
+  const handleRemoveViolation = async (index: number) => {
+    const violation = formData.selectedViolations[index]
+    
+    // If this is a saved violation, delete it from the database
+    if (violation.saved && isEditing && initialData?.id && violation.id && !violation.id.startsWith('temp_')) {
+      const confirmDelete = window.confirm(
+        `Are you sure you want to delete violation ${violation.code}? This action cannot be undone.`
+      )
+      
+      if (!confirmDelete) return
+      
+      try {
+        // Delete the saved violation from the database
+        const response = await fetch(`/api/violations/delete`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rinsId: initialData.id,
+            violationId: violation.id // Use the specific violation ID
+          })
+        })
+        
+        if (!response.ok) {
+          const error = await response.json()
+          alert(`Failed to delete violation: ${error.error}`)
+          return
+        }
+        
+        alert('Violation deleted successfully')
+        
+        // Simple solution: reload the page to refresh all data
+        window.location.reload()
+      } catch (error) {
+        console.error('Error deleting violation:', error)
+        alert('Failed to delete violation')
+        return
+      }
+    }
+    
+    // Remove from UI state (for both saved and unsaved violations)
     setFormData(prev => ({
       ...prev,
       selectedViolations: prev.selectedViolations.filter((_, i) => i !== index)
@@ -749,9 +845,9 @@ export function RoadsideInspectionForm({
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">{violation.code}</span>
                               <Badge variant={violation.severity === 'OUT_OF_SERVICE' ? 'destructive' : 'outline'}>
-                                {violation.severity}
+                                {formatSeverity(violation.severity)}
                               </Badge>
-                              <Badge variant="secondary">{violation.violationType}</Badge>
+                              <Badge variant="secondary">{formatViolationType(violation.violationType, violation.code)}</Badge>
                             </div>
                             <p className="text-sm text-gray-600 mt-1">{violation.description}</p>
                             <p className="text-xs text-gray-500">{violation.section}</p>
@@ -775,9 +871,9 @@ export function RoadsideInspectionForm({
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{violation.code}</span>
                               <Badge variant={violation.severity === 'OUT_OF_SERVICE' ? 'destructive' : 'outline'}>
-                                {violation.severity}
+                                {formatSeverity(violation.severity)}
                               </Badge>
-                              <Badge variant="secondary">{violation.violationType}</Badge>
+                              <Badge variant="secondary">{formatViolationType(violation.violationType, violation.code)}</Badge>
                               {violation.outOfService && (
                                 <Badge variant="destructive">
                                   <AlertTriangle className="h-3 w-3 mr-1" />

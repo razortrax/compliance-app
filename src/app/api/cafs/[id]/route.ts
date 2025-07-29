@@ -99,17 +99,23 @@ export async function PUT(
     const {
       assignedStaffId,
       correctiveActions,
+      violationCorrectiveActions,
       notes,
       dueDate,
       status
     } = body
+
+    // If we have individual violation corrective actions, store them as JSON
+    const finalCorrectiveActions = violationCorrectiveActions 
+      ? JSON.stringify(violationCorrectiveActions)
+      : correctiveActions
 
     // Update the CAF
     const updatedCAF = await db.corrective_action_form.update({
       where: { id: cafId },
       data: {
         assignedStaffId: assignedStaffId || undefined,
-        correctiveActions: correctiveActions || undefined,
+        correctiveActions: finalCorrectiveActions || undefined,
         notes: notes || undefined,
         dueDate: dueDate ? new Date(dueDate) : undefined,
         status: status || undefined,
