@@ -16,6 +16,17 @@ export function SmartRedirect() {
     const handleSmartRouting = async () => {
       // Only run once per user session and when user is loaded
       if (!isLoaded || !user || hasRedirected) return
+      
+      // Don't redirect if user is already on master, organization, or other authenticated pages
+      const currentPath = window.location.pathname
+      if (currentPath.includes('/master/') || currentPath.includes('/organization/') || 
+          currentPath.includes('/consultant/') || currentPath.includes('/complete-profile') ||
+          currentPath.includes('/drivers/') || currentPath.includes('/equipment/') ||
+          currentPath.includes('/licenses/') || currentPath.includes('/training/')) {
+        console.log('🔄 User already on authenticated page, skipping redirect:', currentPath)
+        setHasRedirected(true)
+        return
+      }
 
       try {
         // If this is a new user signup with role parameter, handle differently
@@ -65,9 +76,8 @@ export function SmartRedirect() {
                 router.push(`/master/${masterOrganization.id}/organization/${role.organizationId}`)
                 setHasRedirected(true)
               } else {
-                console.log('🔄 Redirecting org user to organization list')
-                // Fallback to generic org list (this shouldn't happen in normal flow)
-                router.push('/complete-profile')
+                console.log('🔄 Org user missing master org - staying on current page')
+                // Don't redirect to complete-profile, let user stay where they are
                 setHasRedirected(true)
               }
             }
@@ -83,7 +93,8 @@ export function SmartRedirect() {
                 router.push(`/master/${masterOrganization.id}/organization/${role.organizationId}`)
                 setHasRedirected(true)
               } else {
-                router.push('/complete-profile')
+                console.log('🔄 Location user missing master org - staying on current page')
+                // Don't redirect to complete-profile, let user stay where they are
                 setHasRedirected(true)
               }
             }

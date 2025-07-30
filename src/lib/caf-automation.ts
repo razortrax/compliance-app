@@ -233,6 +233,125 @@ const generateCAFNumber = async (): Promise<string> => {
   return `${prefix}${nextNumber.toString().padStart(4, '0')}`
 }
 
+// Main function to auto-generate CAFs from accident violations
+export const generateCAFsFromAccidentViolations = async (accidentId: string, organizationId?: string): Promise<any> => {
+  try {
+    // Get all violations from the accident that don't already have CAFs
+    const violations = await db.accident_violation.findMany({
+      where: {
+        accidentId: accidentId,
+        cafs: {
+          none: {} // Only violations without existing CAFs
+        }
+      },
+      include: {
+        accident: {
+          include: {
+            issue: {
+              include: {
+                party: {
+                  include: {
+                    role: {
+                      where: { isActive: true }
+                    }
+                  }
+                }
+              }
+            },
+            equipment: true // Include equipment for Equipment CAFs
+          }
+        }
+      }
+    })
+
+    if (violations.length === 0) {
+      return { generated: 0, cafs: [] }
+    }
+
+    // Get organization ID from the first violation (they should all be the same accident)
+    const orgId = organizationId || violations[0].accident.issue.party.role[0]?.organizationId
+    if (!orgId) {
+      throw new Error('Could not determine organization ID from accident violations')
+    }
+
+    const createdCAFs = []
+
+    // Group violations by type for batching
+    const violationGroups = {
+      driver: [] as any[],
+      equipment: [] as any[],
+      company: [] as any[]
+    }
+
+    // Categorize violations by their violationType
+    for (const violation of violations) {
+      const violationType = violation.violationType
+      
+      if (violationType === 'Driver_Performance' || violationType === 'Driver_Qualification') {
+        violationGroups.driver.push(violation)
+      } else if (violationType === 'Equipment') {
+        violationGroups.equipment.push(violation)
+      } else if (violationType === 'Company') {
+        violationGroups.company.push(violation)
+      } else {
+        // Default to driver for unknown types
+        violationGroups.driver.push(violation)
+      }
+    }
+
+    // Create CAFs for each group
+    for (const [groupType, groupViolations] of Object.entries(violationGroups)) {
+      if (groupViolations.length === 0) continue
+
+      // Create one CAF per violation for better tracking
+      for (const violation of groupViolations) {
+        const category = getCAFCategoryFromViolationType(violation.violationType, violation.violationCode)
+        
+        // Find appropriate staff for this violation type
+        const assignedStaffId = await findAssignedStaff(orgId, violation.violationType)
+        if (!assignedStaffId) {
+          console.warn(`Could not find appropriate staff to assign ${groupType} CAF for violation ${violation.violationCode}`)
+          continue
+        }
+        
+        const caf = await db.corrective_action_form.create({
+          data: {
+            id: createId(),
+            cafNumber: await generateCAFNumber(),
+            accidentViolationId: violation.id,
+            organizationId: orgId,
+            title: `${groupType.charAt(0).toUpperCase() + groupType.slice(1)} Violation - ${violation.violationCode}`,
+            description: `Corrective action required for accident violation: ${violation.violationCode} - ${violation.description}`,
+            category: category,
+            priority: violation.outOfService ? CafPriority.CRITICAL : 
+                     violation.severity === 'Citation' ? CafPriority.HIGH : CafPriority.MEDIUM,
+            assignedStaffId: assignedStaffId,
+            assignedBy: assignedStaffId
+          },
+          include: {
+            assigned_staff: {
+              include: {
+                party: {
+                  include: {
+                    person: true
+                  }
+                }
+              }
+            }
+          }
+        })
+
+        createdCAFs.push(caf)
+      }
+    }
+
+    return { generated: createdCAFs.length, cafs: createdCAFs }
+  } catch (error) {
+    console.error('Error generating CAFs from accident violations:', error)
+    throw error
+  }
+}
+
 // Main function to auto-generate CAFs from RINS violations
 export const generateCAFsFromRINSViolations = async (rinsId: string, createdByStaffId: string): Promise<any[]> => {
   try {

@@ -83,57 +83,108 @@ export default function DriversPage() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [deactivationReason, setDeactivationReason] = useState('')
   const [isDeactivating, setIsDeactivating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Fetch organization details
+  // Fetch all data with proper error handling and race condition prevention
   useEffect(() => {
-    const fetchOrganization = async () => {
+    const fetchAllData = async () => {
+      console.log('🔄 Fetching drivers page data for org:', organizationId)
+      
       try {
-        const response = await fetch(`/api/organizations/${organizationId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
+        setIsLoading(true)
+        setError(null) // Clear previous errors
+        
+        // Fetch all data in parallel with proper error handling
+        const [orgResult, personsResult, orgsResult] = await Promise.allSettled([
+          fetch(`/api/organizations/${organizationId}`),
+          fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`),
+          fetch('/api/organizations')
+        ])
+        
+        let hasErrors = false
+        const errors = []
+        
+        // Handle organization data
+        if (orgResult.status === 'fulfilled' && orgResult.value.ok) {
+          const orgData = await orgResult.value.json()
+          setOrganization(orgData)
+          console.log('✅ Organization data loaded')
+        } else {
+          hasErrors = true
+          const errorMsg = orgResult.status === 'fulfilled' 
+            ? `Organization API returned ${orgResult.value.status}` 
+            : 'Failed to fetch organization'
+          errors.push(errorMsg)
+          console.error('❌ Failed to fetch organization:', errorMsg)
         }
+        
+        // Handle persons data
+        if (personsResult.status === 'fulfilled' && personsResult.value.ok) {
+          const personsData = await personsResult.value.json()
+          setPersons(personsData)
+          console.log('✅ Drivers data loaded:', personsData.length, 'drivers')
+        } else {
+          hasErrors = true
+          const errorMsg = personsResult.status === 'fulfilled' 
+            ? `Drivers API returned ${personsResult.value.status}` 
+            : 'Failed to fetch drivers'
+          errors.push(errorMsg)
+          console.error('❌ Failed to fetch drivers:', errorMsg)
+          setPersons([]) // Set empty array on error
+        }
+        
+        // Handle organizations list data (less critical)
+        if (orgsResult.status === 'fulfilled' && orgsResult.value.ok) {
+          const orgsData = await orgsResult.value.json()
+          setOrganizations(orgsData)
+          console.log('✅ Organizations list loaded')
+        } else {
+          console.error('❌ Failed to fetch organizations list (non-critical)')
+          setOrganizations([]) // Set empty array on error
+        }
+        
+        // Only show error state for critical failures that prevent core functionality
+        // Don't show errors if we at least have some data to work with
+        if (hasErrors && (!organization || persons.length === 0)) {
+          setError(errors.join('; '))
+        } else if (hasErrors) {
+          // Log errors but don't show error box if we have core data
+          console.warn('⚠️ Some API calls failed but core data is available:', errors.join('; '))
+        }
+        
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        console.error('🔥 Unexpected error fetching drivers data:', error)
+        setError('Unexpected error occurred while loading data')
+        // Set safe defaults on error
+        setPersons([])
+        setOrganizations([])
+      } finally {
+        setIsLoading(false)
+        console.log('🏁 Drivers page data fetch complete')
       }
     }
 
-    fetchOrganization()
+    if (organizationId) {
+      fetchAllData()
+    }
   }, [organizationId])
 
-  // Fetch persons (drivers only)
+  // Refetch persons after updates
   const fetchPersons = async () => {
-          try {
-        setIsLoading(true)
-        const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`)
-        if (response.ok) {
-          const data = await response.json()
-          setPersons(data)
-        }
-      } catch (error) {
-      console.error('Error fetching persons:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Fetch organizations for selector
-  const fetchOrganizations = async () => {
     try {
-      const response = await fetch('/api/organizations')
+      console.log('🔄 Refreshing drivers list')
+      const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`)
       if (response.ok) {
         const data = await response.json()
-        setOrganizations(data)
+        setPersons(data)
+        console.log('✅ Drivers refreshed:', data.length, 'drivers')
+      } else {
+        console.error('❌ Failed to refresh drivers:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching organizations:', error)
+      console.error('🔥 Error refreshing drivers:', error)
     }
   }
-
-  useEffect(() => {
-    fetchPersons()
-    fetchOrganizations()
-  }, [organizationId])
 
   const handleOrganizationSelect = (selectedOrg: Organization) => {
     setIsSheetOpen(false)
@@ -254,13 +305,13 @@ export default function DriversPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Organization Name */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">{organization.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{organization?.name || 'Loading...'}</h1>
         </div>
         
         {/* Page Header */}
         <SectionHeader
           title="Drivers"
-          description={`Manage drivers for ${organization.name}`}
+          description={`Manage drivers for ${organization?.name || 'this organization'}`}
           actions={
             <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
               <DialogTrigger asChild>
@@ -289,10 +340,38 @@ export default function DriversPage() {
           }
         />
 
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Loading Error</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                  <p className="mt-2">
+                    <button 
+                      onClick={() => window.location.reload()} 
+                      className="font-medium underline hover:no-underline"
+                    >
+                      Try refreshing the page
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Persons List */}
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading drivers...</p>
           </div>
         ) : persons.length > 0 ? (
           <div className="grid gap-4">

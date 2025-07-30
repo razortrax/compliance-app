@@ -7,15 +7,107 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model accident_issue {
-  id           String   @id
-  issueId      String   @unique
-  accidentDate DateTime
-  location     String?
-  severity     String
-  reportNumber String?
-  isReportable Boolean  @default(false)
-  issue        issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+// ===========================================
+// UNIFIED INCIDENT MANAGEMENT SYSTEM
+// Replaces: accident_issue + roadside_inspection_issue  
+// ===========================================
+
+// Base incident model for both accidents and roadside inspections
+model incident {
+  id          String      @id @default(cuid())
+  issueId     String      @unique
+  incidentType IncidentType // ACCIDENT | ROADSIDE_INSPECTION
+
+  // Common timing information
+  incidentDate DateTime // Date of incident/inspection
+  incidentTime String?  // Time of incident/inspection
+
+  // Common officer/inspector information  
+  officerName    String  // Inspector name or responding officer
+  agencyName     String? // Agency name
+  officerBadge   String? // Badge number (RSIN) or officer ID
+  reportNumber   String? // Report/inspection number
+
+  // Common location information
+  locationAddress String? // Location address
+  locationCity    String? // Location city  
+  locationState   String? // Location state
+  locationZip     String? // Location zip
+
+  // Incident-specific data (JSON for flexibility)
+  accidentData Json? // Accident-specific fields
+  roadsideData Json? // RSIN-specific fields
+
+  // Common relationships
+  equipment  incident_equipment_involvement[]
+  violations incident_violation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+// Unified equipment involvement (replaces both models)
+model incident_equipment_involvement {
+  id          String  @id @default(cuid())
+  incidentId  String  // FK to incident
+  unitNumber  Int     // 1, 2, or 3
+  
+  // Equipment identification
+  equipmentId String? // Optional link to equipment table
+  unitType    String? // TT, TLR, etc. (RSIN) or vehicle type (Accident)
+  make        String?
+  model       String?
+  year        Int?
+  plateNumber String?
+  plateState  String? // RSIN specific
+  vin         String?
+  
+  // RSIN-specific fields (in JSON for accidents)
+  cvsaSticker String? // RSIN only
+  oosSticker  String? // RSIN only
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  incident  incident   @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  equipment equipment? @relation(fields: [equipmentId], references: [id])
+}
+
+// Unified violation system (replaces both models)
+model incident_violation {
+  id                String             @id @default(cuid())
+  incidentId        String             // FK to incident
+  violationCode     String             // 392.2A(1) or citation code
+  section           String?            // Full section reference
+  unitNumber        Int?               // Which equipment unit (1,2,3) or null for driver
+  outOfService      Boolean            @default(false)
+  outOfServiceDate  DateTime?          // When placed out of service
+  backInServiceDate DateTime?          // When returned to service
+  citationNumber    String?
+  severity          ViolationSeverity?
+  description       String             // Description of violation
+  inspectorComments String?            // Officer/inspector comments
+
+  // Assignment fields (existing)
+  violationType   ViolationType? // Driver, Equipment, Company
+  assignedPartyId String?        // FK to responsible party
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  incident                incident                 @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  corrective_action_forms corrective_action_form[]
+  violation_code_ref      violation_code?          @relation(fields: [violationCode], references: [code])
+}
+
+// New enum for incident types
+enum IncidentType {
+  ACCIDENT            // Motor vehicle accidents
+  ROADSIDE_INSPECTION // DOT roadside inspections  
 }
 
 model consultant {
@@ -92,32 +184,34 @@ model equipment {
   vinNumber          String?   @unique
   plateNumber        String?
   registrationExpiry DateTime?
-  locationId         String?   // Equipment can be assigned to specific location
+  locationId         String? // Equipment can be assigned to specific location
   party              party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
   location           location? @relation(fields: [locationId], references: [id])
+
+  // Incident involvement relationships (unified)
+  incident_involvement incident_equipment_involvement[]
 }
 
 model issue {
-  id               String            @id
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime
-  issueType        String
-  status           String            @default("open")
-  priority         String            @default("medium")
-  partyId          String
-  title            String
-  description      String?
-  dueDate          DateTime?
-  resolvedAt       DateTime?
-  accident_issue   accident_issue?
-  mvr_issue        mvr_issue?
-  physical_issue   physical_issue?
-  drugalcohol_issue drugalcohol_issue?
-  roadside_inspection_issue roadside_inspection_issue?
-  party            party             @relation(fields: [partyId], references: [id])
-  license_issue    license_issue?
-  training_issue   training_issue?
-  attachments      attachment[]      // Issue can have multiple attachments
+  id                        String                     @id
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime
+  issueType                 String
+  status                    String                     @default("open")
+  priority                  String                     @default("medium")
+  partyId                   String
+  title                     String
+  description               String?
+  dueDate                   DateTime?
+  resolvedAt                DateTime?
+  incident                  incident?
+  mvr_issue                 mvr_issue?
+  physical_issue            physical_issue?
+  drugalcohol_issue         drugalcohol_issue?
+  party                     party                      @relation(fields: [partyId], references: [id])
+  license_issue             license_issue?
+  training_issue            training_issue?
+  attachments               attachment[] // Issue can have multiple attachments
 }
 
 enum MvrType {
@@ -204,167 +298,167 @@ enum DrugAlcoholAgency {
 }
 
 model mvr_issue {
-  id               String           @id @default(cuid())
-  issueId          String           @unique
-  state            String           // VARCHAR(2)
-  violationsCount  Int              @default(0)
-  cleanRecord      Boolean          @default(true)
-  notes            String?
-  type             MvrType?
-  result           MvrResult?
-  result_dach      MvrResultDach?
-  result_status    MvrResultStatus?
-  reviewedBy       Json?
-  certification    MvrCertification?
-  status           MvrStatus?
-  startDate        DateTime?        // When MVR period started
-  expirationDate   DateTime?        // When MVR expires (typically 1 year from start)
-  renewalDate      DateTime?        // When MVR was renewed/processed
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id              String            @id @default(cuid())
+  issueId         String            @unique
+  state           String // VARCHAR(2)
+  violationsCount Int               @default(0)
+  cleanRecord     Boolean           @default(true)
+  notes           String?
+  type            MvrType?
+  result          MvrResult?
+  result_dach     MvrResultDach?
+  result_status   MvrResultStatus?
+  reviewedBy      Json?
+  certification   MvrCertification?
+  status          MvrStatus?
+  startDate       DateTime? // When MVR period started
+  expirationDate  DateTime? // When MVR expires (typically 1 year from start)
+  renewalDate     DateTime? // When MVR was renewed/processed
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   // Relations
-  issue            issue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model physical_issue {
-  id               String           @id @default(cuid())
-  issueId          String           @unique
+  id               String        @id @default(cuid())
+  issueId          String        @unique
   type             PhysicalType?
-  medicalExaminer  String?          // VARCHAR(255)
-  selfCertified    Boolean          @default(false)
-  nationalRegistry Boolean          @default(false)
-  startDate        DateTime?        // When physical period started
-  expirationDate   DateTime?        // When physical expires
-  renewalDate      DateTime?        // When physical was renewed/processed
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  medicalExaminer  String? // VARCHAR(255)
+  selfCertified    Boolean       @default(false)
+  nationalRegistry Boolean       @default(false)
+  startDate        DateTime? // When physical period started
+  expirationDate   DateTime? // When physical expires
+  renewalDate      DateTime? // When physical was renewed/processed
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   // Relations
-  issue            issue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model drugalcohol_issue {
-  id              String                 @id @default(cuid())
-  issueId         String                 @unique
-  result          DrugAlcoholResult?     // Test result
-  substance       String?                // Substance tested for (VARCHAR(50))
-  lab             String?                // Testing laboratory (VARCHAR(255))
-  accreditedBy    String?                // Accrediting body (VARCHAR(100))
-  notes           String?                // Additional notes about the test
-  reason          DrugAlcoholReason?     // Reason for test
-  agency          DrugAlcoholAgency?     // Testing agency
-  specimenNumber  String?                // Number specimen (renamed from number_specimen)
-  isDrug          Boolean                @default(false) // is_drug
-  isAlcohol       Boolean                @default(false) // is_alcohol
-  clinic          Json?                  // Clinic information (JSON)
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  id             String             @id @default(cuid())
+  issueId        String             @unique
+  result         DrugAlcoholResult? // Test result
+  substance      String? // Substance tested for (VARCHAR(50))
+  lab            String? // Testing laboratory (VARCHAR(255))
+  accreditedBy   String? // Accrediting body (VARCHAR(100))
+  notes          String? // Additional notes about the test
+  reason         DrugAlcoholReason? // Reason for test
+  agency         DrugAlcoholAgency? // Testing agency
+  specimenNumber String? // Number specimen (renamed from number_specimen)
+  isDrug         Boolean            @default(false) // is_drug
+  isAlcohol      Boolean            @default(false) // is_alcohol
+  clinic         Json? // Clinic information (JSON)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   // Relations
-  issue           issue                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model license_issue {
-  id               String    @id @default(cuid())
-  issueId          String    @unique
-  licenseType      String
-  licenseState     String
-  licenseNumber    String
-  certification    String
-  startDate        DateTime?
-  expirationDate   DateTime
-  renewalDate      DateTime?
-  endorsements     Json?
-  restrictions     Json?
-  notes            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  issueId        String    @unique
+  licenseType    String
+  licenseState   String
+  licenseNumber  String
+  certification  String
+  startDate      DateTime?
+  expirationDate DateTime
+  renewalDate    DateTime?
+  endorsements   Json?
+  restrictions   Json?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
-  issue            issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model training_issue {
-  id               String    @id @default(cuid())
-  issueId          String    @unique
-  trainingType     String    // HazMat Annual, Defensive Driving, etc.
-  provider         String?   // Training company/organization
-  instructor       String?   // Instructor name
-  location         String?   // Training location
-  startDate        DateTime? // When training period started
-  completionDate   DateTime  // When training was completed
-  expirationDate   DateTime  // When training expires
-  certificateNumber String?  // Certificate/completion number
-  hours            Float?    // Training hours completed
-  isRequired       Boolean   @default(false) // Required vs voluntary
-  competencies     Json?     // Skills/topics covered
-  notes            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  issueId           String    @unique
+  trainingType      String // HazMat Annual, Defensive Driving, etc.
+  provider          String? // Training company/organization
+  instructor        String? // Instructor name
+  location          String? // Training location
+  startDate         DateTime? // When training period started
+  completionDate    DateTime // When training was completed
+  expirationDate    DateTime // When training expires
+  certificateNumber String? // Certificate/completion number
+  hours             Float? // Training hours completed
+  isRequired        Boolean   @default(false) // Required vs voluntary
+  competencies      Json? // Skills/topics covered
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
-  issue            issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model attachment {
-  id           String   @id @default(cuid())
-  issueId      String?  // Links to any issue (license, inspection, etc.) - now optional
-  cafId        String?  // Links to CAF - new for Phase 2
-  fileName     String   // Original filename
-  fileType     String   // MIME type (image/jpeg, application/pdf, etc.)
-  fileSize     Int      // File size in bytes
-  filePath     String   // Storage path/URL (empty for notes)
+  id             String   @id @default(cuid())
+  issueId        String? // Links to any issue (license, inspection, etc.) - now optional
+  cafId          String? // Links to CAF - new for Phase 2
+  fileName       String // Original filename
+  fileType       String // MIME type (image/jpeg, application/pdf, etc.)
+  fileSize       Int // File size in bytes
+  filePath       String // Storage path/URL (empty for notes)
   attachmentType String // 'license_front', 'license_back', 'note', 'endorsement_doc', 'caf_evidence', etc.
-  description  String?  // Optional description
-  noteContent  String?  // For text-based addons (notes)
-  uploadedBy   String   // User ID who uploaded
-  createdAt    DateTime @default(now())
-  
+  description    String? // Optional description
+  noteContent    String? // For text-based addons (notes)
+  uploadedBy     String // User ID who uploaded
+  createdAt      DateTime @default(now())
+
   // Relationships
-  issue        issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue                  issue?                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
   corrective_action_form corrective_action_form? @relation("CAFAttachments", fields: [cafId], references: [id], onDelete: Cascade)
 }
 
 model location {
-  id               String       @id
-  partyId          String?      @unique  // NEW: Makes location a party entity
-  organizationId   String       // Keep for backward compatibility during transition
-  name             String
-  locationType     String       // terminal, yard, office, warehouse
-  address          String
-  city             String
-  state            String
-  zipCode          String
-  phone            String?
-  email            String?
-  isMainLocation   Boolean      @default(false)
-  isActive         Boolean      @default(true)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  
+  id             String   @id
+  partyId        String?  @unique // NEW: Makes location a party entity
+  organizationId String // Keep for backward compatibility during transition
+  name           String
+  locationType   String // terminal, yard, office, warehouse
+  address        String
+  city           String
+  state          String
+  zipCode        String
+  phone          String?
+  email          String?
+  isMainLocation Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   // Relationships
-  party            party?       @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  organization     organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  equipment        equipment[]
-  role             role[]       // Staff and drivers assigned to this location
+  party        party?       @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  organization organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  equipment    equipment[]
+  role         role[] // Staff and drivers assigned to this location
 }
 
 model organization {
-  id           String         @id
-  partyId      String         @unique
-  name         String
-  dotNumber    String?        @unique
-  einNumber    String?
-  address      String?
-  city         String?
-  state        String?
-  zipCode      String?
-  phone        String?
-  consultation consultation[]
-  location     location[]
+  id                      String                   @id
+  partyId                 String                   @unique
+  name                    String
+  dotNumber               String?                  @unique
+  einNumber               String?
+  address                 String?
+  city                    String?
+  state                   String?
+  zipCode                 String?
+  phone                   String?
+  consultation            consultation[]
+  location                location[]
   corrective_action_forms corrective_action_form[] // CAF system support
-  party        party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  party                   party                    @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
 model party {
@@ -377,10 +471,10 @@ model party {
   equipment    equipment?
   issue        issue[]
   organization organization?
-  location     location?     // NEW: Location can be a party
+  location     location? // NEW: Location can be a party
   person       person?
   role         role[]
-  staff        staff?        // CAF system support
+  staff        staff? // CAF system support
 }
 
 model person {
@@ -404,7 +498,7 @@ model role {
   partyId        String
   roleType       String
   organizationId String?
-  locationId     String?   // Role can be assigned to specific location
+  locationId     String? // Role can be assigned to specific location
   status         String    @default("pending")
   startDate      DateTime  @default(now())
   endDate        DateTime?
@@ -455,226 +549,135 @@ enum ViolationSeverity {
   Out_Of_Service
 }
 
-model roadside_inspection_issue {
-  id                    String                 @id @default(cuid())
-  issueId               String                 @unique
-  
-  // DVER Header Information
-  reportNumber          String?                // USP070000063
-  inspectionDate        DateTime               // Date of inspection
-  inspectionTime        String?                // Time of inspection
-  inspectorName         String                 // Inspector name
-  inspectorBadge        String?                // Badge number
-  
-  // Location Details
-  inspectionLocation    String                 // NEWBERRY SC
-  facilityName          String?                // WATER TECH TRANSPORTATION LLC
-  facilityAddress       String?
-  facilityCity          String?
-  facilityState         String?
-  facilityZip           String?
-  
-  // Inspection Details
-  inspectionLevel       RinsLevel?             // Level I-VI
-  overallResult         RinsResult?            // Pass/Warning/OOS
-  
-  // Driver Information (from DVER)
-  driverLicense         String?                // License number
-  driverLicenseState    String?                // License state
-  driverDOB             DateTime?              // Date of birth
-  
-  // DVER Processing
-  dverReceived          Boolean                @default(false)
-  dverSource            DverSource?            // How we got the DVER
-  entryMethod           EntryMethod            @default(Manual_Entry)
-  
-  // Relationships
-  equipment             rins_equipment_involvement[]
-  violations            rins_violation[]
-  
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-
-  // Relations
-  issue                 issue                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
-}
-
-model rins_equipment_involvement {
-  id              String                 @id @default(cuid())
-  rinsId          String                 // FK to roadside_inspection_issue
-  unitNumber      Int                    // 1, 2, or 3
-  unitType        String?                // TT, TLR, etc.
-  make            String?                // PTRB, UTIL
-  model           String?
-  year            Int?
-  plateNumber     String?
-  plateState      String?
-  vin             String?
-  equipmentId     String?                // FK to equipment party if exists
-  cvsaSticker     String?
-  oosSticker      String?
-  
-  createdAt       DateTime               @default(now())
-  
-  // Relations
-  roadside_inspection roadside_inspection_issue @relation(fields: [rinsId], references: [id], onDelete: Cascade)
-}
-
-model rins_violation {
-  id                    String                 @id @default(cuid())
-  rinsId                String                 // FK to roadside_inspection_issue
-  violationCode         String                 // 392.2A(1)
-  section               String?                // Full section reference
-  unitNumber            Int?                   // Which equipment unit (1,2,3) or null for driver
-  outOfService          Boolean                @default(false)
-  outOfServiceDate      DateTime?              // When placed out of service
-  backInServiceDate     DateTime?              // When returned to service
-  citationNumber        String?
-  severity              ViolationSeverity?
-  description           String
-  inspectorComments     String?
-  
-  // For assignment (Phase 1B)
-  violationType         ViolationType?         // Driver, Equipment, Company
-  assignedPartyId       String?                // FK to responsible party
-  
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  
-  // Relations
-  roadside_inspection   roadside_inspection_issue @relation(fields: [rinsId], references: [id], onDelete: Cascade)
-  corrective_action_forms corrective_action_form[]
-  violation_code_ref    violation_code?        @relation(fields: [violationCode], references: [code])
-}
+// Roadside inspection models have been replaced by the unified incident system above
 
 // FMCSA Violation Codes Database (Real-time updated from FMCSA data)
 model violation_code {
-  id                  String   @id @default(cuid())
-  code                String   @unique      // "396.17CPI", "392.2SLLSR"
-  description         String                // Full violation description
-  violationType       String                // "Vehicle", "Driver", "Other" (from FMCSA)
-  
-  // FMCSA Statistics (from monthly snapshots)
-  totalInspections    Int?                  // # of Inspections
-  totalViolations     Int?                  // # of Violations  
-  percentOfTotal      Float?                // % of Total Violations
-  oosViolations       Int?                  // # of OOS Violations
-  oosPercent          Float?                // %OOS Percent
-  
-  // Derived compliance intelligence
-  riskScore           Float?                // Calculated risk assessment
-  isHighRisk          Boolean   @default(false)  // Based on OOS % thresholds
-  isCritical          Boolean   @default(false)  // High OOS or severity
-  
-  // CFR categorization (parsed from code)
-  cfrPart             Int?                  // 390, 391, 392, 393, etc.
-  cfrSection          String?               // Full section reference
-  
-  // Data management
-  effectiveDate       DateTime  @default(now())
-  retiredAt           DateTime?             // NULL = still active
-  lastUpdated         DateTime  @updatedAt
-  dataSource          String    @default("FMCSA_CSV")  // Track source
-  
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id            String @id @default(cuid())
+  code          String @unique // "396.17CPI", "392.2SLLSR"
+  description   String // Full violation description
+  violationType String // "Vehicle", "Driver", "Other" (from FMCSA)
 
-  // Relations to existing violations
-  rins_violations     rins_violation[]      // Link to actual violations
+  // FMCSA Statistics (from monthly snapshots)
+  totalInspections Int? // # of Inspections
+  totalViolations  Int? // # of Violations  
+  percentOfTotal   Float? // % of Total Violations
+  oosViolations    Int? // # of OOS Violations
+  oosPercent       Float? // %OOS Percent
+
+  // Derived compliance intelligence
+  riskScore  Float? // Calculated risk assessment
+  isHighRisk Boolean @default(false) // Based on OOS % thresholds
+  isCritical Boolean @default(false) // High OOS or severity
+
+  // CFR categorization (parsed from code)
+  cfrPart    Int? // 390, 391, 392, 393, etc.
+  cfrSection String? // Full section reference
+
+  // Data management
+  effectiveDate DateTime  @default(now())
+  retiredAt     DateTime? // NULL = still active
+  lastUpdated   DateTime  @updatedAt
+  dataSource    String    @default("FMCSA_CSV") // Track source
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations to existing violations (unified)
+  incident_violations incident_violation[] // Link to actual violations
 }
 
 // Optional: Track violation data snapshots for audit trail
 model violation_snapshot {
-  id              String    @id @default(cuid())
-  monthKey        String    // "2025-01", "2025-02"
-  fileName        String    // Original CSV filename
-  recordCount     Int       // Number of records processed
-  importedAt      DateTime  @default(now())
-  importedBy      String?   // User who triggered import
-  filePath        String?   // Storage path for audit
-  notes           String?   // Import notes/errors
+  id          String   @id @default(cuid())
+  monthKey    String // "2025-01", "2025-02"
+  fileName    String // Original CSV filename
+  recordCount Int // Number of records processed
+  importedAt  DateTime @default(now())
+  importedBy  String? // User who triggered import
+  filePath    String? // Storage path for audit
+  notes       String? // Import notes/errors
 }
 
 // CAF System - Phase 2 Implementation
 model staff {
-  id                    String                 @id @default(cuid())
-  partyId               String                 @unique
-  employeeId            String?                // Company employee ID
-  position              String?                // Job title/position
-  department            String?                // Department/division
-  supervisorId          String?                // FK to supervisor staff record
-  isActive              Boolean                @default(true)
-  canApproveCAFs        Boolean                @default(false)
-  canSignCAFs           Boolean                @default(false)
-  
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  
+  id             String  @id @default(cuid())
+  partyId        String  @unique
+  employeeId     String? // Company employee ID
+  position       String? // Job title/position
+  department     String? // Department/division
+  supervisorId   String? // FK to supervisor staff record
+  isActive       Boolean @default(true)
+  canApproveCAFs Boolean @default(false)
+  canSignCAFs    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  party                 party                  @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  supervisor            staff?                 @relation("StaffSupervisor", fields: [supervisorId], references: [id])
-  subordinates          staff[]                @relation("StaffSupervisor")
-  assigned_cafs         corrective_action_form[] @relation("AssignedStaff")
-  created_cafs          corrective_action_form[] @relation("CreatedByStaff")
-  signatures            caf_signature[]
+  party         party                    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  supervisor    staff?                   @relation("StaffSupervisor", fields: [supervisorId], references: [id])
+  subordinates  staff[]                  @relation("StaffSupervisor")
+  assigned_cafs corrective_action_form[] @relation("AssignedStaff")
+  created_cafs  corrective_action_form[] @relation("CreatedByStaff")
+  signatures    caf_signature[]
 }
 
 model corrective_action_form {
-  id                    String                 @id @default(cuid())
-  cafNumber             String                 @unique // Auto-generated CAF-YYYY-NNNN
-  rinsViolationId       String?                // FK to originating violation (optional)
-  accidentViolationId   String?                // FK to future accident violations
-  
+  id                   String  @id @default(cuid())
+  cafNumber            String  @unique // Auto-generated CAF-YYYY-NNNN
+  incidentViolationId  String? // FK to unified incident violation
+
   // Basic Information
-  title                 String                 // "Driver Performance - 392.2A(1)"
-  description           String                 // Detailed description of required action
-  correctiveActions     String?                // Manual entry of specific corrective actions required
-  notes                 String?                // Additional notes or special instructions
-  priority              CafPriority            @default(MEDIUM)
-  category              CafCategory            // DRIVER_PERFORMANCE, EQUIPMENT_MAINTENANCE, etc.
-  
+  title             String // "Driver Performance - 392.2A(1)"
+  description       String // Detailed description of required action
+  correctiveActions String? // Manual entry of specific corrective actions required
+  notes             String? // Additional notes or special instructions
+  priority          CafPriority @default(MEDIUM)
+  category          CafCategory // DRIVER_PERFORMANCE, EQUIPMENT_MAINTENANCE, etc.
+
   // Assignment
-  assignedStaffId       String                 // FK to responsible staff member
-  assignedBy            String                 // FK to staff who assigned
-  organizationId        String                 // FK to organization
-  dueDate               DateTime?              // When CAF must be completed
-  
+  assignedStaffId String // FK to responsible staff member
+  assignedBy      String // FK to staff who assigned
+  organizationId  String // FK to organization
+  dueDate         DateTime? // When CAF must be completed
+
   // Status and Completion
-  status                CafStatus              @default(ASSIGNED)
-  completionNotes       String?                // Staff notes on completion
-  completedAt           DateTime?              // When marked complete
-  
+  status          CafStatus @default(ASSIGNED)
+  completionNotes String? // Staff notes on completion
+  completedAt     DateTime? // When marked complete
+
   // Approval and Signatures
-  requiresApproval      Boolean                @default(true)
-  approvedAt            DateTime?              // When approved
-  approvedBy            String?                // FK to approving staff
-  
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  
+  requiresApproval Boolean   @default(true)
+  approvedAt       DateTime? // When approved
+  approvedBy       String? // FK to approving staff
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  rins_violation        rins_violation?        @relation(fields: [rinsViolationId], references: [id])
-  assigned_staff        staff                  @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
-  created_by_staff      staff                  @relation("CreatedByStaff", fields: [assignedBy], references: [id])
-  organization          organization           @relation(fields: [organizationId], references: [id])
-  signatures            caf_signature[]
-  attachments           attachment[]           @relation("CAFAttachments")
+  incident_violation incident_violation? @relation(fields: [incidentViolationId], references: [id])
+  assigned_staff     staff               @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
+  created_by_staff   staff               @relation("CreatedByStaff", fields: [assignedBy], references: [id])
+  organization       organization        @relation(fields: [organizationId], references: [id])
+  signatures         caf_signature[]
+  attachments        attachment[]        @relation("CAFAttachments")
 }
 
 model caf_signature {
-  id                    String                 @id @default(cuid())
-  cafId                 String                 // FK to corrective_action_form
-  staffId               String                 // FK to staff member who signed
-  signatureType         SignatureType          // COMPLETION, APPROVAL, WITNESS
-  signedAt              DateTime               @default(now())
-  digitalSignature      String?                // Encrypted signature data
-  ipAddress             String?                // IP where signature was made
-  notes                 String?                // Optional signature notes
-  
+  id               String        @id @default(cuid())
+  cafId            String // FK to corrective_action_form
+  staffId          String // FK to staff member who signed
+  signatureType    SignatureType // COMPLETION, APPROVAL, WITNESS
+  signedAt         DateTime      @default(now())
+  digitalSignature String? // Encrypted signature data
+  ipAddress        String? // IP where signature was made
+  notes            String? // Optional signature notes
+
   // Relations
   corrective_action_form corrective_action_form @relation(fields: [cafId], references: [id], onDelete: Cascade)
-  staff                 staff                  @relation(fields: [staffId], references: [id])
-  
+  staff                  staff                  @relation(fields: [staffId], references: [id])
+
   @@unique([cafId, staffId, signatureType]) // Prevent duplicate signatures
 }
 
@@ -687,25 +690,25 @@ enum CafPriority {
 }
 
 enum CafCategory {
-  DRIVER_PERFORMANCE      // 391.x, 392.x violations
-  DRIVER_QUALIFICATION    // 391.x violations
-  EQUIPMENT_MAINTENANCE   // 393.x, 396.x violations
-  COMPANY_OPERATIONS      // 390.x violations
-  SAFETY_MANAGEMENT       // General safety issues
-  OTHER                   // Miscellaneous
+  DRIVER_PERFORMANCE // 391.x, 392.x violations
+  DRIVER_QUALIFICATION // 391.x violations
+  EQUIPMENT_MAINTENANCE // 393.x, 396.x violations
+  COMPANY_OPERATIONS // 390.x violations
+  SAFETY_MANAGEMENT // General safety issues
+  OTHER // Miscellaneous
 }
 
 enum CafStatus {
-  ASSIGNED               // CAF assigned to staff
-  IN_PROGRESS           // Work has begun
-  COMPLETED             // Work complete, awaiting approval
-  APPROVED              // Approved and closed
-  REJECTED              // Rejected, needs rework
-  CANCELLED             // CAF cancelled
+  ASSIGNED // CAF assigned to staff
+  IN_PROGRESS // Work has begun
+  COMPLETED // Work complete, awaiting approval
+  APPROVED // Approved and closed
+  REJECTED // Rejected, needs rework
+  CANCELLED // CAF cancelled
 }
 
 enum SignatureType {
-  COMPLETION            // Staff completing the CAF
-  APPROVAL              // Supervisor approving completion
-  WITNESS               // Witness to completion (if required)
+  COMPLETION // Staff completing the CAF
+  APPROVAL // Supervisor approving completion
+  WITNESS // Witness to completion (if required)
 }

@@ -6,6 +6,7 @@ import { CafPriority, CafCategory, CafStatus } from '@prisma/client'
 
 interface CAFData {
   rinsViolationId?: string
+  accidentViolationId?: string
   title: string
   description: string
   priority?: CafPriority
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
     const staffId = searchParams.get('staffId')
     const status = searchParams.get('status')
     const rinsId = searchParams.get('rinsId')
+    const accidentId = searchParams.get('accidentId')
 
     const whereClause: any = {}
 
@@ -77,12 +79,37 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (accidentId) {
+      whereClause.accident_violation = {
+        accident: {
+          id: accidentId
+        }
+      }
+    }
+
     const cafs = await db.corrective_action_form.findMany({
       where: whereClause,
       include: {
         rins_violation: {
           include: {
             roadside_inspection: {
+              include: {
+                issue: {
+                  include: {
+                    party: {
+                      include: {
+                        person: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        accident_violation: {
+          include: {
+            accident: {
               include: {
                 issue: {
                   include: {
@@ -198,6 +225,7 @@ export async function POST(request: NextRequest) {
         id: createId(),
         cafNumber,
         rinsViolationId: data.rinsViolationId,
+        accidentViolationId: data.accidentViolationId,
         title: data.title,
         description: data.description,
         priority: data.priority || CafPriority.MEDIUM,
@@ -210,6 +238,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         rins_violation: true,
+        accident_violation: true,
         assigned_staff: {
           include: {
             party: {

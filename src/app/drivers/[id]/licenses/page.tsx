@@ -286,6 +286,7 @@ export default function DriverLicensesPage() {
       <AppLayout 
         sidebarMenu="driver" 
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
         topNav={[]}
         organizations={organizations}
         onOrganizationSelect={handleOrganizationSelect}
@@ -302,6 +303,7 @@ export default function DriverLicensesPage() {
       <AppLayout 
         sidebarMenu="driver" 
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
         topNav={[]}
         organizations={organizations}
         onOrganizationSelect={handleOrganizationSelect}
@@ -339,9 +341,10 @@ export default function DriverLicensesPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
+        currentOrgId={organization?.id}
         className="p-6"
         organizations={organizations}
-        currentOrgId={organization?.id}
         isSheetOpen={isSheetOpen}
         onSheetOpenChange={setIsSheetOpen}
         onOrganizationSelect={handleOrganizationSelect}

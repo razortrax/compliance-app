@@ -235,6 +235,7 @@ export default function DriverTrainingPage() {
       <AppLayout 
         sidebarMenu="driver" 
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
         topNav={[]}
         organizations={organizations as Organization[]}
         onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
@@ -251,6 +252,7 @@ export default function DriverTrainingPage() {
       <AppLayout 
         sidebarMenu="driver" 
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
         topNav={[]}
         organizations={organizations as Organization[]}
         onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
@@ -296,9 +298,10 @@ export default function DriverTrainingPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver" 
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
+        currentOrgId={organization?.id}
         className="p-6"
         organizations={organizations as Organization[]}
-        currentOrgId={organization?.id}
         isSheetOpen={isSheetOpen}
         onSheetOpenChange={setIsSheetOpen}
         onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}

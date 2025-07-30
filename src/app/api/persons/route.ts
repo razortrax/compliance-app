@@ -6,95 +6,89 @@ import type { Prisma } from '@prisma/client'
 
 // GET /api/persons - List all persons for current user's organizations
 export async function GET(req: NextRequest) {
+  // Declare variables at function scope for error handling
+  let userId: string | null = null
+  let organizationId: string | null = null
+  let roleType: string | null = null
+
   try {
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get query parameters
     const { searchParams } = new URL(req.url)
-    const organizationId = searchParams.get('organizationId')
-    const roleType = searchParams.get('roleType') // New filter for role type
+    organizationId = searchParams.get('organizationId')
+    roleType = searchParams.get('roleType') // New filter for role type
 
-    // Get ALL organizations that the user has access to
-    const allOrgIds: string[] = []
+    console.log(`👤 User ${userId} requesting persons for org: ${organizationId}, roleType: ${roleType}`)
 
-    // If specific organizationId requested, use that; otherwise get all accessible orgs
+    // Simplified access control using a single query
+    let allOrgIds: string[] = []
+
     if (organizationId) {
-      // Verify user has access to this specific organization
+      // Check if user is a master (can access any organization)
       const userMasterOrg = await db.organization.findFirst({
-        where: { party: { userId } }
-      })
-
-      let hasAccess = false
-
-      if (userMasterOrg) {
-        hasAccess = true // Master users can access any org
-      } else {
-        // Check if user owns this organization or has a role in it
-        const organization = await db.organization.findFirst({
-          where: {
-            id: organizationId,
-            party: { userId }
-          }
-        })
-
-        if (organization) {
-          hasAccess = true
-        } else {
-          const hasRole = await db.role.findFirst({
-            where: {
-              party: { userId },
-              organizationId: organizationId,
-              isActive: true
-            }
-          })
-          hasAccess = !!hasRole
-        }
-      }
-
-      if (!hasAccess) {
-        return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 })
-      }
-
-      allOrgIds.push(organizationId)
-    } else {
-      // Original logic for getting all accessible organizations
-      // 1. Organizations the user directly owns/created
-      const ownedOrgs = await db.organization.findMany({
         where: { party: { userId } },
         select: { id: true }
       })
-      allOrgIds.push(...ownedOrgs.map((org: { id: string }) => org.id))
 
-      // 2. Organizations the user manages through consultant roles
-      const consultantOrgs = await db.organization.findMany({
+      if (userMasterOrg) {
+        // Master user can access any organization
+        allOrgIds.push(organizationId)
+        console.log(`✅ Master user - access granted to organization ${organizationId}`)
+      } else {
+        // Check if user has direct access to this specific organization
+        const accessCheck = await db.organization.findFirst({
+          where: {
+            id: organizationId,
+            OR: [
+              // User owns this organization directly
+              { party: { userId } },
+              // User has a role in this organization  
+              { party: { role: { some: { party: { userId }, isActive: true } } } }
+            ]
+          },
+          select: { id: true }
+        })
+
+        if (!accessCheck) {
+          console.log(`❌ Access denied to organization ${organizationId} for user ${userId}`)
+          return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 })
+        }
+
+        allOrgIds.push(organizationId)
+        console.log(`✅ Access granted to organization ${organizationId}`)
+      }
+    } else {
+      // Get all accessible organizations efficiently
+      const userOrgs = await db.organization.findMany({
         where: {
-          party: { 
-            role: { 
-              some: { 
-                party: { userId },
-                roleType: 'CONSULTANT_OF',
-                isActive: true 
-              } 
-            } 
-          }
+          OR: [
+            // Organizations user owns
+            { party: { userId } },
+            // Organizations where user has roles
+            { party: { role: { some: { party: { userId }, isActive: true } } } }
+          ]
         },
         select: { id: true }
       })
-      allOrgIds.push(...consultantOrgs.map((org: { id: string }) => org.id))
 
-      // 3. Get ALL organizations in the system (since master users can manage any org)
-      const userMasterOrg = await db.organization.findFirst({
-        where: { party: { userId } }
+      allOrgIds = userOrgs.map(org => org.id)
+      console.log(`✅ User has access to ${allOrgIds.length} organizations`)
+      
+      // If user is a master, they can access all organizations
+      const isMaster = await db.organization.findFirst({
+        where: { party: { userId } },
+        select: { id: true }
       })
 
-      if (userMasterOrg) {
-        const allOrgs = await db.organization.findMany({
-          select: { id: true }
-        })
-        allOrgIds.push(...allOrgs.map((org: { id: string }) => org.id))
+      if (isMaster) {
+        const allOrgs = await db.organization.findMany({ select: { id: true } })
+        allOrgIds = allOrgs.map(org => org.id)
+        console.log(`✅ Master user - access to all ${allOrgIds.length} organizations`)
       }
     }
 
@@ -111,6 +105,9 @@ export async function GET(req: NextRequest) {
     if (roleType) {
       roleWhere.roleType = roleType
     }
+
+    console.log(`🔍 Querying persons with roleWhere:`, roleWhere)
+    console.log(`🔍 Organizations in scope:`, orgIds.length, 'orgs')
 
     // Get all persons assigned to these organizations
     const persons = await db.person.findMany({
@@ -141,10 +138,21 @@ export async function GET(req: NextRequest) {
       ]
     })
 
+    console.log(`✅ Found ${persons.length} persons`)
     return NextResponse.json(persons)
   } catch (error) {
-    console.error('Error fetching persons:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('🔥 Error in persons API:', error)
+    console.error('🔥 Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      organizationId,
+      roleType,
+      userId
+    })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 

@@ -7,91 +7,98 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Declare variables at function scope for error handling
+  let userId: string | null = null
+  let organizationId: string | null = null
+
   try {
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const organizationId = params.id
-    console.log(`GET /api/organizations/${organizationId} - User: ${userId}`)
+    organizationId = params.id
+    console.log(`🏢 GET /api/organizations/${organizationId} - User: ${userId}`)
 
-    // First, check if user has a master company
+    // Simplified access control - check if user is a master first
     const userMasterOrg = await db.organization.findFirst({
-      where: {
-        party: {
-          userId: userId
-        }
-      },
-      select: {
-        id: true,
-        partyId: true,
-        name: true
-      }
+      where: { party: { userId } },
+      select: { id: true, partyId: true, name: true }
     })
 
-    console.log('User Master Org:', userMasterOrg)
+    console.log('🔍 User Master Org:', userMasterOrg?.name || 'None')
 
-    // If user has a master company, find all organizations managed by that master company
-    let managedOrgIds: string[] = []
+    let organization = null
+
     if (userMasterOrg) {
-      const managedRoles = await db.role.findMany({
-        where: {
-          roleType: 'master',
-          partyId: userMasterOrg.partyId,
-          isActive: true
-        },
-        select: {
-          organizationId: true
+      // Master user can access any organization
+      organization = await db.organization.findFirst({
+        where: { id: organizationId },
+        include: {
+          party: {
+            select: {
+              id: true,
+              userId: true, 
+              status: true,
+              createdAt: true,
+              updatedAt: true
+            }
+          }
         }
       })
-      managedOrgIds = managedRoles.map(role => role.organizationId).filter(Boolean) as string[]
-      console.log('Managed organization IDs:', managedOrgIds)
-    }
-
-    // Find the organization with simpler logic
-    const organization = await db.organization.findFirst({
-      where: {
-        id: organizationId,
-        OR: [
-          // User owns this organization (is their master company)
-          {
-            id: userMasterOrg?.id
-          },
-          // This organization is managed by user's master company
-          {
-            id: { in: managedOrgIds.length > 0 ? managedOrgIds : [''] }
-          }
-        ]
-      },
-      include: {
-        party: {
-          select: {
-            id: true,
-            userId: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true
+      console.log('✅ Master user - organization access:', organization?.name || 'NOT FOUND')
+    } else {
+      // Non-master user - check direct access only
+      organization = await db.organization.findFirst({
+        where: {
+          id: organizationId,
+          OR: [
+            // User owns this organization directly
+            { party: { userId } },
+            // User has a role in this organization
+            { party: { role: { some: { party: { userId }, isActive: true } } } }
+          ]
+        },
+        include: {
+          party: {
+            select: {
+              id: true,
+              userId: true,
+              status: true, 
+              createdAt: true,
+              updatedAt: true
+            }
           }
         }
-      }
-    })
-
-    console.log('Found organization:', organization?.name || 'NOT FOUND')
+      })
+      console.log('🔍 Direct access check:', organization?.name || 'NOT FOUND')
+    }
 
     if (!organization) {
+      console.log(`❌ Organization ${organizationId} not found or access denied for user ${userId}`)
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
       )
     }
 
+    console.log(`✅ Successfully found organization: ${organization.name}`)
     return NextResponse.json(organization)
   } catch (error) {
-    console.error('Failed to fetch organization:', error)
+    console.error('🔥 Error in organizations API:', error)
+    console.error('🔥 Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      organizationId,
+      userId
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch organization' },
+      { 
+        error: 'Failed to fetch organization',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

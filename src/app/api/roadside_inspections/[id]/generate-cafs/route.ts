@@ -45,8 +45,55 @@ export async function POST(
       }
     }
 
+    // Get the RINS to find organization context
+    const rins = await db.roadside_inspection_issue.findUnique({
+      where: { id: rinsId },
+      include: {
+        issue: {
+          include: {
+            party: {
+              include: {
+                role: {
+                  where: { isActive: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!rins) {
+      return NextResponse.json({ error: 'RINS not found' }, { status: 404 })
+    }
+
+    // Get organization ID
+    const organizationId = rins.issue.party.role[0]?.organizationId
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Could not determine organization' }, { status: 400 })
+    }
+
+    // Find a staff member to attribute CAF creation to
+    const staff = await db.staff.findFirst({
+      where: {
+        party: {
+          role: {
+            some: {
+              organizationId: organizationId,
+              isActive: true
+            }
+          }
+        },
+        isActive: true
+      }
+    })
+
+    if (!staff) {
+      return NextResponse.json({ error: 'No active staff found for organization' }, { status: 400 })
+    }
+
     // Generate fresh CAFs
-    const result = await generateCAFsFromRINSViolations(rinsId)
+    const result = await generateCAFsFromRINSViolations(rinsId, staff.id)
     
     return NextResponse.json({
       message: recreate ? 'CAFs recreated successfully' : 'CAFs created successfully',

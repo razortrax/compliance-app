@@ -10,7 +10,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { X, Plus, AlertTriangle } from 'lucide-react'
-import { RinsLevel, RinsResult, DverSource, EntryMethod } from '@prisma/client'
 import { searchViolations, ViolationCode } from '@/lib/violations'
 
 // Helper function to format violation types for display
@@ -67,7 +66,7 @@ const formatSeverity = (severity: string): string => {
   }
 }
 
-interface RoadsideInspectionFormProps {
+interface AccidentIssueFormProps {
   initialData?: any
   isEditing?: boolean
   onSubmit: (data: any) => void
@@ -79,31 +78,37 @@ interface RoadsideInspectionFormProps {
 }
 
 interface FormData {
-  // DVER Header Information
+  // Accident Basic Information
+  accidentDate: string
+  accidentTime: string
+  
+  // Officer/Agency Information
+  officerName: string
+  agencyName: string
   reportNumber: string
-  inspectionDate: string
-  inspectionTime: string
-  inspectorName: string
-  inspectorBadge: string
   
-  // Location Details
-  inspectionLocation: string
-  facilityName: string
-  facilityAddress: string
-  facilityCity: string
-  facilityState: string
-  facilityZip: string
+  // Accident Classifications
+  isFatality: boolean
+  isReportable: boolean
+  isInjury: boolean
+  isTow: boolean
+  isCitation: boolean
+  needsReport: boolean
+  needsDrugTest: boolean
   
-  // Inspection Details
-  inspectionLevel: RinsLevel | ''
-  overallResult: RinsResult | ''
+  // Additional Details (conditional)
+  numberOfFatalities?: number
+  numberOfVehicles?: number
+  reportableNumber?: string
+  specimenNumber?: string
   
-  // DVER Processing
-  dverReceived: boolean
-  dverSource: DverSource | ''
-  entryMethod: EntryMethod
+  // Accident Location
+  accidentAddress: string
+  accidentCity: string
+  accidentState: string
+  accidentZip: string
   
-  // Drivers and Equipment selection
+  // Driver and Equipment selection
   selectedDriverId: string
   selectedEquipmentIds: string[]
   
@@ -125,7 +130,7 @@ interface FormData {
   }>
 }
 
-export function RoadsideInspectionForm({
+export function AccidentIssueForm({
   initialData,
   isEditing = false,
   onSubmit,
@@ -134,24 +139,28 @@ export function RoadsideInspectionForm({
   organizationId,
   driverId,
   onViolationSaved
-}: RoadsideInspectionFormProps) {
+}: AccidentIssueFormProps) {
   const [formData, setFormData] = useState<FormData>({
+    accidentDate: '',
+    accidentTime: '',
+    officerName: '',
+    agencyName: '',
     reportNumber: '',
-    inspectionDate: '',
-    inspectionTime: '',
-    inspectorName: '',
-    inspectorBadge: '',
-    inspectionLocation: '',
-    facilityName: '',
-    facilityAddress: '',
-    facilityCity: '',
-    facilityState: '',
-    facilityZip: '',
-    inspectionLevel: '',
-    overallResult: '',
-    dverReceived: false,
-    dverSource: '',
-    entryMethod: 'Manual_Entry',
+    isFatality: false,
+    isReportable: false,
+    isInjury: false,
+    isTow: false,
+    isCitation: false,
+    needsReport: false,
+    needsDrugTest: false,
+    numberOfFatalities: undefined,
+    numberOfVehicles: undefined,
+    reportableNumber: '',
+    specimenNumber: '',
+    accidentAddress: '',
+    accidentCity: '',
+    accidentState: '',
+    accidentZip: '',
     selectedDriverId: driverId || '', // Auto-select driver if provided
     selectedEquipmentIds: [],
     hasViolations: false,
@@ -167,22 +176,26 @@ export function RoadsideInspectionForm({
   useEffect(() => {
     if (initialData) {
       setFormData({
+        accidentDate: initialData.accidentDate ? initialData.accidentDate.split('T')[0] : '',
+        accidentTime: initialData.accidentTime || '',
+        officerName: initialData.officerName || '',
+        agencyName: initialData.agencyName || '',
         reportNumber: initialData.reportNumber || '',
-        inspectionDate: initialData.inspectionDate ? initialData.inspectionDate.split('T')[0] : '',
-        inspectionTime: initialData.inspectionTime || '',
-        inspectorName: initialData.inspectorName || '',
-        inspectorBadge: initialData.inspectorBadge || '',
-        inspectionLocation: initialData.inspectionLocation || '',
-        facilityName: initialData.facilityName || '',
-        facilityAddress: initialData.facilityAddress || '',
-        facilityCity: initialData.facilityCity || '',
-        facilityState: initialData.facilityState || '',
-        facilityZip: initialData.facilityZip || '',
-        inspectionLevel: initialData.inspectionLevel || '',
-        overallResult: initialData.overallResult || '',
-        dverReceived: initialData.dverReceived || false,
-        dverSource: initialData.dverSource || '',
-        entryMethod: initialData.entryMethod || 'Manual_Entry',
+        isFatality: initialData.isFatality || false,
+        isReportable: initialData.isReportable || false,
+        isInjury: initialData.isInjury || false,
+        isTow: initialData.isTow || false,
+        isCitation: initialData.isCitation || false,
+        needsReport: initialData.needsReport || false,
+        needsDrugTest: initialData.needsDrugTest || false,
+        numberOfFatalities: initialData.numberOfFatalities,
+        numberOfVehicles: initialData.numberOfVehicles,
+        reportableNumber: initialData.reportableNumber || '',
+        specimenNumber: initialData.specimenNumber || '',
+        accidentAddress: initialData.accidentAddress || '',
+        accidentCity: initialData.accidentCity || '',
+        accidentState: initialData.accidentState || '',
+        accidentZip: initialData.accidentZip || '',
         selectedDriverId: initialData.issue?.partyId || driverId || '',
         selectedEquipmentIds: initialData.equipment?.map((eq: any) => eq.equipmentId).filter(Boolean) || [],
         hasViolations: initialData.violations?.length > 0 || false,
@@ -344,7 +357,7 @@ export function RoadsideInspectionForm({
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            rinsId: initialData.id,
+            accidentId: initialData.id,
             violationId: violation.id // Use the specific violation ID
           })
         })
@@ -401,13 +414,13 @@ export function RoadsideInspectionForm({
     
     // Only allow individual saves in edit mode
     if (!isEditing || !initialData?.id) {
-      alert('Individual violation saves are only available when editing an existing roadside inspection. Create the RINS first, then edit to add violations individually.')
+      alert('Individual violation saves are only available when editing an existing accident. Create the accident first, then edit to add violations individually.')
       return
     }
     
     // Validate required fields
     if (!violation.inspectorComments?.trim()) {
-      alert('Inspector comments are required before saving')
+      alert('Officer comments are required before saving')
       return
     }
 
@@ -419,9 +432,9 @@ export function RoadsideInspectionForm({
     try {
       setSavingViolationIndex(index)
       
-      // Create a minimal RINS payload with just this violation
+      // Create a minimal accident payload with just this violation
       const violationData = {
-        rinsId: initialData?.id, // Only for updates
+        accidentId: initialData?.id, // Only for updates
         violation: {
           violationCode: violation.code,
           description: violation.description,
@@ -477,8 +490,24 @@ export function RoadsideInspectionForm({
       return
     }
 
-    if (!formData.inspectionDate || !formData.inspectorName || !formData.inspectionLocation) {
+    if (!formData.accidentDate || !formData.officerName || !formData.agencyName) {
       alert('Please fill in all required fields')
+      return
+    }
+
+    // Validate conditional fields
+    if (formData.isFatality && !formData.numberOfFatalities) {
+      alert('Number of fatalities is required when fatality is checked')
+      return
+    }
+
+    if (formData.isReportable && !formData.reportableNumber) {
+      alert('Reportable number is required when reportable is checked')
+      return
+    }
+
+    if (formData.needsDrugTest && !formData.specimenNumber) {
+      alert('Specimen number is required when drug test is needed')
       return
     }
 
@@ -486,7 +515,7 @@ export function RoadsideInspectionForm({
     if (formData.hasViolations && formData.selectedViolations.length > 0) {
       const missingComments = formData.selectedViolations.find(v => !v.inspectorComments.trim())
       if (missingComments) {
-        alert(`Please add inspector comments for violation ${missingComments.code}`)
+        alert(`Please add officer comments for violation ${missingComments.code}`)
         return
       }
 
@@ -501,7 +530,7 @@ export function RoadsideInspectionForm({
     const submissionData = {
       ...formData,
       partyId: formData.selectedDriverId, // Link to the driver
-      title: `Roadside Inspection - ${formData.inspectionLocation}`,
+      title: `Accident - ${formData.agencyName}`,
       // Include equipment info
       equipment: formData.selectedEquipmentIds.map((id, index) => ({
         unitNumber: index + 1,
@@ -528,150 +557,238 @@ export function RoadsideInspectionForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* DVER Header */}
+      {/* Accident Basic Information */}
       <Card>
         <CardHeader>
-          <CardTitle>DVER Information</CardTitle>
+          <CardTitle>Accident Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="reportNumber">Report Number</Label>
+              <Label htmlFor="accidentDate">Accident Date *</Label>
               <Input
-                id="reportNumber"
-                value={formData.reportNumber}
-                onChange={(e) => handleInputChange('reportNumber', e.target.value)}
-                placeholder="USP070000063"
-              />
-            </div>
-            <div>
-              <Label htmlFor="inspectionDate">Inspection Date *</Label>
-              <Input
-                id="inspectionDate"
+                id="accidentDate"
                 type="date"
-                value={formData.inspectionDate}
-                onChange={(e) => handleInputChange('inspectionDate', e.target.value)}
+                value={formData.accidentDate}
+                onChange={(e) => handleInputChange('accidentDate', e.target.value)}
                 required
               />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="inspectionTime">Inspection Time</Label>
+              <Label htmlFor="accidentTime">Accident Time</Label>
               <Input
-                id="inspectionTime"
-                value={formData.inspectionTime}
-                onChange={(e) => handleInputChange('inspectionTime', e.target.value)}
+                id="accidentTime"
+                value={formData.accidentTime}
+                onChange={(e) => handleInputChange('accidentTime', e.target.value)}
                 placeholder="12:37 PM EST"
               />
             </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="inspectorName">Inspector Name *</Label>
+              <Label htmlFor="officerName">Officer Name *</Label>
               <Input
-                id="inspectorName"
-                value={formData.inspectorName}
-                onChange={(e) => handleInputChange('inspectorName', e.target.value)}
-                placeholder="Morin, Alvin Ray"
+                id="officerName"
+                value={formData.officerName}
+                onChange={(e) => handleInputChange('officerName', e.target.value)}
+                placeholder="Smith, John"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="agencyName">Agency Name *</Label>
+              <Input
+                id="agencyName"
+                value={formData.agencyName}
+                onChange={(e) => handleInputChange('agencyName', e.target.value)}
+                placeholder="State Highway Patrol"
                 required
               />
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="inspectorBadge">Inspector Badge</Label>
-              <Input
-                id="inspectorBadge"
-                value={formData.inspectorBadge}
-                onChange={(e) => handleInputChange('inspectorBadge', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="inspectionLevel">Inspection Level</Label>
-              <Select
-                value={formData.inspectionLevel}
-                onValueChange={(value) => handleInputChange('inspectionLevel', value as RinsLevel)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Level_I">Level I - Comprehensive</SelectItem>
-                  <SelectItem value="Level_II">Level II - Walk-around</SelectItem>
-                  <SelectItem value="Level_III">Level III - Driver/credential</SelectItem>
-                  <SelectItem value="Level_IV">Level IV - Special investigation</SelectItem>
-                  <SelectItem value="Level_V">Level V - Vehicle-only</SelectItem>
-                  <SelectItem value="Level_VI">Level VI - Enhanced NAS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label htmlFor="reportNumber">Police Report Number</Label>
+            <Input
+              id="reportNumber"
+              value={formData.reportNumber}
+              onChange={(e) => handleInputChange('reportNumber', e.target.value)}
+              placeholder="2024-001234"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Location Information */}
+      {/* Accident Classifications */}
       <Card>
         <CardHeader>
-          <CardTitle>Location Information</CardTitle>
+          <CardTitle>Accident Classifications</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="inspectionLocation">Inspection Location *</Label>
-            <Input
-              id="inspectionLocation"
-              value={formData.inspectionLocation}
-              onChange={(e) => handleInputChange('inspectionLocation', e.target.value)}
-              placeholder="NEWBERRY SC"
-              required
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="facilityName">Facility Name</Label>
-            <Input
-              id="facilityName"
-              value={formData.facilityName}
-              onChange={(e) => handleInputChange('facilityName', e.target.value)}
-              placeholder="WATER TECH TRANSPORTATION LLC"
-            />
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <Label htmlFor="facilityAddress">Facility Address</Label>
-              <Input
-                id="facilityAddress"
-                value={formData.facilityAddress}
-                onChange={(e) => handleInputChange('facilityAddress', e.target.value)}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isFatality"
+                checked={formData.isFatality}
+                onCheckedChange={(checked) => handleInputChange('isFatality', checked)}
               />
+              <Label htmlFor="isFatality">Fatality</Label>
             </div>
-            <div>
-              <Label htmlFor="facilityCity">City</Label>
-              <Input
-                id="facilityCity"
-                value={formData.facilityCity}
-                onChange={(e) => handleInputChange('facilityCity', e.target.value)}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isReportable"
+                checked={formData.isReportable}
+                onCheckedChange={(checked) => handleInputChange('isReportable', checked)}
               />
+              <Label htmlFor="isReportable">Reportable</Label>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isInjury"
+                checked={formData.isInjury}
+                onCheckedChange={(checked) => handleInputChange('isInjury', checked)}
+              />
+              <Label htmlFor="isInjury">Injury</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isTow"
+                checked={formData.isTow}
+                onCheckedChange={(checked) => handleInputChange('isTow', checked)}
+              />
+              <Label htmlFor="isTow">Vehicle Towed</Label>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isCitation"
+                checked={formData.isCitation}
+                onCheckedChange={(checked) => handleInputChange('isCitation', checked)}
+              />
+              <Label htmlFor="isCitation">Citations Issued</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="needsReport"
+                checked={formData.needsReport}
+                onCheckedChange={(checked) => handleInputChange('needsReport', checked)}
+              />
+              <Label htmlFor="needsReport">Needs Report</Label>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="needsDrugTest"
+              checked={formData.needsDrugTest}
+              onCheckedChange={(checked) => handleInputChange('needsDrugTest', checked)}
+            />
+            <Label htmlFor="needsDrugTest">Drug Test Required</Label>
+          </div>
+          
+          {/* Conditional Fields */}
+          {formData.isFatality && (
             <div>
-              <Label htmlFor="facilityState">State</Label>
+              <Label htmlFor="numberOfFatalities">Number of Fatalities *</Label>
               <Input
-                id="facilityState"
-                value={formData.facilityState}
-                onChange={(e) => handleInputChange('facilityState', e.target.value)}
-                placeholder="SC"
+                id="numberOfFatalities"
+                type="number"
+                min="1"
+                value={formData.numberOfFatalities || ''}
+                onChange={(e) => handleInputChange('numberOfFatalities', parseInt(e.target.value) || undefined)}
+                required={formData.isFatality}
+              />
+            </div>
+          )}
+          
+          {formData.isReportable && (
+            <div>
+              <Label htmlFor="reportableNumber">Reportable Number *</Label>
+              <Input
+                id="reportableNumber"
+                value={formData.reportableNumber || ''}
+                onChange={(e) => handleInputChange('reportableNumber', e.target.value)}
+                placeholder="DOT-2024-001"
+                required={formData.isReportable}
+              />
+            </div>
+          )}
+          
+          {formData.needsDrugTest && (
+            <div>
+              <Label htmlFor="specimenNumber">Specimen Number *</Label>
+              <Input
+                id="specimenNumber"
+                value={formData.specimenNumber || ''}
+                onChange={(e) => handleInputChange('specimenNumber', e.target.value)}
+                placeholder="SP-2024-001"
+                required={formData.needsDrugTest}
+              />
+            </div>
+          )}
+          
+          <div>
+            <Label htmlFor="numberOfVehicles">Number of Vehicles Involved</Label>
+            <Input
+              id="numberOfVehicles"
+              type="number"
+              min="1"
+              value={formData.numberOfVehicles || ''}
+              onChange={(e) => handleInputChange('numberOfVehicles', parseInt(e.target.value) || undefined)}
+              placeholder="2"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Accident Location */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Accident Location</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="accidentAddress">Address</Label>
+            <Input
+              id="accidentAddress"
+              value={formData.accidentAddress}
+              onChange={(e) => handleInputChange('accidentAddress', e.target.value)}
+              placeholder="1234 Main Street"
+            />
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="accidentCity">City</Label>
+              <Input
+                id="accidentCity"
+                value={formData.accidentCity}
+                onChange={(e) => handleInputChange('accidentCity', e.target.value)}
+                placeholder="Springfield"
               />
             </div>
             <div>
-              <Label htmlFor="facilityZip">ZIP Code</Label>
+              <Label htmlFor="accidentState">State</Label>
               <Input
-                id="facilityZip"
-                value={formData.facilityZip}
-                onChange={(e) => handleInputChange('facilityZip', e.target.value)}
+                id="accidentState"
+                value={formData.accidentState}
+                onChange={(e) => handleInputChange('accidentState', e.target.value)}
+                placeholder="IL"
+              />
+            </div>
+            <div>
+              <Label htmlFor="accidentZip">ZIP Code</Label>
+              <Input
+                id="accidentZip"
+                value={formData.accidentZip}
+                onChange={(e) => handleInputChange('accidentZip', e.target.value)}
+                placeholder="62701"
               />
             </div>
           </div>
@@ -762,68 +879,24 @@ export function RoadsideInspectionForm({
         </CardContent>
       </Card>
 
-      {/* Results & Processing */}
+      {/* Violations & Citations */}
       <Card>
         <CardHeader>
-          <CardTitle>Results & Processing</CardTitle>
+          <CardTitle>Violations & Citations</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="overallResult">Overall Result</Label>
-              <Select
-                value={formData.overallResult}
-                onValueChange={(value) => handleInputChange('overallResult', value as RinsResult)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select result" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pass">Pass</SelectItem>
-                  <SelectItem value="Warning">Warning</SelectItem>
-                  <SelectItem value="Out_Of_Service">Out of Service</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="dverSource">DVER Source</Label>
-              <Select
-                value={formData.dverSource}
-                onValueChange={(value) => handleInputChange('dverSource', value as DverSource)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Driver_Reported">Driver Reported</SelectItem>
-                  <SelectItem value="FMCSA_Portal_Check">FMCSA Portal Check</SelectItem>
-                  <SelectItem value="Third_Party_Report">Third Party Report</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="dverReceived"
-              checked={formData.dverReceived}
-              onCheckedChange={(checked) => handleInputChange('dverReceived', checked)}
-            />
-            <Label htmlFor="dverReceived">DVER Form Received</Label>
-          </div>
-          
           <div className="flex items-center space-x-2">
             <Checkbox
               id="hasViolations"
               checked={formData.hasViolations}
               onCheckedChange={(checked) => handleInputChange('hasViolations', checked)}
             />
-            <Label htmlFor="hasViolations">Has Violations</Label>
+            <Label htmlFor="hasViolations">Has Violations/Citations</Label>
           </div>
           
           {formData.hasViolations && (
             <div>
-              <Label>Enter Violation Codes from DVER</Label>
+              <Label>Enter Violation Codes from Citations</Label>
               <div className="space-y-2 mt-2 relative">
                 <Input
                   placeholder="Search violations by code or description (e.g., 392.2, brake, lighting)"
@@ -893,12 +966,12 @@ export function RoadsideInspectionForm({
                           <p className="text-sm text-gray-600">{violation.description}</p>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          {/* Inspector Comments - Required */}
+                          {/* Officer Comments - Required */}
                           <div>
-                            <Label htmlFor={`comments-${index}`}>Inspector Comments *</Label>
+                            <Label htmlFor={`comments-${index}`}>Officer Comments *</Label>
                             <Textarea
                               id={`comments-${index}`}
-                              placeholder="Required: Enter inspector's comments about this violation..."
+                              placeholder="Required: Enter officer's comments about this violation..."
                               value={violation.inspectorComments}
                               onChange={(e) => handleUpdateViolation(index, 'inspectorComments', e.target.value)}
                               className="mt-1"
@@ -996,12 +1069,12 @@ export function RoadsideInspectionForm({
                             </div>
                           )}
                           
-                          {/* For new roadside inspections, show helpful message */}
+                          {/* For new accidents, show helpful message */}
                           {!isEditing && (
                             <div className="pt-4 border-t">
                               <div className="flex items-center gap-2 text-blue-600">
                                 <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                <span className="text-sm">Will be saved with inspection</span>
+                                <span className="text-sm">Will be saved with accident</span>
                               </div>
                             </div>
                           )}
@@ -1022,7 +1095,7 @@ export function RoadsideInspectionForm({
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : (isEditing ? 'Update' : 'Create')} Roadside Inspection
+          {loading ? 'Saving...' : (isEditing ? 'Update' : 'Create')} Accident
         </Button>
       </div>
     </form>

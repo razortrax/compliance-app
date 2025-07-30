@@ -288,6 +288,7 @@ export default function MvrIssuesPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
         className="p-6"
       >
         <div className="max-w-7xl mx-auto">
@@ -309,6 +310,7 @@ export default function MvrIssuesPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId}
+        masterOrgId={masterOrg?.id}
         className="p-6"
       >
         <div className="max-w-7xl mx-auto">
@@ -351,9 +353,10 @@ export default function MvrIssuesPage() {
       showDriverEquipmentSelector={true}
       sidebarMenu="driver"
       driverId={driverId}
+      masterOrgId={masterOrg?.id}
+      currentOrgId={organization?.id}
       className="p-6"
       organizations={organizations}
-      currentOrgId={organization?.id}
       isSheetOpen={isSheetOpen}
       onSheetOpenChange={setIsSheetOpen}
       onOrganizationSelect={handleOrganizationSelect}

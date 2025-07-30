@@ -223,13 +223,16 @@ export function AppSidebar({
         Issues
       </Link>
       <Link 
-        href={currentOrgId ? `/roadside_inspections?organizationId=${currentOrgId}` : "#"} 
+                      href={currentOrgId ? `/roadside-inspections?partyId=${currentOrgId}` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId ? `/accidents?partyId=${currentOrgId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Car className="mr-3 h-4 w-4" />
         Accidents
       </Link>
@@ -299,7 +302,10 @@ export function AppSidebar({
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={driverId ? `/accident_issues?driverId=${driverId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Car className="mr-3 h-4 w-4" />
         Accidents
       </Link>
@@ -332,7 +338,10 @@ export function AppSidebar({
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId ? `/accidents?partyId=${currentOrgId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Car className="mr-3 h-4 w-4" />
         Accidents
       </Link>

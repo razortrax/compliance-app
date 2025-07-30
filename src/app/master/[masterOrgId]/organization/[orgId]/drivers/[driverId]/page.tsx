@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
+import { useMasterOrg } from '@/hooks/use-master-org'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,8 +17,7 @@ import {
   IdCard, 
   Calendar,
   Edit,
-  User,
-  ArrowLeft
+  User
 } from 'lucide-react'
 
 interface DriverPerson {
@@ -51,6 +51,9 @@ export default function DriverDetailPage() {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)
   const [editMode, setEditMode] = useState(false)
+  
+  // Get master organization data
+  const { masterOrg } = useMasterOrg()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,10 +83,6 @@ export default function DriverDetailPage() {
     fetchData()
   }, [driverId, organizationId])
 
-  const handleBackToDrivers = () => {
-    router.push(`/master/${masterOrgId}/organization/${organizationId}/drivers`)
-  }
-
   const handlePersonUpdate = () => {
     // Refresh person data
     window.location.reload()
@@ -92,18 +91,20 @@ export default function DriverDetailPage() {
   if (loading) {
     return (
       <AppLayout 
-        masterOrgId={masterOrgId}
-        showOrgSelector={true}
-        sidebarMenu="driver"
-        currentOrgId={organizationId}
-        driverId={driverId}
-        name="Driver Details"
+        name={masterOrg?.name || 'Master'}
         topNav={[
           { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
           { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-          { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: false },
-          { label: 'Driver Details', href: `#`, isActive: true }
+          { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
+          { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
         ]}
+        showOrgSelector={true}
+        showDriverEquipmentSelector={true}
+        sidebarMenu="driver"
+        masterOrgId={masterOrgId}
+        currentOrgId={organizationId}
+        driverId={driverId}
+        className="p-6"
       >
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
@@ -118,25 +119,24 @@ export default function DriverDetailPage() {
   if (!person) {
     return (
       <AppLayout 
-        masterOrgId={masterOrgId}
-        showOrgSelector={true}
-        sidebarMenu="driver"
-        currentOrgId={organizationId}
-        name="Driver Not Found"
+        name={masterOrg?.name || 'Master'}
         topNav={[
           { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
           { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-          { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: false },
-          { label: 'Driver Details', href: `#`, isActive: true }
+          { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
+          { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
         ]}
+        showOrgSelector={true}
+        showDriverEquipmentSelector={true}
+        sidebarMenu="driver"
+        masterOrgId={masterOrgId}
+        currentOrgId={organizationId}
+        driverId={driverId}
+        className="p-6"
       >
         <div className="text-center py-8">
           <h2 className="text-xl font-semibold text-gray-900">Driver Not Found</h2>
           <p className="text-gray-600 mt-2">The requested driver could not be found.</p>
-          <Button onClick={handleBackToDrivers} className="mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Drivers
-          </Button>
         </div>
       </AppLayout>
     )
@@ -144,30 +144,23 @@ export default function DriverDetailPage() {
 
   return (
     <AppLayout 
-      masterOrgId={masterOrgId}
-      showOrgSelector={true}
-      sidebarMenu="driver"
-      currentOrgId={organizationId}
-      driverId={driverId}
-      name={`${person.firstName} ${person.lastName}`}
+      name={masterOrg?.name || 'Master'}
       topNav={[
         { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
         { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-        { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: false },
-        { label: `${person.firstName} ${person.lastName}`, href: `#`, isActive: true }
+        { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
+        { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
       ]}
+      showOrgSelector={true}
+      showDriverEquipmentSelector={true}
+      sidebarMenu="driver"
+      masterOrgId={masterOrgId}
+      currentOrgId={organizationId}
+      driverId={driverId}
+      className="p-6"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <Button
-            variant="outline"
-            onClick={handleBackToDrivers}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Drivers
-          </Button>
-          
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">

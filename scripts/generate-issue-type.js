@@ -49,6 +49,8 @@ function generateIssueType(issueTypeName, entityType, fieldDefinitions) {
 function generatePrismaSchema(issueTypeName, snakeName, fieldDefinitions) {
   console.log('📊 Generating Prisma schema...');
   
+  const capitalizedName = issueTypeName.charAt(0).toUpperCase() + issueTypeName.slice(1);
+  
   const enumDefinitions = fieldDefinitions
     .filter(field => field.type === 'ENUM')
     .map(field => {
@@ -488,7 +490,8 @@ if (require.main === module) {
   // Load field definitions from config file or use defaults
   let fieldDefinitions = [];
   if (configFile && fs.existsSync(configFile)) {
-    fieldDefinitions = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+    const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+    fieldDefinitions = config.fields || config; // Support both nested and flat structure
   } else {
     console.log('⚠️ No config file provided. Using minimal defaults.');
     fieldDefinitions = [

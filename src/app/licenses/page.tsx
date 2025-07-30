@@ -178,6 +178,7 @@ export default function LicensesPage() {
       <AppLayout
         name={masterOrg?.name || 'Master'}
         sidebarMenu="driver"
+        masterOrgId={masterOrg?.id}
         className="p-6"
       >
         <div className="max-w-7xl mx-auto">
@@ -194,6 +195,7 @@ export default function LicensesPage() {
     <AppLayout
       name={masterOrg?.name || 'Master'}
       sidebarMenu="driver"
+      masterOrgId={masterOrg?.id}
       className="p-6"
     >
       <div className="max-w-7xl mx-auto space-y-6">

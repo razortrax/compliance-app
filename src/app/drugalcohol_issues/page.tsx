@@ -213,6 +213,7 @@ export default function DrugAlcoholIssuesPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId || undefined}
+        masterOrgId={masterOrg?.id}
       >
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -230,6 +231,7 @@ export default function DrugAlcoholIssuesPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId || undefined}
+        masterOrgId={masterOrg?.id}
       >
         <EmptyState
           icon={Users}
@@ -268,9 +270,10 @@ export default function DrugAlcoholIssuesPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId || undefined}
+        masterOrgId={masterOrg?.id}
+        currentOrgId={organization?.id}
         className="p-6"
         organizations={organizations}
-        currentOrgId={organization?.id}
         isSheetOpen={isSheetOpen}
         onSheetOpenChange={setIsSheetOpen}
         onOrganizationSelect={handleOrganizationSelect}

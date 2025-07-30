@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -92,7 +92,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
   const [masterCompany, setMasterCompany] = useState<Organization | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = useCallback(async () => {
     try {
       const token = await getToken()
       const response = await fetch('/api/organizations', {
@@ -138,28 +138,46 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
         setOrganizations(organizationsWithMetrics)
         console.log('✅ Managed organizations:', organizationsWithMetrics)
       } else {
-        console.warn('API failed, showing empty state:', response.status, response.statusText)
-        setOrganizations([])
+        console.warn('🔥 Organizations API failed:', response.status, response.statusText)
+        // Don't clear existing data on API errors - just log the error
+        if (response.status === 401) {
+          console.warn('🔒 Authentication error - user may need to re-authenticate')
+        }
       }
     } catch (error) {
-      console.warn('Network error, showing empty state:', error)
-      setOrganizations([])
+      console.error('🔥 Network error fetching organizations:', error)
+      // Don't clear existing data on network errors - preserve what we have
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [getToken, userId])
 
   useEffect(() => {
     fetchOrganizations()
-  }, [userId])
+  }, [fetchOrganizations])
 
-  // Redirect to profile completion if no master company found
+  // Only redirect to profile completion if we're certain the user has no master company
+  // Don't redirect on API failures or loading states
   useEffect(() => {
-    if (!isLoading && !masterCompany && organizations.length === 0) {
-      console.log('No master company found for user, redirecting to profile completion')
-      router.push('/complete-profile?role=master')
+    // Only redirect if:
+    // 1. Not loading
+    // 2. No master company found
+    // 3. No organizations (sub-organizations) found  
+    // 4. We actually tried to fetch (not API error)
+    // 5. We're on the root master page (not sub-pages)
+    const currentPath = window.location.pathname
+    const isRootMasterPage = currentPath === `/master/${masterOrgId}` || currentPath.endsWith(`/master/${masterOrgId}`)
+    
+    if (!isLoading && !masterCompany && organizations.length === 0 && isRootMasterPage) {
+      // Add a small delay to ensure API calls have completed
+      const timeoutId = setTimeout(() => {
+        console.log('🔄 No master company found for user, redirecting to profile completion')
+        router.push('/complete-profile?role=master')
+      }, 1000)
+      
+      return () => clearTimeout(timeoutId)
     }
-  }, [isLoading, masterCompany, organizations, router])
+  }, [isLoading, masterCompany, organizations, router, masterOrgId])
 
   const handleOrganizationSubmit = async (data: any) => {
     try {

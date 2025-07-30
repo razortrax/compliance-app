@@ -448,8 +448,7 @@ export default function RoadsideInspectionsPage() {
           fetchCAFs()
         }, 500)
 
-        const actionText = action === 'recreate' ? 'recreated' : 'created'
-        alert(`CAFs ${actionText} successfully! ${result.generated || result.cafs?.length || 0} CAF(s) generated.`)
+        // CAFs generated successfully - removed alert dialog
 
         // Auto-open first CAF if any were generated
         if (result.cafs && result.cafs.length > 0) {
@@ -621,9 +620,10 @@ export default function RoadsideInspectionsPage() {
         showDriverEquipmentSelector={true}
         sidebarMenu={driverId ? "driver" : "organization"}
         driverId={driverId || undefined}
+        masterOrgId={masterOrg?.id}
+        currentOrgId={contextOrganization?.id}
         className="p-6"
         organizations={organizations}
-        currentOrgId={contextOrganization?.id}
         isSheetOpen={isSheetOpen}
         onSheetOpenChange={setIsSheetOpen}
         onOrganizationSelect={handleOrganizationSelect}
@@ -666,10 +666,10 @@ export default function RoadsideInspectionsPage() {
           </div>
 
           {/* Split Pane Layout */}
-          <div className="flex gap-6 min-h-[600px]">
+          <div className="flex gap-6 h-[calc(100vh-300px)]">
             {/* Left Pane - Roadside Inspections List */}
-            <div className="w-[400px] flex-shrink-0">
-              <Card>
+            <div className="w-[300px] flex-shrink-0">
+              <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
@@ -1234,8 +1234,8 @@ export default function RoadsideInspectionsPage() {
                           </div>
                         </div>
                         <p className="text-sm text-gray-600">{violation.description}</p>
-                        {violation.inspectorComments && (
-                          <p className="text-xs text-gray-500 mt-1">Inspector: {violation.inspectorComments}</p>
+                        {(violation as any).inspectorComments && (
+                          <p className="text-xs text-gray-500 mt-1">Inspector: {(violation as any).inspectorComments}</p>
                         )}
                       </div>
                     ))

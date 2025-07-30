@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
-import { createId } from '@paralleldrive/cuid2'
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string; locationId: string }> }
+  { params }: { params: { id: string; locationId: string } }
 ) {
   try {
     const { userId } = await auth()
@@ -13,74 +12,39 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const params = await context.params
-
-    // First check if user has a master organization
-    const userMasterOrg = await db.organization.findFirst({
+    // Check if user has access to this organization (same logic as other endpoints)
+    let organization = await db.organization.findFirst({
       where: {
-        party: {
-          userId: userId
-        }
+        id: params.id,
+        party: { userId }
       }
     })
 
-    let hasAccess = false
-
-    // Check if this is the user's master organization
-    if (userMasterOrg && userMasterOrg.id === params.id) {
-      hasAccess = true
-    } else if (userMasterOrg) {
-      // Check if the user's master org manages this organization
-      const masterRole = await db.role.findFirst({
+    // If not owner, check if user has an active role in this organization
+    if (!organization) {
+      const hasRole = await db.role.findFirst({
         where: {
-          roleType: 'master',
-          partyId: userMasterOrg.partyId,
+          party: { userId },
           organizationId: params.id,
           isActive: true
         }
       })
-      
-      if (masterRole) {
-        hasAccess = true
+
+      if (!hasRole) {
+        return NextResponse.json({ error: 'Organization not found or access denied' }, { status: 404 })
+      }
+
+      // User has role, fetch the organization
+      organization = await db.organization.findUnique({
+        where: { id: params.id }
+      })
+
+      if (!organization) {
+        return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
       }
     }
 
-    // If not master access, check for direct access
-    if (!hasAccess) {
-      const directAccess = await db.organization.findFirst({
-        where: {
-          id: params.id,
-          OR: [
-            {
-              party: {
-                userId: userId
-              }
-            },
-            {
-              party: {
-                role: {
-                  some: {
-                    party: {
-                      userId: userId
-                    },
-                    isActive: true
-                  }
-                }
-              }
-            }
-          ]
-        }
-      })
-      
-      hasAccess = !!directAccess
-    }
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
-    }
-
     // Fetch the location with counts
-    console.log('Fetching location:', params.locationId, 'for org:', params.id)
     const location = await db.location.findFirst({
       where: {
         id: params.locationId,
@@ -97,7 +61,6 @@ export async function GET(
     })
 
     if (!location) {
-      console.log('Location not found with ID:', params.locationId, 'and orgId:', params.id)
       return NextResponse.json({ error: 'Location not found' }, { status: 404 })
     }
 
@@ -113,7 +76,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: { params: Promise<{ id: string; locationId: string }> }
+  { params }: { params: { id: string; locationId: string } }
 ) {
   try {
     const { userId } = await auth()
@@ -121,64 +84,34 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const params = await context.params
-
-    // Use the same authorization logic as GET
-    const userMasterOrg = await db.organization.findFirst({
+    // Check if user has access to this organization (same authorization logic)
+    let organization = await db.organization.findFirst({
       where: {
-        party: {
-          userId: userId
-        }
+        id: params.id,
+        party: { userId }
       }
     })
 
-    let hasAccess = false
-
-    // Check if this is the user's master organization
-    if (userMasterOrg && userMasterOrg.id === params.id) {
-      hasAccess = true
-    } else if (userMasterOrg) {
-      // Check if the user's master org manages this organization
-      const masterRole = await db.role.findFirst({
+    if (!organization) {
+      const hasRole = await db.role.findFirst({
         where: {
-          roleType: 'master',
-          partyId: userMasterOrg.partyId,
+          party: { userId },
           organizationId: params.id,
           isActive: true
         }
       })
-      
-      if (masterRole) {
-        hasAccess = true
+
+      if (!hasRole) {
+        return NextResponse.json({ error: 'Organization not found or access denied' }, { status: 403 })
       }
-    }
 
-    // If not master access, check for direct ownership or role
-    if (!hasAccess) {
-      const userOrg = await db.organization.findFirst({
-        where: {
-          id: params.id,
-          party: {
-            userId: userId
-          }
-        }
+      organization = await db.organization.findUnique({
+        where: { id: params.id }
       })
 
-      const userRole = await db.role.findFirst({
-        where: {
-          party: {
-            userId: userId
-          },
-          organizationId: params.id,
-          isActive: true
-        }
-      })
-
-      hasAccess = !!(userOrg || userRole)
-    }
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      if (!organization) {
+        return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      }
     }
 
     const data = await req.json()
