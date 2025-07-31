@@ -1,209 +1,124 @@
-# Fleetrax 🚛
+# Fleetrax - Fleet DOT Compliance Management Platform
 
-*Fleet DOT Compliance Management SaaS Platform*
+A comprehensive SaaS platform for fleet DOT compliance management, built with Next.js 14, TypeScript, and modern web technologies.
 
-Fleetrax is a comprehensive web-based SaaS platform designed to simplify DOT record-keeping, automate expiration tracking, and manage compliance workflows for fleet operators. Built with modern technologies and a flexible party-model architecture.
+## 🚀 Latest Features
 
-## ✨ Key Features
+### **Enhanced Activity Log System** 🆕
+Universal, tag-based activity tracking that can be attached to any entity in the system:
+- **Multi-Activity Types**: Notes, Communications, URLs, Credentials, Attachments, Tasks
+- **Smart Tagging**: Multi-tag support with quick-select and custom tags
+- **Advanced Filtering**: Filter by activity type and tags
+- **Universal Integration**: Works with Issues, Drivers, Organizations, Equipment, Locations, CAFs
+- **Security**: Encrypted credentials, creator ownership, access control
 
-### 🔐 **Multi-Role Authentication**
-- **Master Consultants**: Manage multiple client organizations
-- **Organization Managers**: Full organizational oversight
-- **Location Managers**: Location-specific management
-- Role-based access control with Clerk authentication
+📖 **[Full Documentation](./documentation/enhanced-activity-log-system.md)**
 
-### 📊 **License Management**
-- **Master-Detail Interface**: Intuitive split-pane design
-- **License Renewal Workflow**: Automated date population and status tracking
-- **Photo Management**: Front/back license photo uploads with DigitalOcean Spaces
-- **Comprehensive Tracking**: CDL types, endorsements, restrictions, start/expiration dates
+## 🏗️ Architecture
 
-### 🚗 **Driver & Equipment Management**
-- **Individual Detail Pages**: Full sidebar navigation for each entity
-- **Smart Navigation Flow**: List pages → detail pages with consistent UX
-- **Deactivation Management**: End-date tracking for inactive entities
-- **Role Assignment**: Automatic role assignment based on context
-
-### 📁 **File Storage & Attachments**
-- **DigitalOcean Spaces Integration**: S3-compatible storage with CDN support
-- **Organized File Structure**: Systematic folder organization by type and entity
-- **Multiple File Types**: Images, PDFs, Word documents with size validation
-- **Progress Tracking**: Real-time upload progress and error handling
-
-### 🏢 **Multi-Tenant Architecture**
-- **Party Model**: Flexible entity relationships (Organizations, Locations, Drivers, Equipment)
-- **Hierarchical Access**: Master → Organization → Location structure
-- **Consultant Support**: Organization-level access for external consultants
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS, ShadCN UI
-- **Backend**: Serverless API routes, Prisma ORM
-- **Database**: PostgreSQL on DigitalOcean
-- **Authentication**: Clerk (JWT with RBAC)
+### **Tech Stack**
+- **Frontend**: Next.js 14, TypeScript, React, ShadCN UI, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: PostgreSQL (DigitalOcean)
+- **Authentication**: Clerk
 - **File Storage**: DigitalOcean Spaces (S3-compatible)
-- **State Management**: Zustand
-- **Form Handling**: React Hook Form with Zod validation
+- **Deployment**: DigitalOcean
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm/yarn/pnpm
-- DigitalOcean PostgreSQL database
-- Clerk account for authentication
-- DigitalOcean Spaces for file storage
-
-### Environment Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone [repository-url]
-   cd compliance_app
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables**
-   Create `.env.local` with:
-   ```env
-   # Database
-   DATABASE_URL="your-postgresql-connection-string"
-   
-   # Clerk Authentication
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
-   CLERK_SECRET_KEY=your-clerk-secret-key
-   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-   NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
-   NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
-   
-   # DigitalOcean Spaces
-   DO_SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
-   DO_SPACES_REGION=nyc3
-   DO_SPACES_BUCKET=compliance-app-files
-   DO_SPACES_KEY=your-spaces-access-key
-   DO_SPACES_SECRET=your-spaces-secret-key
-   DO_SPACES_CDN_ENDPOINT=https://your-cdn-endpoint.com
-   ```
-
-4. **Set up the database**
-   ```bash
-   npx prisma migrate dev
-   ```
-
-5. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **View the application**
-   Open [http://localhost:3000](http://localhost:3000)
-
-### Database Management
-
-- **View data**: `npx prisma studio`
-- **Reset database**: `npx prisma migrate reset`
-- **Deploy migrations**: `npx prisma migrate deploy`
-
-## 📁 Project Structure
-
-```
-compliance_app/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/               # API endpoints
-│   │   │   ├── attachments/   # File upload management
-│   │   │   ├── licenses/      # License CRUD + renewal
-│   │   │   ├── persons/       # Driver management
-│   │   │   └── equipment/     # Equipment management
-│   │   ├── drivers/[id]/      # Driver detail pages
-│   │   └── equipment/[id]/    # Equipment detail pages
-│   ├── components/            # React components
-│   │   ├── licenses/         # License-specific components
-│   │   ├── layouts/          # Layout components
-│   │   └── ui/               # ShadCN UI components
-│   ├── lib/                  # Utility libraries
-│   │   ├── storage.ts        # DigitalOcean Spaces integration
-│   │   └── utils.ts          # Shared utilities
-│   └── db/                   # Database configuration
-├── prisma/                   # Database schema and migrations
-├── documentation/            # Comprehensive project docs
-└── public/                   # Static assets
-```
-
-## 🎯 Current Implementation Status
-
-### ✅ **Completed Features**
-- ✅ Core authentication and user management
-- ✅ Organization, location, driver, and equipment management
-- ✅ License management with renewal workflow
-- ✅ File upload system with DigitalOcean Spaces
-- ✅ Master-detail interfaces with consistent navigation
-- ✅ Role-based access control across all features
-
-### 🚧 **In Development**
-- 🔄 Additional issue types (Physical exams, Drug & Alcohol, MVR, Training)
-- 🔄 Compliance dashboard with KPIs
-- 🔄 Automated expiration alerts
-
-### 📋 **Planned Features**
-- 📋 Roadside inspection management
-- 📋 Accident reporting workflows
-- 📋 Audit report generation
-- 📋 Mobile-responsive optimizations
-
-## 🧪 Development
-
-### **Available Scripts**
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-
-### **Key Development Notes**
-- Uses cloud-native PostgreSQL (no local database required)
-- All file storage handled via DigitalOcean Spaces
-- Comprehensive role-based access control implemented
-- Party model architecture for flexible entity relationships
+### **Key Features**
+- ✅ **Role-Based Access Control** (Master, Organization, Location, Consultant)
+- ✅ **Complete Driver Issue Management** (Licenses, MVR, Training, Physical, Drug/Alcohol)
+- ✅ **Accident & Incident Reporting** with violation tracking
+- ✅ **Roadside Inspection Management** with out-of-service tracking
+- ✅ **Enhanced Activity Log System** with universal entity support
+- ✅ **Gold Standard Pages** with consistent UX patterns
+- ✅ **Smart Navigation** with URL-driven context
+- ✅ **File Management** with DigitalOcean Spaces integration
 
 ## 📚 Documentation
 
-Comprehensive documentation available in `/documentation/`:
+### **Core Documentation**
+- 📋 **[Current Status](./documentation/current-status.md)** - Implementation progress and milestones
+- 🏛️ **[Architecture](./documentation/cursor-rules/architecture.md)** - System design and patterns
+- 🗄️ **[Database Schema](./documentation/cursor-rules/database.md)** - Prisma models and relationships
 
-- **[Current Status](documentation/current-status.md)** - Implementation progress and roadmap
-- **[Architecture](documentation/SRSD.md)** - System design and technical specifications  
-- **[Product Requirements](documentation/PRD.md)** - Feature specifications and user stories
-- **[Contributing Guide](documentation/contributing.md)** - Development setup and standards
-- **[Compliance Requirements](documentation/compliance-requirements.md)** - DOT compliance breakdown
+### **Feature Documentation**
+- 📝 **[Enhanced Activity Log System](./documentation/enhanced-activity-log-system.md)** - Universal activity tracking
+- 🔍 **[Roadside Inspections](./documentation/roadside-inspections-plan.md)** - Inspection management
+- 💊 **[Drug & Alcohol Testing](./documentation/drug-alcohol-testing-plan.md)** - Testing documentation
+- 📞 **[Contact System](./documentation/contact-system-architecture.md)** - Communication tracking
 
-## 🔒 Security & Compliance
+### **Development Guides**
+- 🛠️ **[Contributing](./documentation/contributing.md)** - Development guidelines
+- 🔧 **[Issue Type Creation](./documentation/issue-type-creation-guide.md)** - Adding new issue types
+- 🚨 **[Troubleshooting](./documentation/troubleshooting.md)** - Common issues and solutions
 
-- **Authentication**: Secure JWT-based auth with Clerk
-- **Access Control**: Multi-level role-based permissions
-- **Data Protection**: Encrypted database connections
-- **File Security**: Secure file upload validation and storage
-- **Audit Trail**: Comprehensive logging of all data changes
+## 🚀 Quick Start
 
-## 🚀 Deployment
+### **Prerequisites**
+- Node.js 18+
+- PostgreSQL database
+- Clerk account for authentication
+- DigitalOcean Spaces for file storage
 
-The application is production-ready and can be deployed to:
-- **Vercel** (recommended for Next.js)
-- **DigitalOcean App Platform**
-- **AWS**
-- **Any platform supporting Node.js**
+### **Installation**
+```bash
+# Clone repository
+git clone [repository-url]
+cd compliance_app
 
-## 📄 License
+# Install dependencies
+npm install
 
-[Add your license information here]
+# Setup environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
+
+# Setup database
+npx prisma migrate dev
+npx prisma generate
+
+# Start development server
+npm run dev
+```
+
+### **Environment Variables**
+```env
+# Database
+DATABASE_URL="postgresql://..."
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_..."
+CLERK_SECRET_KEY="sk_..."
+
+# DigitalOcean Spaces
+DO_SPACES_ENDPOINT="https://nyc3.digitaloceanspaces.com"
+DO_SPACES_KEY="..."
+DO_SPACES_SECRET="..."
+DO_SPACES_BUCKET="..."
+```
+
+## 🎯 Current Status
+
+**Phase 7 Complete**: Enhanced Activity Log System
+- ✅ Universal ActivityLog component with multi-entity support
+- ✅ Tag-based filtering and smart search
+- ✅ Full integration into Gold Standard pages (MVR, License, Training)
+- ✅ Comprehensive API with CRUD operations
+- ✅ Security features and access control
+
+**Next Phase**: Physical Issues Field Completion & Equipment Management
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](documentation/contributing.md) for development guidelines and setup instructions.
+1. Follow the [Contributing Guidelines](./documentation/contributing.md)
+2. Check [Current Status](./documentation/current-status.md) for implementation priorities
+3. Review [Architecture Documentation](./documentation/cursor-rules/architecture.md) for patterns
+4. Test thoroughly and update documentation
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
 
 ---
 
-**Built with ❤️ for fleet safety and compliance management**
+**Built with ❤️ for fleet compliance management**

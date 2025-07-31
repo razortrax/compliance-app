@@ -446,7 +446,7 @@ export default function DriversPage() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/drivers/${person.id}`}
+                          onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/driver/${person.id}`}
                         >
                           <User className="h-4 w-4 mr-1" />
                           View

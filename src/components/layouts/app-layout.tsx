@@ -2,8 +2,58 @@
 
 import { ReactNode } from 'react'
 import { useUser } from '@clerk/nextjs'
+import { useParams, usePathname } from 'next/navigation'
 import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
+
+// Hook to derive context from URL structure
+function useUrlContext() {
+  const params = useParams()
+  const pathname = usePathname()
+  
+  // Extract IDs from URL params
+  const masterOrgId = params.masterOrgId as string | undefined
+  const orgId = params.orgId as string | undefined  
+  const driverId = params.driverId as string | undefined
+  const equipmentId = params.equipmentId as string | undefined
+  
+  // Determine context from URL structure
+  const hasDriver = !!driverId
+  const hasEquipment = !!equipmentId
+  const hasOrganization = !!orgId
+  const hasMaster = !!masterOrgId
+  
+  // Auto-detect sidebar menu type from URL
+  let sidebarMenu: 'organization' | 'driver' | 'equipment' | undefined
+  if (hasDriver) {
+    sidebarMenu = 'driver'
+  } else if (hasEquipment) {
+    sidebarMenu = 'equipment'  
+  } else if (hasOrganization) {
+    sidebarMenu = 'organization'
+  }
+  
+  // Auto-detect what selectors to show
+  const showOrgSelector = hasMaster // Show org selector if we're in a master context
+  const showDriverEquipmentSelector = hasOrganization // Show driver/equipment selector if we're in an org context
+  
+  return {
+    // Context IDs
+    masterOrgId,
+    orgId: orgId || '',
+    driverId,
+    equipmentId,
+    // Auto-detected UI state
+    sidebarMenu,
+    showOrgSelector,
+    showDriverEquipmentSelector,
+    // Context flags
+    hasDriver,
+    hasEquipment, 
+    hasOrganization,
+    hasMaster
+  }
+}
 
 export interface Organization {
   id: string
@@ -17,24 +67,23 @@ export interface Organization {
 
 interface AppLayoutProps {
   children: ReactNode
-  // Header configuration
+  // Header configuration  
   name?: string
   topNav?: Array<{
     label: string
     href: string
     isActive?: boolean
   }>
-  // Sidebar configuration  
+  // Legacy props (backwards compatibility)
   showOrgSelector?: boolean
   showDriverEquipmentSelector?: boolean
   sidebarMenu?: 'organization' | 'driver' | 'equipment'
-  // Context IDs for dynamic navigation
   driverId?: string
   equipmentId?: string
-  masterOrgId?: string  // Add master organization ID for URL context
+  masterOrgId?: string
+  currentOrgId?: string
   // Organization selector props
   organizations?: Organization[]
-  currentOrgId?: string
   isSheetOpen?: boolean
   onSheetOpenChange?: (open: boolean) => void
   onOrganizationSelect?: (org: Organization) => void
@@ -46,21 +95,35 @@ export function AppLayout({
   children,
   name,
   topNav = [],
-  showOrgSelector = false,
-  showDriverEquipmentSelector = false,
+  // Legacy props
+  showOrgSelector,
+  showDriverEquipmentSelector,
   sidebarMenu,
   driverId,
   equipmentId,
-  masterOrgId,  // Add to destructured props
-  organizations,
+  masterOrgId,
   currentOrgId,
+  // Common props
+  organizations,
   isSheetOpen,
   onSheetOpenChange,
   onOrganizationSelect,
   className = ""
 }: AppLayoutProps) {
   const { user } = useUser()
-
+  
+  // Get context automatically from URL (as fallback)
+  const urlContext = useUrlContext()
+  
+  // Use legacy props if provided, otherwise fall back to URL context
+  const finalShowOrgSelector = showOrgSelector ?? urlContext.showOrgSelector
+  const finalShowDriverEquipmentSelector = showDriverEquipmentSelector ?? urlContext.showDriverEquipmentSelector
+  const finalSidebarMenu = sidebarMenu ?? urlContext.sidebarMenu
+  const finalDriverId = driverId ?? urlContext.driverId
+  const finalEquipmentId = equipmentId ?? urlContext.equipmentId
+  const finalMasterOrgId = masterOrgId ?? urlContext.masterOrgId
+  const finalCurrentOrgId = currentOrgId ?? urlContext.orgId
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -71,16 +134,16 @@ export function AppLayout({
       
       <div className="flex">
         {/* Sidebar - only show if we have selectors or menu */}
-        {(showOrgSelector || showDriverEquipmentSelector || sidebarMenu) && (
+        {(finalShowOrgSelector || finalShowDriverEquipmentSelector || finalSidebarMenu) && (
           <AppSidebar
-            showOrgSelector={showOrgSelector}
-            showDriverEquipmentSelector={showDriverEquipmentSelector}
-            menuType={sidebarMenu}
-            driverId={driverId}
-            equipmentId={equipmentId}
-            masterOrgId={masterOrgId}
+            showOrgSelector={finalShowOrgSelector}
+            showDriverEquipmentSelector={finalShowDriverEquipmentSelector}
+            menuType={finalSidebarMenu}
+            driverId={finalDriverId}
+            equipmentId={finalEquipmentId}
+            masterOrgId={finalMasterOrgId}
             organizations={organizations}
-            currentOrgId={currentOrgId}
+            currentOrgId={finalCurrentOrgId}
             isSheetOpen={isSheetOpen}
             onSheetOpenChange={onSheetOpenChange}
             onOrganizationSelect={onOrganizationSelect}

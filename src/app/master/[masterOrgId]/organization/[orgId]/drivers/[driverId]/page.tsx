@@ -148,7 +148,7 @@ export default function DriverDetailPage() {
       topNav={[
         { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
         { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-        { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
+        { label: 'Driver', href: `/master/${masterOrgId}/organization/${organizationId}/driver/${driverId}`, isActive: true },
         { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
       ]}
       showOrgSelector={true}

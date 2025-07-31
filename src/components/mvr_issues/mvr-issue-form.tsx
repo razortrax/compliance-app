@@ -91,9 +91,7 @@ export default function MvrIssueForm({ partyId, mvrIssue, onSuccess, onCancel }:
     certification: mvrIssue?.certification || '',
     status: mvrIssue?.status || '',
     notes: mvrIssue?.notes || '',
-    title: mvrIssue?.issue?.title || '',
-    description: mvrIssue?.issue?.description || '',
-    priority: mvrIssue?.issue?.priority || 'medium',
+
     startDate: mvrIssue?.startDate ? new Date(mvrIssue.startDate) : null,
     expirationDate: mvrIssue?.expirationDate ? new Date(mvrIssue.expirationDate) : null,
     renewalDate: mvrIssue?.renewalDate ? new Date(mvrIssue.renewalDate) : null,
@@ -110,8 +108,8 @@ export default function MvrIssueForm({ partyId, mvrIssue, onSuccess, onCancel }:
     e.preventDefault()
     setError(null)
     
-    if (!formData.state || !formData.title || (!mvrIssue && !partyId)) {
-      setError('State and Title are required.')
+    if (!formData.state || (!mvrIssue && !partyId)) {
+      setError('State is required.')
       return
     }
     
@@ -173,17 +171,6 @@ export default function MvrIssueForm({ partyId, mvrIssue, onSuccess, onCancel }:
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Enter MVR record title"
-                required
-              />
-            </div>
-            
             <div className="space-y-2">
               <Label htmlFor="state">State *</Label>
               <Select value={formData.state} onValueChange={(value) => handleInputChange('state', value)}>
@@ -426,51 +413,7 @@ export default function MvrIssueForm({ partyId, mvrIssue, onSuccess, onCancel }:
         </CardContent>
       </Card>
 
-      {/* Additional Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Additional Information</CardTitle>
-          <CardDescription>Notes, description, and priority settings</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Enter description..."
-              rows={3}
-            />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder="Enter notes..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
-            <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Form Actions */}
       <div className="flex items-center justify-end space-x-4">

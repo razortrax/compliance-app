@@ -175,18 +175,19 @@ model data_sharing_consent {
 }
 
 model equipment {
-  id                 String    @id
-  partyId            String    @unique
+  id                 String         @id
+  partyId            String         @unique
   vehicleType        String
   make               String?
   model              String?
   year               Int?
-  vinNumber          String?   @unique
+  vinNumber          String?        @unique
   plateNumber        String?
   registrationExpiry DateTime?
-  locationId         String? // Equipment can be assigned to specific location
-  party              party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  location           location? @relation(fields: [locationId], references: [id])
+  locationId         String?        // Equipment can be assigned to specific location
+  activity_logs      activity_log[] // Enhanced activity tracking for equipment
+  party              party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  location           location?      @relation(fields: [locationId], references: [id])
 
   // Incident involvement relationships (unified)
   incident_involvement incident_equipment_involvement[]
@@ -211,7 +212,8 @@ model issue {
   party                     party                      @relation(fields: [partyId], references: [id])
   license_issue             license_issue?
   training_issue            training_issue?
-  attachments               attachment[] // Issue can have multiple attachments
+  attachments               attachment[]               // Issue can have multiple attachments
+  activity_logs             activity_log[]             // Enhanced activity tracking for issues
 }
 
 enum MvrType {
@@ -401,6 +403,72 @@ model training_issue {
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
+// ENHANCED ACTIVITY LOG SYSTEM - Multi-tag, Multi-entity support
+model activity_log {
+  id          String   @id @default(cuid())
+  
+  // Entity relationships (flexible - can link to any entity)
+  issueId        String? // Links to any compliance issue
+  organizationId String? // Links to organization  
+  personId       String? // Links to driver/staff
+  equipmentId    String? // Links to equipment
+  locationId     String? // Links to location
+  cafId          String? // Links to CAF
+  
+  // Activity content
+  activityType String // 'note', 'communication', 'url', 'credential', 'attachment', 'task'
+  title        String // Brief title/subject
+  content      String // Main content (note text, URL, phone notes, etc.)
+  
+  // File attachment data (for activityType = 'attachment')
+  fileName     String? // Original filename (if file attachment)
+  fileType     String? // MIME type
+  fileSize     Int?    // File size in bytes  
+  filePath     String? // Storage path/URL
+  
+  // Credential data (for activityType = 'credential') - encrypted
+  username     String? // Portal username
+  password     String? // Encrypted password
+  portalUrl    String? // Portal/site URL
+  
+  // Task data (for activityType = 'task')
+  dueDate      DateTime? // Task due date
+  isCompleted  Boolean   @default(false)
+  priority     String?   // 'low', 'medium', 'high', 'urgent'
+  
+  // Multi-tag system
+  tags         String[]  // Array of tags: ['communication', 'phone', 'urgent', 'follow-up']
+  
+  // System fields
+  createdBy    String    // User ID who created
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relationships
+  issue        issue?        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  organization organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  person       person?       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  equipment    equipment?    @relation(fields: [equipmentId], references: [id], onDelete: Cascade) 
+  location     location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  caf          corrective_action_form? @relation("CAFActivityLogs", fields: [cafId], references: [id], onDelete: Cascade)
+}
+
+// Organization-specific tag management for future customization
+model organization_tag {
+  id             String       @id @default(cuid())
+  organizationId String       
+  tagName        String       // Custom tag name
+  tagColor       String?      // Hex color for UI
+  tagIcon        String?      // Icon identifier
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  
+  organization   organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([organizationId, tagName]) // Prevent duplicate tags per org
+}
+
+// LEGACY: Keep existing attachment model for backwards compatibility
 model attachment {
   id             String   @id @default(cuid())
   issueId        String? // Links to any issue (license, inspection, etc.) - now optional
@@ -438,8 +506,9 @@ model location {
   updatedAt      DateTime @updatedAt
 
   // Relationships
-  party        party?       @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  organization organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  activity_logs activity_log[] // Enhanced activity tracking for locations
+  party        party?         @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  organization organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   equipment    equipment[]
   role         role[] // Staff and drivers assigned to this location
 }
@@ -458,6 +527,8 @@ model organization {
   consultation            consultation[]
   location                location[]
   corrective_action_forms corrective_action_form[] // CAF system support
+  activity_logs           activity_log[]           // Enhanced activity tracking
+  organization_tags       organization_tag[]       // Custom tag management
   party                   party                    @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
@@ -478,19 +549,20 @@ model party {
 }
 
 model person {
-  id            String    @id
-  partyId       String    @unique
+  id            String         @id
+  partyId       String         @unique
   firstName     String
   lastName      String
   dateOfBirth   DateTime?
-  licenseNumber String?   @unique
+  licenseNumber String?        @unique
   phone         String?
   email         String?
   address       String?
   city          String?
   state         String?
   zipCode       String?
-  party         party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  activity_logs activity_log[] // Enhanced activity tracking for drivers/staff
+  party         party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
 model role {
@@ -662,6 +734,7 @@ model corrective_action_form {
   organization       organization        @relation(fields: [organizationId], references: [id])
   signatures         caf_signature[]
   attachments        attachment[]        @relation("CAFAttachments")
+  activity_logs      activity_log[]      @relation("CAFActivityLogs") // Enhanced activity tracking for CAFs
 }
 
 model caf_signature {

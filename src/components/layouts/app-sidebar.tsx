@@ -254,61 +254,49 @@ export function AppSidebar({
         Drivers
       </h3>
       <Link 
-        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/drivers/${driverId}` : "#"} 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <BarChart3 className="mr-3 h-4 w-4" />
         Overview
       </Link>
       <Link 
-        href={driverId ? `/drivers/${driverId}/licenses` : "#"} 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/licenses` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <Clipboard className="mr-3 h-4 w-4" />
         Licenses
       </Link>
       <Link 
-        href={driverId ? `/mvr_issues?driverId=${driverId}` : "#"} 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/mvr-issue` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <Car className="mr-3 h-4 w-4" />
         MVRs
       </Link>
-      <Link
-        href={driverId ? `/physical_issues?driverId=${driverId}` : "#"}
-        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
-      >
+      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
         <Users className="mr-3 h-4 w-4" />
-        Physicals
-      </Link>
-      <Link
-        href={driverId ? `/drugalcohol_issues?driverId=${driverId}` : "#"}
-        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
-      >
+        Physicals <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
+      </div>
+      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
         <Users className="mr-3 h-4 w-4" />
-        Drug & Alcohol
-      </Link>
+        Drug & Alcohol <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
+      </div>
       <Link 
-        href={driverId ? `/drivers/${driverId}/training` : "#"} 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/training` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <GraduationCap className="mr-3 h-4 w-4" />
         Training
       </Link>
-      <Link 
-        href={driverId ? `/roadside_inspections?driverId=${driverId}` : "#"} 
-        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
-      >
+      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
         <ShieldCheck className="mr-3 h-4 w-4" />
-        Roadside Inspections
-      </Link>
-      <Link 
-        href={driverId ? `/accident_issues?driverId=${driverId}` : "#"} 
-        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
-      >
+        RSIN <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
+      </div>
+      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
         <Car className="mr-3 h-4 w-4" />
-        Accidents
-      </Link>
+        Accidents <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
+      </div>
     </nav>
   )
 

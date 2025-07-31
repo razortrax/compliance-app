@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -28,77 +27,75 @@ interface Training {
   hours?: number
   isRequired: boolean
   competencies?: any[]
-  notes?: string
   issue: {
     id: string
     title: string
-    description?: string
-    status: string
-    priority: string
     party: {
       id: string
-      person?: {
-        firstName: string
-        lastName: string
-      }
-      organization?: {
-        name: string
-      }
     }
   }
 }
 
 interface TrainingFormProps {
-  training?: Training
-  driverId?: string // Auto-assign to this driver if provided
-  renewingTraining?: Training // Training being renewed (triggers renewal logic)
-  onSuccess: () => void
+  training?: Training | null
+  renewingTraining?: Training | null
+  driverId?: string
+  onSuccess: (training: any) => void
   onCancel: () => void
 }
 
+// Training types with focus on DOT mandatory training
 const TRAINING_TYPES = [
-  { value: 'HazMat Annual', label: 'HazMat Annual Training' },
-  { value: 'Defensive Driving', label: 'Defensive Driving' },
-  { value: 'Passenger Safety', label: 'Passenger Safety Training' },
-  { value: 'School Bus Safety', label: 'School Bus Safety' },
-  { value: 'DOT Safety', label: 'DOT Safety Training' },
-  { value: 'Cargo Handling', label: 'Cargo Handling' },
-  { value: 'Vehicle Inspection', label: 'Vehicle Inspection Training' },
-  { value: 'Emergency Response', label: 'Emergency Response' },
-  { value: 'Customer Service', label: 'Customer Service' },
-  { value: 'Other', label: 'Other Training' }
+  // DOT Required Training
+  'HazMat Annual',
+  'HazMat Initial',
+  'HazMat Security Threat Assessment',
+  // Common Voluntary Training
+  'Defensive Driving',
+  'First Aid/CPR',
+  'DOT Physical Compliance',
+  'Vehicle Inspection',
+  'Hours of Service',
+  'Drug and Alcohol Awareness',
+  'Safety Training',
+  'Customer Service',
+  'Other'
 ]
 
-const PRIORITIES = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' }
-]
-
-export function TrainingForm({ training, driverId, renewingTraining, onSuccess, onCancel }: TrainingFormProps) {
+export function TrainingForm({ training, renewingTraining, driverId, onSuccess, onCancel }: TrainingFormProps) {
+  const isEditing = !!training
   const isRenewal = !!renewingTraining
   const baseTraining = training || renewingTraining
 
-  // Helper function to calculate initial dates for renewals
+  // Calculate default dates
   const getInitialDates = () => {
+    const today = new Date()
+    
     if (isRenewal && renewingTraining) {
-      const today = new Date()
-      const oldExpiry = new Date(renewingTraining.expirationDate)
-      const oneYearFromToday = new Date(today)
-      oneYearFromToday.setFullYear(oneYearFromToday.getFullYear() + 1)
+      // For renewals, suggest completion today and expiration based on training type
+      const expirationDate = new Date(today)
+      
+      // For HazMat training, add 2 years (DOT requirement)
+      if (renewingTraining.trainingType.toLowerCase().includes('hazmat')) {
+        expirationDate.setFullYear(today.getFullYear() + 2)
+      } else {
+        // Default to 1 year for other training
+        expirationDate.setFullYear(today.getFullYear() + 1)
+      }
       
       return {
         completionDate: today,
-        expirationDate: oneYearFromToday
+        expirationDate
       }
-    }
-    return {
-      completionDate: new Date(),
-      expirationDate: (() => {
-        const date = new Date()
-        date.setFullYear(date.getFullYear() + 1)
-        return date
-      })()
+    } else {
+      // For new training, default expiration depends on type
+      const expirationDate = new Date(today)
+      expirationDate.setFullYear(today.getFullYear() + 1) // Default 1 year
+      
+      return {
+        completionDate: today,
+        expirationDate
+      }
     }
   }
 
@@ -109,49 +106,105 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
     provider: baseTraining?.provider || '',
     instructor: baseTraining?.instructor || '',
     location: baseTraining?.location || '',
-    startDate: baseTraining?.startDate ? new Date(baseTraining.startDate) : initialDates.completionDate,
+    startDate: baseTraining?.startDate ? new Date(baseTraining.startDate) : undefined as Date | undefined,
     completionDate: baseTraining?.completionDate ? new Date(baseTraining.completionDate) : initialDates.completionDate,
     expirationDate: baseTraining?.expirationDate ? new Date(baseTraining.expirationDate) : initialDates.expirationDate,
     certificateNumber: baseTraining?.certificateNumber || '',
     hours: baseTraining?.hours || 0,
     isRequired: baseTraining?.isRequired || false,
-    notes: baseTraining?.notes || '',
-    title: baseTraining?.issue?.title || '',
-    description: baseTraining?.issue?.description || '',
-    priority: baseTraining?.issue?.priority || 'medium',
-    partyId: baseTraining?.issue?.party?.id || ''
+    partyId: baseTraining?.issue?.party?.id || driverId || ''
   })
 
   const [competencies, setCompetencies] = useState<string[]>(
-    baseTraining?.competencies?.map((c: any) => c.name || c) || []
+    baseTraining?.competencies ? baseTraining.competencies.map(c => c.name || c) : []
   )
   const [newCompetency, setNewCompetency] = useState('')
-  const [isStartOpen, setIsStartOpen] = useState(false)
-  const [isCompletionOpen, setIsCompletionOpen] = useState(false)
-  const [isExpirationOpen, setIsExpirationOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Auto-fetch driver data when driverId is provided for new trainings
+  // Update expiration date when training type changes (for new training)
   useEffect(() => {
-    if (driverId && !training && !renewingTraining) {
-      fetchDriverData()
+    if (!isEditing && formData.trainingType) {
+      const isHazmat = formData.trainingType.toLowerCase().includes('hazmat')
+      const yearsToAdd = isHazmat ? 2 : 1 // HazMat = 2 years, others = 1 year
+      
+      const newExpiration = new Date(formData.completionDate)
+      newExpiration.setFullYear(newExpiration.getFullYear() + yearsToAdd)
+      
+      setFormData(prev => ({
+        ...prev,
+        expirationDate: newExpiration
+      }))
     }
-  }, [driverId, training, renewingTraining])
+  }, [formData.trainingType, formData.completionDate, isEditing])
 
-  const fetchDriverData = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.trainingType || !formData.completionDate || !formData.expirationDate || !formData.partyId) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    setIsSubmitting(true)
+    
     try {
-      const response = await fetch(`/api/persons/${driverId}`)
-      if (response.ok) {
-        const driver = await response.json()
-        setFormData(prev => ({
-          ...prev,
-          partyId: driver.party.id,
-          title: `${prev.trainingType} Training - ${driver.firstName} ${driver.lastName}`,
-          description: `Training record for ${driver.firstName} ${driver.lastName}`
-        }))
+      const requestData = {
+        trainingType: formData.trainingType,
+        provider: formData.provider,
+        instructor: formData.instructor,
+        location: formData.location,
+        startDate: formData.startDate?.toISOString(),
+        completionDate: formData.completionDate.toISOString(),
+        expirationDate: formData.expirationDate.toISOString(),
+        certificateNumber: formData.certificateNumber,
+        hours: formData.hours || undefined,
+        isRequired: formData.isRequired,
+        competencies: competencies.map(c => ({ name: c })),
+        partyId: formData.partyId,
+        title: `${formData.trainingType} Training`,
+        ...(isRenewal && { 
+          previousTrainingId: renewingTraining?.id 
+        })
       }
+      
+      // For renewals, use minimal renewal data
+      const finalRequestData = isRenewal ? {
+        previousTrainingId: renewingTraining?.id,
+        startDate: formData.startDate?.toISOString(),
+        completionDate: formData.completionDate.toISOString(),
+        expirationDate: formData.expirationDate.toISOString(),
+        certificateNumber: formData.certificateNumber,
+        hours: formData.hours
+      } : requestData
+
+      const url = isRenewal 
+        ? '/api/trainings/renew'
+        : isEditing 
+          ? `/api/trainings/${training?.id}`
+          : '/api/trainings'
+      
+      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalRequestData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to ${isRenewal ? 'renew' : isEditing ? 'update' : 'create'} training: ${errorText}`)
+      }
+
+      const result = await response.json()
+      onSuccess(result)
     } catch (error) {
-      console.error('Error fetching driver data:', error)
+      console.error('Error submitting training:', error)
+      alert(error instanceof Error ? error.message : 'An error occurred while saving the training')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -166,131 +219,69 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
     setCompetencies(competencies.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async () => {
-    if (!formData.trainingType || !formData.completionDate || !formData.expirationDate || !formData.partyId) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const requestData = {
-        trainingType: formData.trainingType,
-        provider: formData.provider,
-        instructor: formData.instructor,
-        location: formData.location,
-        startDate: formData.startDate?.toISOString(),
-        completionDate: formData.completionDate.toISOString(),
-        expirationDate: formData.expirationDate.toISOString(),
-        certificateNumber: formData.certificateNumber,
-        hours: formData.hours || undefined,
-        isRequired: formData.isRequired,
-        competencies: competencies.map(c => ({ name: c })),
-        notes: formData.notes,
-        partyId: formData.partyId,
-        title: formData.title || `${formData.trainingType} Training`,
-        description: formData.description,
-        priority: formData.priority,
-        ...(isRenewal && { 
-          previousTrainingId: renewingTraining?.id 
-        })
-      }
-      
-      // For renewals, only send the minimal renewal data
-      const finalRequestData = isRenewal ? {
-        previousTrainingId: renewingTraining?.id,
-        startDate: formData.startDate?.toISOString(),
-        completionDate: formData.completionDate.toISOString(),
-        expirationDate: formData.expirationDate.toISOString(),
-        certificateNumber: formData.certificateNumber,
-        hours: formData.hours,
-        notes: formData.notes,
-        title: formData.title,
-        description: formData.description
-      } : requestData
-      
-      let url, method
-      if (isRenewal) {
-        // For renewals, use the renewal endpoint
-        url = '/api/trainings/renew'
-        method = 'POST'
-      } else if (training) {
-        // For edits, use PUT to existing training
-        url = `/api/trainings/${training.id}`
-        method = 'PUT'
-      } else {
-        // For new trainings, use POST
-        url = '/api/trainings'
-        method = 'POST'
-      }
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalRequestData)
-      })
-      
-      if (response.ok) {
-        onSuccess()
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.error || 'Failed to save training'}`)
-      }
-    } catch (error) {
-      console.error('Error saving training:', error)
-      alert('Failed to save training. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Training Type & Basic Info */}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Basic Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Training Information</CardTitle>
+          <CardTitle>Training Information</CardTitle>
           <CardDescription>
-            {isRenewal ? 'Renew this training with updated completion and expiration dates' : 
-             training ? 'Update training information' : 'Enter training details'}
+            {isRenewal ? 'Renew existing training record' : isEditing ? 'Edit training record' : 'Add new training record'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
+            {/* Training Type */}
             <div className="space-y-2">
-              <Label htmlFor="trainingType">Training Type *</Label>
-              <Select 
-                value={formData.trainingType} 
+              <Label htmlFor="trainingType">Training Type <span className="text-red-500">*</span></Label>
+              <Select
+                value={formData.trainingType}
                 onValueChange={(value) => setFormData({ ...formData, trainingType: value })}
-                disabled={isRenewal}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select training type" />
                 </SelectTrigger>
                 <SelectContent>
                   {TRAINING_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                    <SelectItem key={type} value={type}>
+                      {type}
+                      {type.toLowerCase().includes('hazmat') && (
+                        <Badge variant="destructive" className="ml-2 text-xs">DOT Required</Badge>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* DOT Required Checkbox */}
+            <div className="space-y-2 flex items-center">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isRequired"
+                  checked={formData.isRequired}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isRequired: !!checked })}
+                />
+                <Label htmlFor="isRequired" className="text-sm font-medium">
+                  DOT Required Training
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Provider */}
             <div className="space-y-2">
               <Label htmlFor="provider">Training Provider</Label>
               <Input
                 id="provider"
                 value={formData.provider}
                 onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                placeholder="e.g., SafetyFirst Training"
-                disabled={isRenewal}
+                placeholder="e.g., Smith Safety Training"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            {/* Instructor */}
             <div className="space-y-2">
               <Label htmlFor="instructor">Instructor</Label>
               <Input
@@ -298,35 +289,66 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
                 value={formData.instructor}
                 onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
                 placeholder="Instructor name"
-                disabled={isRenewal}
               />
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            {/* Location */}
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">Training Location</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Training location"
-                disabled={isRenewal}
+                placeholder="e.g., Company facility, Online"
+              />
+            </div>
+
+            {/* Certificate Number */}
+            <div className="space-y-2">
+              <Label htmlFor="certificateNumber">Certificate Number</Label>
+              <Input
+                id="certificateNumber"
+                value={formData.certificateNumber}
+                onChange={(e) => setFormData({ ...formData, certificateNumber: e.target.value })}
+                placeholder="Certificate or completion number"
+              />
+            </div>
+          </div>
+
+          {/* Training Hours */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="hours">Training Hours</Label>
+              <Input
+                id="hours"
+                type="number"
+                step="0.5"
+                min="0"
+                value={formData.hours}
+                onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
+                placeholder="Hours completed"
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Dates & Completion */}
+      {/* Dates Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Training Dates</CardTitle>
-          <CardDescription>When was the training completed and when does it expire?</CardDescription>
+          <CardTitle>Training Dates</CardTitle>
+          <CardDescription>
+            Set training completion and expiration dates
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
+            {/* Start Date */}
             <div className="space-y-2">
               <Label>Start Date</Label>
-              <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -339,15 +361,12 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
                     {formData.startDate ? format(formData.startDate, "PPP") : "Pick start date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={formData.startDate}
                     onSelect={(date) => {
-                      if (date) {
-                        setFormData({ ...formData, startDate: date })
-                        setIsStartOpen(false)
-                      }
+                      setFormData({ ...formData, startDate: date || undefined })
                     }}
                     initialFocus
                   />
@@ -355,9 +374,10 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
               </Popover>
             </div>
 
+            {/* Completion Date */}
             <div className="space-y-2">
-              <Label>Completion Date *</Label>
-              <Popover open={isCompletionOpen} onOpenChange={setIsCompletionOpen}>
+              <Label>Completion Date <span className="text-red-500">*</span></Label>
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -370,15 +390,12 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
                     {formData.completionDate ? format(formData.completionDate, "PPP") : "Pick completion date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={formData.completionDate}
                     onSelect={(date) => {
-                      if (date) {
-                        setFormData({ ...formData, completionDate: date })
-                        setIsCompletionOpen(false)
-                      }
+                      if (date) setFormData({ ...formData, completionDate: date })
                     }}
                     initialFocus
                   />
@@ -386,9 +403,10 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
               </Popover>
             </div>
 
+            {/* Expiration Date */}
             <div className="space-y-2">
-              <Label>Expiration Date *</Label>
-              <Popover open={isExpirationOpen} onOpenChange={setIsExpirationOpen}>
+              <Label>Expiration Date <span className="text-red-500">*</span></Label>
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -401,15 +419,12 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
                     {formData.expirationDate ? format(formData.expirationDate, "PPP") : "Pick expiration date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={formData.expirationDate}
                     onSelect={(date) => {
-                      if (date) {
-                        setFormData({ ...formData, expirationDate: date })
-                        setIsExpirationOpen(false)
-                      }
+                      if (date) setFormData({ ...formData, expirationDate: date })
                     }}
                     initialFocus
                   />
@@ -417,83 +432,39 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
               </Popover>
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="certificateNumber">Certificate Number</Label>
-              <Input
-                id="certificateNumber"
-                value={formData.certificateNumber}
-                onChange={(e) => setFormData({ ...formData, certificateNumber: e.target.value })}
-                placeholder="Certificate or completion number"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="hours">Training Hours</Label>
-              <Input
-                id="hours"
-                type="number"
-                min="0"
-                step="0.5"
-                value={formData.hours}
-                onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
-                placeholder="0"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="isRequired"
-              checked={formData.isRequired}
-              onCheckedChange={(checked) => setFormData({ ...formData, isRequired: !!checked })}
-              disabled={isRenewal}
-            />
-            <Label htmlFor="isRequired">This is a required training</Label>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Competencies */}
+      {/* Competencies Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Competencies</CardTitle>
-          <CardDescription>Skills or topics covered in this training</CardDescription>
+          <CardTitle>Competencies & Skills</CardTitle>
+          <CardDescription>
+            Track specific skills or topics covered in this training
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
               value={newCompetency}
               onChange={(e) => setNewCompetency(e.target.value)}
-              placeholder="Add a competency (e.g., 'Vehicle Inspection', 'Emergency Procedures')"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addCompetency()
-                }
-              }}
-              disabled={isRenewal}
+              placeholder="Add a competency or skill"
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCompetency())}
             />
-            <Button type="button" onClick={addCompetency} disabled={isRenewal}>
+            <Button type="button" onClick={addCompetency} size="sm">
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-
+          
           {competencies.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {competencies.map((competency, index) => (
                 <Badge key={index} variant="secondary" className="flex items-center gap-1">
                   {competency}
-                  {!isRenewal && (
-                    <button
-                      type="button"
-                      onClick={() => removeCompetency(index)}
-                      className="ml-1 hover:text-red-500"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => removeCompetency(index)}
+                  />
                 </Badge>
               ))}
             </div>
@@ -501,77 +472,16 @@ export function TrainingForm({ training, driverId, renewingTraining, onSuccess, 
         </CardContent>
       </Card>
 
-      {/* Additional Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Additional Information</CardTitle>
-          <CardDescription>Notes and administrative details</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Training record title"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Brief description"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select 
-                value={formData.priority} 
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((priority) => (
-                    <SelectItem key={priority.value} value={priority.value}>
-                      {priority.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Additional notes about this training..."
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isRenewal ? 'Renew Training' : training ? 'Update Training' : 'Create Training'}
+          {isRenewal ? 'Renew Training' : isEditing ? 'Update Training' : 'Add Training'}
         </Button>
       </div>
-    </div>
+    </form>
   )
 } 

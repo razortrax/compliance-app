@@ -34,7 +34,7 @@ export function buildStandardDriverNavigation(
     // Master users see: Master | Organization | Drivers | Equipment
     topNav.push({ 
       label: 'Master', 
-      href: '/dashboard', 
+      href: `/master/${masterOrg.id}`, 
       isActive: false 
     })
     if (organization?.id) {

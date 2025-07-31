@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { LicenseForm } from '@/components/licenses/license-form'
 import { AddAddonModal } from '@/components/licenses/add-addon-modal'
 import {
-  Edit, Plus, FileText, IdCard, ArrowLeft, User, Eye, Truck, MapPin, Hash, Phone, Mail, CheckCircle, AlertCircle, Loader2
+  Edit, Plus, FileText, IdCard, ArrowLeft, User, Eye, Truck, MapPin, Hash, Phone, Mail, CheckCircle, AlertCircle, Loader2, Clock
 } from 'lucide-react'
 
 interface Person {
@@ -103,18 +103,87 @@ export default function DriverLicensesPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
-  // Helper function to calculate expiration status
-  const getExpirationStatus = (expirationDate: string) => {
-    const expiry = new Date(expirationDate)
+  // Smart expiration status function - MVR Gold Standard
+  const getExpirationStatus = (license: License) => {
+    if (!license.expirationDate) {
+      return {
+        status: 'unknown',
+        daysUntil: null,
+        badge: <Badge variant="secondary" className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          No Expiration
+        </Badge>
+      }
+    }
+
+    const expirationDate = new Date(license.expirationDate)
     const today = new Date()
-    const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    const daysUntilExpiration = Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    const isExpired = daysUntilExpiration < 0
     
-    if (daysUntil < 0) {
-      return { status: 'expired', daysUntil: Math.abs(daysUntil) }
-    } else if (daysUntil <= 30) {
-      return { status: 'expiring', daysUntil }
+    // Check if this license has been renewed (has a newer license after it)
+    const hasNewerLicense = licenses.some(otherLicense => 
+      otherLicense.id !== license.id && 
+      otherLicense.licenseType === license.licenseType &&
+      otherLicense.expirationDate && 
+      license.expirationDate &&
+      new Date(otherLicense.expirationDate) > new Date(license.expirationDate)
+    )
+
+    // INACTIVE Licenses - Show status tags instead of expiration countdown
+    if (hasNewerLicense) {
+      // This license was renewed - show "Renewed" tag
+      return {
+        status: 'renewed',
+        daysUntil: null,
+        badge: <Badge className="flex items-center gap-1 bg-blue-100 text-blue-800 border-blue-200">
+          <CheckCircle className="h-3 w-3" />
+          Renewed
+        </Badge>
+      }
+    } else if (isExpired) {
+      // This license is expired and not renewed - show "Expired" tag
+      return {
+        status: 'expired',
+        daysUntil: null,
+        badge: <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Expired
+        </Badge>
+      }
+    }
+
+    // ACTIVE Licenses - Show expiration countdown with proper color coding
+    if (daysUntilExpiration <= 30) {
+      // Due within 30 days = Orange
+      return {
+        status: 'critical',
+        daysUntil: daysUntilExpiration,
+        badge: <Badge className="flex items-center gap-1 bg-orange-100 text-orange-800 border-orange-200">
+          <Clock className="h-3 w-3" />
+          {daysUntilExpiration}d
+        </Badge>
+      }
+    } else if (daysUntilExpiration <= 60) {
+      // Due within 60 days = Yellow
+      return {
+        status: 'warning',
+        daysUntil: daysUntilExpiration,
+        badge: <Badge className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border-yellow-200">
+          <Clock className="h-3 w-3" />
+          {daysUntilExpiration}d
+        </Badge>
+      }
     } else {
-      return { status: 'valid', daysUntil }
+      // Current and compliant = Green
+      return {
+        status: 'current',
+        daysUntil: daysUntilExpiration,
+        badge: <Badge className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
+          <CheckCircle className="h-3 w-3" />
+          Current
+        </Badge>
+      }
     }
   }
 
@@ -409,17 +478,23 @@ export default function DriverLicensesPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-200 max-h-full overflow-y-auto">
-                      {licenses
+                      {[...licenses]
                         .sort((a, b) => {
-                          // Sort by status first (active on top), then by expiration date
-                          const aActive = a.issue.status === 'active'
-                          const bActive = b.issue.status === 'active'
-                          if (aActive && !bActive) return -1
-                          if (!aActive && bActive) return 1
-                          return new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime()
+                          // First, sort by active status (expired licenses go to bottom)
+                          const aExpired = a.expirationDate ? new Date(a.expirationDate) < new Date() : false
+                          const bExpired = b.expirationDate ? new Date(b.expirationDate) < new Date() : false
+                          
+                          if (aExpired !== bExpired) {
+                            return aExpired ? 1 : -1 // Active licenses first
+                          }
+                          
+                          // Then sort by expiration date (newest first within each group)
+                          const aDate = a.expirationDate ? new Date(a.expirationDate) : new Date(0)
+                          const bDate = b.expirationDate ? new Date(b.expirationDate) : new Date(0)
+                          return bDate.getTime() - aDate.getTime()
                         })
                         .map((license) => {
-                        const expirationStatus = getExpirationStatus(license.expirationDate)
+                        const expirationStatus = getExpirationStatus(license)
                         const isSelected = selectedLicense?.id === license.id
                         const isActive = license.issue.status === 'active'
                         
@@ -476,16 +551,7 @@ export default function DriverLicensesPage() {
                                     </Badge>
                                   )}
                                 </div>
-                                <Badge 
-                                  variant={expirationStatus.status === 'expired' ? 'destructive' : 
-                                          expirationStatus.status === 'expiring' ? 'secondary' : 'default'}
-                                  className="text-xs"
-                                >
-                                  {expirationStatus.status === 'expired' 
-                                    ? `Expired`
-                                    : `${expirationStatus.daysUntil}d`
-                                  }
-                                </Badge>
+                                {expirationStatus.badge}
                               </div>
                               
                               {/* Second Row: Endorsements + Endorsement Expiry */}
@@ -638,31 +704,37 @@ export default function DriverLicensesPage() {
                 ) : selectedLicense ? (
                   <>
                     <CardHeader>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle>{selectedLicense.issue.title}</CardTitle>
-                          <CardDescription>{selectedLicense.issue.description}</CardDescription>
+                          <CardTitle>License Details</CardTitle>
+                          <CardDescription>
+                            {selectedLicense ? 'Details for selected license' : 'Select a license to view details'}
+                          </CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setShowEditForm(true)
-                              setShowAddForm(false)
-                              setShowRenewalForm(false)
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => handleRenewLicense(selectedLicense)}
-                          >
-                            Renew License
-                          </Button>
-                        </div>
+                        {selectedLicense && (
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setShowEditForm(true)
+                                setShowAddForm(false)
+                                setShowRenewalForm(false)
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRenewLicense(selectedLicense)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Renew
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="overflow-y-auto max-h-[calc(100%-120px)]">
@@ -827,7 +899,7 @@ export default function DriverLicensesPage() {
                               onClick={() => setShowAddAddonModal(true)}
                             >
                               <Plus className="h-4 w-4 mr-1" />
-                              Add Addon
+                              Add
                             </Button>
                           </div>
                           

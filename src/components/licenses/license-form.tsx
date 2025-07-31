@@ -77,11 +77,11 @@ interface Person {
 }
 
 interface LicenseFormProps {
-  license?: License
+  license?: License | null
   driverId?: string // Auto-assign to this driver if provided
   organizationId?: string // Auto-assign to this organization if provided
-  renewingLicense?: License // License being renewed (triggers renewal logic)
-  onSuccess: () => void
+  renewingLicense?: License | null // License being renewed (triggers renewal logic)
+  onSuccess: (license: any) => void
   onCancel: () => void
 }
 
@@ -328,7 +328,8 @@ export function LicenseForm({ license, driverId, organizationId, renewingLicense
       })
       
       if (response.ok) {
-        onSuccess()
+        const result = await response.json()
+        onSuccess(result)
       } else {
         const error = await response.json()
         alert(`Error: ${error.error || 'Failed to save license'}`)
