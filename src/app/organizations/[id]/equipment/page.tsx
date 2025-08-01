@@ -163,7 +163,7 @@ export default function EquipmentPage() {
     return (
       <AppLayout
         name={masterOrg?.name || 'Master'}
-        topNav={[{ label: 'Master', href: '/dashboard', isActive: false }]}
+        topNav={[{ label: 'Master', href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard', isActive: false }]}
         className="p-6"
       >
         <div className="text-center py-12">
@@ -175,7 +175,7 @@ export default function EquipmentPage() {
 
   const masterName = masterOrg?.name || 'Master'
   const topNav = [
-    { label: 'Master', href: '/dashboard', isActive: false },
+    { label: 'Master', href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard', isActive: false },
     { label: 'Organization', href: `/organizations/${organizationId}`, isActive: false },
     { label: 'Drivers', href: `/organizations/${organizationId}/drivers`, isActive: false },
     { label: 'Equipment', href: `/organizations/${organizationId}/equipment`, isActive: true }
@@ -299,7 +299,7 @@ export default function EquipmentPage() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.location.href = `/equipment/${item.id}`}
+                          onClick={() => window.location.href = `/organizations/${organizationId}/equipment/${item.id}`}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View

@@ -19,12 +19,14 @@ import { format } from 'date-fns'
 interface Training {
   id: string
   trainingType: string
+  category?: string
   provider?: string | null
   instructor?: string | null
   location?: string | null
   startDate?: string | null
   completionDate: string
-  expirationDate: string
+  expirationDate?: string | null
+  expirationPeriodMonths?: number | null
   certificateNumber?: string | null
   hours?: number | null
   isRequired: boolean
@@ -210,59 +212,122 @@ export default function MasterDriverTrainingPage() {
     }
   }
 
-  const handleOrganizationSelect = (org: Organization) => {
-    console.log('Organization selected:', org.id)
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleTrainingFormSuccess = (newTraining: any) => {
-    console.log('Training created successfully:', newTraining)
-    // Refresh the training data
-    setData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        trainings: [...prev.trainings, newTraining]
+  const handleAddTraining = async (formData: any) => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/trainings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to create training: ${errorText}`)
       }
-    })
-    setIsAddDialogOpen(false)
-    // Auto-select the new training
-    if (newTraining) {
+
+      const newTraining = await response.json()
+      
+      // Refresh the training data
+      setData(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          trainings: [...prev.trainings, newTraining]
+        }
+      })
+      setIsAddDialogOpen(false)
       setSelectedTraining(newTraining)
+    } catch (error) {
+      console.error('Error creating training:', error)
+      alert(error instanceof Error ? error.message : 'An error occurred while creating the training')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const handleTrainingFormCancel = () => {
-    setIsAddDialogOpen(false)
+  const handleEditTraining = async (formData: any) => {
+    if (!selectedTraining) return
+    
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/trainings/${selectedTraining.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to update training: ${errorText}`)
+      }
+
+      const updatedTraining = await response.json()
+      
+      // Update the training in the list
+      setData(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          trainings: prev.trainings.map(training => 
+            training.id === updatedTraining.id ? updatedTraining : training
+          )
+        }
+      })
+      setSelectedTraining(updatedTraining)
+      setIsEditDialogOpen(false)
+    } catch (error) {
+      console.error('Error updating training:', error)
+      alert(error instanceof Error ? error.message : 'An error occurred while updating the training')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleEditSuccess = (updatedTraining: any) => {
-    console.log('Training updated successfully:', updatedTraining)
-    // Update the training in the list
-    setData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        trainings: prev.trainings.map(training => 
-          training.id === updatedTraining.id ? updatedTraining : training
-        )
+  const handleRenewTraining = async (formData: any) => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/trainings/renew', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to renew training: ${errorText}`)
       }
-    })
-    setSelectedTraining(updatedTraining)
-    setIsEditDialogOpen(false)
+
+      const renewedTraining = await response.json()
+      
+      // Add the renewed training to the list
+      setData(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          trainings: [...prev.trainings, renewedTraining]
+        }
+      })
+      setSelectedTraining(renewedTraining)
+      setIsRenewalDialogOpen(false)
+    } catch (error) {
+      console.error('Error renewing training:', error)
+      alert(error instanceof Error ? error.message : 'An error occurred while renewing the training')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleRenewalSuccess = (renewedTraining: any) => {
-    console.log('Training renewed successfully:', renewedTraining)
-    // Add the new renewed training to the list
-    setData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        trainings: [...prev.trainings, renewedTraining]
-      }
-    })
-    setSelectedTraining(renewedTraining)
-    setIsRenewalDialogOpen(false)
+  const handleOrganizationSelect = (org: Organization) => {
+    console.log('Organization selected:', org.id)
   }
 
   const refreshAttachments = async () => {
@@ -374,9 +439,10 @@ export default function MasterDriverTrainingPage() {
               </DialogHeader>
               <div className="px-1">
                 <TrainingForm
-                  driverId={data.driver.id}
-                  onSuccess={handleTrainingFormSuccess}
-                  onCancel={handleTrainingFormCancel}
+                  personId={data.driver.id}
+                  onSubmit={handleAddTraining}
+                  onCancel={() => setIsAddDialogOpen(false)}
+                  isSubmitting={isSubmitting}
                 />
               </div>
             </DialogContent>
@@ -583,10 +649,12 @@ export default function MasterDriverTrainingPage() {
                         <span className="font-medium text-gray-700">Completion Date:</span>
                         <span className="ml-2">{format(new Date(selectedTraining.completionDate), 'MMM dd, yyyy')}</span>
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Expiration Date:</span>
-                        <span className="ml-2">{format(new Date(selectedTraining.expirationDate), 'MMM dd, yyyy')}</span>
-                      </div>
+                      {selectedTraining.expirationDate && (
+                        <div>
+                          <span className="font-medium text-gray-700">Expiration Date:</span>
+                          <span className="ml-2">{format(new Date(selectedTraining.expirationDate), 'MMM dd, yyyy')}</span>
+                        </div>
+                      )}
                       {selectedTraining.certificateNumber && (
                         <div>
                           <span className="font-medium text-gray-700">Certificate #:</span>
@@ -626,6 +694,23 @@ export default function MasterDriverTrainingPage() {
         </div>
       </div>
 
+      {/* Add Training Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Training</DialogTitle>
+          </DialogHeader>
+          <div className="px-1">
+            <TrainingForm
+              personId={data.driver.id}
+              onSubmit={handleAddTraining}
+              onCancel={() => setIsAddDialogOpen(false)}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Training Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -634,9 +719,11 @@ export default function MasterDriverTrainingPage() {
           </DialogHeader>
           <div className="px-1">
             <TrainingForm
-              training={selectedTraining}
-              onSuccess={handleEditSuccess}
+              personId={data.driver.id}
+              initialData={selectedTraining}
+              onSubmit={handleEditTraining}
               onCancel={() => setIsEditDialogOpen(false)}
+              isSubmitting={isSubmitting}
             />
           </div>
         </DialogContent>
@@ -650,9 +737,11 @@ export default function MasterDriverTrainingPage() {
           </DialogHeader>
           <div className="px-1">
             <TrainingForm
+              personId={data.driver.id}
               renewingTraining={selectedTraining}
-              onSuccess={handleRenewalSuccess}
+              onSubmit={handleRenewTraining}
               onCancel={() => setIsRenewalDialogOpen(false)}
+              isSubmitting={isSubmitting}
             />
           </div>
         </DialogContent>

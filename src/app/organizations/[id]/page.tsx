@@ -333,7 +333,7 @@ export default function OrganizationDetailPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Organization not found</h2>
-            <Button onClick={() => router.push('/dashboard')}>
+            <Button onClick={() => router.push(masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
@@ -350,7 +350,7 @@ export default function OrganizationDetailPage() {
   const topNav = [
     { 
       label: 'Master', 
-      href: '/dashboard',
+      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
       isActive: false
     },
     { 

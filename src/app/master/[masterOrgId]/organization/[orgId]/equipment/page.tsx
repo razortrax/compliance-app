@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
 import { EquipmentForm } from '@/components/equipment/equipment-form'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,98 +26,104 @@ interface Equipment {
   model?: string | null
   year?: number | null
   vinNumber?: string | null
-  locationId?: string | null
-  location?: { id: string; name: string } | null
-  party?: {
-    role: Array<{
-      roleType: string
-      organizationId: string
-      locationId?: string | null
-      location?: { id: string; name: string } | null
-    }>
+  plateNumber?: string | null
+  registrationExpiry?: string | null
+  location?: { 
+    id: string
+    name: string
+    address?: string
+    city?: string
+    state?: string
+  } | null
+  maintenance: {
+    status: 'unknown'
+    daysSinceLastMaintenance: number | null
+    isOverdue: boolean
   }
 }
 
 interface Organization {
   id: string
   name: string
+  dotNumber?: string | null
+}
+
+interface EquipmentPageData {
+  organization: Organization
+  equipment: Equipment[]
+  summary: {
+    totalEquipment: number
+    activeEquipment: number
+    inactiveEquipment: number
+    maintenanceOverdue: number
+    maintenanceDue: number
+    equipmentByType: Record<string, number>
+  }
 }
 
 export default function EquipmentPage() {
   const params = useParams()
-  const router = useRouter()
   const masterOrgId = params.masterOrgId as string
   const organizationId = params.orgId as string
-  const { masterOrg } = useMasterOrg()
   
-  const [equipment, setEquipment] = useState<Equipment[]>([])
-  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [data, setData] = useState<EquipmentPageData | null>(null)
+  const [masterOrg, setMasterOrg] = useState<Organization | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null)
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
 
-  // Fetch organization details
+  // Fetch all data using URL-driven API 🚀
   useEffect(() => {
-    const fetchOrganization = async () => {
+    const fetchData = async () => {
+      if (!masterOrgId || !organizationId) return
+      
+      setIsLoading(true)
       try {
-        const response = await fetch(`/api/organizations/${organizationId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
+        // Fetch equipment data and master organization data in parallel
+        const [equipmentResponse, masterOrgResponse] = await Promise.all([
+          fetch(`/api/master/${masterOrgId}/organization/${organizationId}/equipment`),
+          fetch(`/api/organizations/${masterOrgId}`)
+        ])
+
+        if (equipmentResponse.ok) {
+          const equipmentResult: EquipmentPageData = await equipmentResponse.json()
+          setData(equipmentResult)
+          console.log(`✅ Loaded ${equipmentResult.equipment.length} equipment items for ${equipmentResult.organization.name}`)
+        } else {
+          console.error('Failed to fetch equipment data:', equipmentResponse.status)
+        }
+
+        if (masterOrgResponse.ok) {
+          const masterOrgResult = await masterOrgResponse.json()
+          setMasterOrg({
+            id: masterOrgResult.id,
+            name: masterOrgResult.name,
+            dotNumber: masterOrgResult.dotNumber
+          })
+          console.log(`✅ Loaded master organization: ${masterOrgResult.name}`)
+        } else {
+          console.error('Failed to fetch master organization data:', masterOrgResponse.status)
+          // Fallback to a default if master org fetch fails
+          setMasterOrg({ 
+            id: masterOrgId, 
+            name: 'Master Organization'
+          })
         }
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        console.error('Error fetching data:', error)
+        // Set fallback master org data
+        setMasterOrg({ 
+          id: masterOrgId, 
+          name: 'Master Organization'
+        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    fetchOrganization()
-  }, [organizationId])
-
-  // Fetch equipment
-  const fetchEquipment = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch('/api/equipment')
-      if (response.ok) {
-        const data = await response.json()
-        // Filter for this organization
-        const orgEquipment = data.filter((item: Equipment) => 
-          item.party?.role?.some(role => role.organizationId === organizationId)
-        )
-        setEquipment(orgEquipment)
-      }
-    } catch (error) {
-      console.error('Error fetching equipment:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Fetch organizations for selector
-  const fetchOrganizations = async () => {
-    try {
-      const response = await fetch('/api/organizations')
-      if (response.ok) {
-        const data = await response.json()
-        setOrganizations(data)
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error)
-    }
-  }
-
-  useEffect(() => {
-    fetchEquipment()
-    fetchOrganizations()
-  }, [organizationId])
-
-  const handleOrganizationSelect = (selectedOrg: Organization) => {
-    setIsSheetOpen(false)
-    router.push(`/organizations/${selectedOrg.id}/equipment`)
-  }
+    fetchData()
+  }, [masterOrgId, organizationId])
 
   const handleEditEquipment = (item: Equipment) => {
     setSelectedEquipment(item)
@@ -128,6 +133,14 @@ export default function EquipmentPage() {
   const handleCloseEditModal = () => {
     setShowEditModal(false)
     setSelectedEquipment(null)
+  }
+
+  const refreshData = async () => {
+    const response = await fetch(`/api/master/${masterOrgId}/organization/${organizationId}/equipment`)
+    if (response.ok) {
+      const result: EquipmentPageData = await response.json()
+      setData(result)
+    }
   }
 
   const getVehicleTypeLabel = (type: string) => {
@@ -160,51 +173,71 @@ export default function EquipmentPage() {
     return parts.length > 0 ? parts.join(' ') : 'Untitled Vehicle'
   }
 
-  if (!organization) {
+  // Build navigation breadcrumbs for equipment page (static labels)
+  const topNav = [
+    { 
+      label: 'Master', 
+      href: `/master/${masterOrgId}`, 
+      isActive: false 
+    },
+    { 
+      label: 'Organization', 
+      href: `/master/${masterOrgId}/organization/${organizationId}`, 
+      isActive: false 
+    },
+    { 
+      label: 'Drivers', 
+      href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, 
+      isActive: false 
+    },
+    { 
+      label: 'Equipment', 
+      href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, 
+      isActive: true 
+    }
+  ]
+
+  // Loading state with proper header context
+  if (isLoading || !data) {
     return (
-      <AppLayout
-        name={masterOrg?.name || 'Master'}
-        topNav={[{ label: 'Master', href: `/master/${masterOrgId}`, isActive: false }]}
+      <AppLayout 
+        name={masterOrg?.name || 'Master'} 
+        topNav={topNav}
         className="p-6"
       >
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="text-gray-500 mt-4">Loading equipment data...</p>
         </div>
       </AppLayout>
     )
   }
 
-  const masterName = masterOrg?.name || 'Master'
-  const topNav = [
-    { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
-    { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-    { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: false },
-    { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: true }
-  ]
-
   return (
     <AppLayout
-      name={masterName}
+      name={masterOrg?.name || 'Master'}
       topNav={topNav}
-      showOrgSelector={true}
-      showDriverEquipmentSelector={true}
       className="p-6"
-      organizations={organizations}
-      currentOrgId={organizationId}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
-      onOrganizationSelect={handleOrganizationSelect}
     >
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Organization Name */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">{organization.name}</h1>
+        {/* Organization Name & Summary */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">{data.organization.name}</h1>
+          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+            <span>Total Equipment: <strong>{data.summary.totalEquipment}</strong></span>
+            <span>Active: <strong>{data.summary.activeEquipment}</strong></span>
+            {data.summary.maintenanceOverdue > 0 && (
+              <span className="text-red-600">
+                Maintenance Overdue: <strong>{data.summary.maintenanceOverdue}</strong>
+              </span>
+            )}
+          </div>
         </div>
         
         {/* Page Header */}
         <SectionHeader
           title="Equipment & Vehicles"
-          description={`Manage vehicles and equipment for ${organization.name}`}
+          description={`Manage vehicles and equipment for ${data.organization.name}`}
           actions={
             <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
               <DialogTrigger asChild>
@@ -217,14 +250,14 @@ export default function EquipmentPage() {
                 <DialogHeader>
                   <DialogTitle>Add New Equipment</DialogTitle>
                   <DialogDescription>
-                    Add a new vehicle or piece of equipment to {organization.name}
+                    Add a new vehicle or piece of equipment to {data.organization.name}
                   </DialogDescription>
                 </DialogHeader>
                 <EquipmentForm
                   organizationId={organizationId}
                   onSuccess={() => {
                     setShowAddForm(false)
-                    fetchEquipment()
+                    refreshData()
                   }}
                   onCancel={() => setShowAddForm(false)}
                 />
@@ -248,7 +281,7 @@ export default function EquipmentPage() {
                 equipment={selectedEquipment}
                 onSuccess={() => {
                   handleCloseEditModal()
-                  fetchEquipment()
+                  refreshData()
                 }}
                 onCancel={handleCloseEditModal}
               />
@@ -256,69 +289,93 @@ export default function EquipmentPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Equipment List */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+        {/* Equipment Summary Cards */}
+        {Object.keys(data.summary.equipmentByType).length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            {Object.entries(data.summary.equipmentByType).map(([type, count]) => (
+              <Card key={type}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">{getVehicleTypeLabel(type)}</p>
+                      <p className="text-2xl font-bold">{count}</p>
+                    </div>
+                    <Truck className="h-8 w-8 text-gray-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        ) : equipment.length > 0 ? (
-          <div className="grid gap-4">
-            {equipment.map((item) => {
-              const role = item.party?.role?.[0]
-              return (
-                <Card key={item.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-3 flex-1">
-                        {/* Vehicle Name and Type */}
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold">
-                            {getVehicleDisplayName(item)}
-                          </h3>
-                          <Badge className={getVehicleTypeBadgeColor(item.vehicleType)}>
-                            {getVehicleTypeLabel(item.vehicleType)}
-                          </Badge>
-                          {(role?.location || item.location) && (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {role?.location?.name || item.location?.name}
-                            </Badge>
-                          )}
-                        </div>
+        )}
 
-                        {/* Vehicle Details */}
+        {/* Equipment List */}
+        {data.equipment.length > 0 ? (
+          <div className="grid gap-4">
+            {data.equipment.map((item) => (
+              <Card key={item.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-3 flex-1">
+                      {/* Vehicle Name and Type */}
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-semibold">
+                          {getVehicleDisplayName(item)}
+                        </h3>
+                        <Badge className={getVehicleTypeBadgeColor(item.vehicleType)}>
+                          {getVehicleTypeLabel(item.vehicleType)}
+                        </Badge>
+                        {item.location && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {item.location.name}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Vehicle Details */}
+                      <div className="space-y-1">
                         {item.vinNumber && (
                           <div className="flex items-center gap-1 text-sm text-gray-600">
                             <Hash className="h-4 w-4" />
                             VIN: {item.vinNumber}
                           </div>
                         )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => window.location.href = `/equipment/${item.id}`}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditEquipment(item)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
+                        {item.plateNumber && (
+                          <div className="text-sm text-gray-600">
+                            Plate: {item.plateNumber}
+                          </div>
+                        )}
+                        {item.registrationExpiry && (
+                          <div className="text-sm text-gray-600">
+                            Registration Expires: {new Date(item.registrationExpiry).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditEquipment(item)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : (
           <EmptyState

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +25,8 @@ import {
   Car,
   Clipboard,
   Settings,
-  GraduationCap
+  GraduationCap,
+  Stethoscope
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -36,6 +37,24 @@ interface Organization {
   party?: {
     userId?: string | null
   }
+}
+
+interface Driver {
+  id: string
+  firstName: string
+  lastName: string
+  compliance: {
+    expiringIssues: number
+    status: 'warning' | 'compliant'
+  }
+}
+
+interface Equipment {
+  id: string
+  vehicleType: string
+  make?: string | null
+  model?: string | null
+  plateNumber?: string | null
 }
 
 interface AppSidebarProps {
@@ -67,7 +86,13 @@ export function AppSidebar({
   onSheetOpenChange = () => {},
   onOrganizationSelect = () => {}
 }: AppSidebarProps) {
-  const [selectedTab, setSelectedTab] = useState<'drivers' | 'equipment'>('drivers')
+  // Initialize tab based on current page type - default to drivers unless on equipment page
+  const [selectedTab, setSelectedTab] = useState<'drivers' | 'equipment'>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname.includes('/equipment') ? 'equipment' : 'drivers'
+    }
+    return menuType === 'equipment' ? 'equipment' : 'drivers'
+  })
 
   // Organization Selector Button (working version from org page)
   const OrganizationSelector = () => (
@@ -126,10 +151,67 @@ export function AppSidebar({
     </Sheet>
   )
 
-  // Driver/Equipment Selector Button (shadcn Sheet approach)
+  // Driver/Equipment Selector Button - Fixed based on debugging recommendations 🔧
   const DriverEquipmentSelector = () => {
-    const [selectorOpen, setSelectorOpen] = useState(false)  // Modal open/close state
-    // selectedTab state is already defined at component level - keeps tab selection separate from modal state
+    const [selectorOpen, setSelectorOpen] = useState(false)
+    const [drivers, setDrivers] = useState<Driver[]>([])
+    const [equipment, setEquipment] = useState<Equipment[]>([])
+    const [isLoadingDrivers, setIsLoadingDrivers] = useState(false)
+    const [isLoadingEquipment, setIsLoadingEquipment] = useState(false)
+    
+    // Fetch drivers data
+    const fetchDrivers = async () => {
+      if (!masterOrgId || !currentOrgId || drivers.length > 0) return
+      
+      setIsLoadingDrivers(true)
+      try {
+        const response = await fetch(`/api/master/${masterOrgId}/organization/${currentOrgId}/drivers`)
+        if (response.ok) {
+          const data = await response.json()
+          setDrivers(data.drivers || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch drivers:', error)
+      } finally {
+        setIsLoadingDrivers(false)
+      }
+    }
+    
+    // Fetch equipment data
+    const fetchEquipment = async () => {
+      if (!masterOrgId || !currentOrgId || equipment.length > 0) return
+      
+      setIsLoadingEquipment(true)
+      try {
+        const response = await fetch(`/api/master/${masterOrgId}/organization/${currentOrgId}/equipment`)
+        if (response.ok) {
+          const data = await response.json()
+          setEquipment(data.equipment || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch equipment:', error)
+      } finally {
+        setIsLoadingEquipment(false)
+      }
+    }
+    
+    // Fetch data when modal opens
+    useEffect(() => {
+      if (selectorOpen && masterOrgId && currentOrgId) {
+        fetchDrivers()
+        fetchEquipment()
+      }
+    }, [selectorOpen, masterOrgId, currentOrgId])
+    
+    const handleDriverClick = (driver: Driver) => {
+      setSelectorOpen(false)
+      window.location.href = `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driver.id}`
+    }
+    
+    const handleEquipmentClick = (item: Equipment) => {
+      setSelectorOpen(false)
+      window.location.href = `/master/${masterOrgId}/organization/${currentOrgId}/equipment/${item.id}`
+    }
     
     return (
       <Sheet open={selectorOpen} onOpenChange={setSelectorOpen}>
@@ -140,8 +222,7 @@ export function AppSidebar({
           >
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <Truck className="h-4 w-4" />
-              <span className="font-medium">Selector</span>
+              <span className="font-medium">Select</span>
             </div>
             <ChevronDown className="h-4 w-4" />
           </Button>
@@ -155,48 +236,106 @@ export function AppSidebar({
           </SheetHeader>
           
           <div className="mt-6">
-            {/* Tab Toggle - using plain buttons to avoid any shadcn Button behavior */}
+            {/* Tab Toggle - Using proper Button components */}
             <div className="flex border-b border-gray-200 mb-4">
-              <button
-                type="button"
-                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  selectedTab === 'drivers'
-                    ? 'text-blue-600 border-blue-600 bg-blue-50'
-                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
-                }`}
+              <Button
+                variant={selectedTab === 'drivers' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 rounded-none border-0 border-b-2 border-transparent data-[state=active]:border-blue-600"
                 onClick={() => setSelectedTab('drivers')}
               >
                 <Users className="h-4 w-4 mr-2" />
-                Drivers
-              </button>
-              <button
-                type="button"
-                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  selectedTab === 'equipment'
-                    ? 'text-blue-600 border-blue-600 bg-blue-50'
-                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
-                }`}
+                Drivers ({drivers.length})
+              </Button>
+              <Button
+                variant={selectedTab === 'equipment' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 rounded-none border-0 border-b-2 border-transparent data-[state=active]:border-blue-600"
                 onClick={() => setSelectedTab('equipment')}
               >
                 <Truck className="h-4 w-4 mr-2" />
-                Equipment
-              </button>
+                Equipment ({equipment.length})
+              </Button>
             </div>
             
-            {/* Content Area - conditional rendering inside, not around the modal */}
-            <div className="space-y-2">
+            {/* Content Area - Keep this completely stable, no key changes */}
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {selectedTab === 'drivers' ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">No drivers found</p>
-                  <p className="text-xs mt-2">Drivers will appear here when added to this organization</p>
-                </div>
+                <>
+                  {isLoadingDrivers ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Loading drivers...</p>
+                    </div>
+                  ) : drivers.length > 0 ? (
+                    drivers.map((driver) => (
+                      <button
+                        key={driver.id}
+                        onClick={() => handleDriverClick(driver)}
+                        className="w-full p-3 text-left rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {driver.firstName} {driver.lastName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {driver.compliance.expiringIssues > 0 ? (
+                                <span className="text-orange-600">
+                                  {driver.compliance.expiringIssues} expiring issues
+                                </span>
+                              ) : (
+                                <span className="text-green-600">Compliant</span>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">No drivers found</p>
+                      <p className="text-xs mt-2">Drivers will appear here when added to this organization</p>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Truck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">No equipment found</p>
-                  <p className="text-xs mt-2">Equipment will appear here when added to this organization</p>
-                </div>
+                <>
+                  {isLoadingEquipment ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Loading equipment...</p>
+                    </div>
+                  ) : equipment.length > 0 ? (
+                    equipment.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleEquipmentClick(item)}
+                        className="w-full p-3 text-left rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {item.make} {item.model}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {item.vehicleType} • {item.plateNumber || 'No plate'}
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Truck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">No equipment found</p>
+                      <p className="text-xs mt-2">Equipment will appear here when added to this organization</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -212,7 +351,7 @@ export function AppSidebar({
         Organization
       </h3>
       <Link 
-        href={currentOrgId ? `/organizations/${currentOrgId}` : "#"} 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <BarChart3 className="mr-3 h-4 w-4" />
@@ -223,14 +362,14 @@ export function AppSidebar({
         Issues
       </Link>
       <Link 
-                      href={currentOrgId ? `/roadside-inspections?partyId=${currentOrgId}` : "#"} 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/roadside_inspections` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>
       <Link 
-        href={currentOrgId ? `/accidents?partyId=${currentOrgId}` : "#"} 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/accidents` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <Car className="mr-3 h-4 w-4" />
@@ -254,7 +393,7 @@ export function AppSidebar({
         Drivers
       </h3>
       <Link 
-        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}` : "#"} 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <BarChart3 className="mr-3 h-4 w-4" />
@@ -274,10 +413,13 @@ export function AppSidebar({
         <Car className="mr-3 h-4 w-4" />
         MVRs
       </Link>
-      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
-        <Users className="mr-3 h-4 w-4" />
-        Physicals <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
-      </div>
+      <Link 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/physical_issues` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Stethoscope className="mr-3 h-4 w-4" />
+        Physicals
+      </Link>
       <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
         <Users className="mr-3 h-4 w-4" />
         Drug & Alcohol <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
@@ -306,7 +448,10 @@ export function AppSidebar({
       <h3 className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
         Equipment
       </h3>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <BarChart3 className="mr-3 h-4 w-4" />
         Overview
       </Link>
@@ -322,12 +467,15 @@ export function AppSidebar({
         <Settings className="mr-3 h-4 w-4" />
         Maintenance
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/roadside_inspections` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <ShieldCheck className="mr-3 h-4 w-4" />
         Roadside Inspections
       </Link>
       <Link 
-        href={currentOrgId ? `/accidents?partyId=${currentOrgId}` : "#"} 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/accidents` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <Car className="mr-3 h-4 w-4" />

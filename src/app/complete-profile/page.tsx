@@ -84,8 +84,8 @@ function CompleteProfileForm() {
       // Note: User name is already set in Clerk from signup
       // Our database stores the authoritative profile information
 
-      // Redirect to dashboard
-      router.push('/dashboard')
+      // Redirect to homepage - let SmartRedirect handle the rest
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {

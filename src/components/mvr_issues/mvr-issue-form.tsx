@@ -118,6 +118,7 @@ export default function MvrIssueForm({ partyId, mvrIssue, onSuccess, onCancel }:
     try {
       const payload = {
         ...formData,
+        title: `MVR Record - ${formData.state}`,
         violationsCount: Number(formData.violationsCount),
         cleanRecord: !!formData.cleanRecord,
         partyId: mvrIssue ? undefined : partyId,

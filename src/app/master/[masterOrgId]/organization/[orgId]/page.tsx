@@ -245,7 +245,7 @@ export default function OrganizationDetailPage() {
 
   const handleOrganizationSelect = (selectedOrg: Organization) => {
     setIsSheetOpen(false)
-    router.push(`/organizations/${selectedOrg.id}`)
+    router.push(`/master/${masterOrgId}/organization/${selectedOrg.id}`)
   }
 
   // Fetch KPIs data
@@ -303,7 +303,7 @@ export default function OrganizationDetailPage() {
    }
 
    const handleViewLocation = (location: Location) => {
-     router.push(`/organizations/${organizationId}/locations/${location.id}`)
+     router.push(`/master/${masterOrgId}/organization/${organizationId}/locations/${location.id}`)
    }
 
    const handleAddLocation = () => {
@@ -334,7 +334,7 @@ export default function OrganizationDetailPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Organization not found</h2>
-            <Button onClick={() => router.push('/dashboard')}>
+            <Button onClick={() => router.push(`/master/${masterOrgId}`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>

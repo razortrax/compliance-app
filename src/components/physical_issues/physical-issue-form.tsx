@@ -1,27 +1,47 @@
-"use client"
+'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, CalendarIcon } from 'lucide-react'
-import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertCircle, Calendar, Stethoscope, Clock } from 'lucide-react'
 
-interface PhysicalIssueFormProps {
-  partyId?: string
-  physicalIssue?: any
-  onSuccess?: (newPhysical?: any) => void
-  onCancel?: () => void
+interface PhysicalIssue {
+  id: string
+  issueId: string
+  type?: string
+  medicalExaminer?: string
+  selfCertified: boolean
+  nationalRegistry: boolean
+  result?: string
+  status: string
+  startDate?: string
+  expirationDate?: string
+  outOfServiceDate?: string
+  backInServiceDate?: string
+  createdAt: string
+  updatedAt: string
+  issue: {
+    id: string
+    title: string
+    description?: string
+    status: string
+    priority: string
+  }
 }
 
-const PHYSICAL_TYPE_OPTIONS = [
+interface PhysicalIssueFormProps {
+  physicalIssue?: PhysicalIssue | null
+  partyId?: string  // Changed from personId to partyId
+  onSubmit: (data: any) => void
+  onCancel: () => void
+  isSubmitting?: boolean
+}
+
+const physicalTypes = [
   { value: 'Annual', label: 'Annual' },
   { value: 'Bi_Annual', label: 'Bi-Annual' },
   { value: 'Return_to_Duty', label: 'Return to Duty' },
@@ -33,231 +53,252 @@ const PHYSICAL_TYPE_OPTIONS = [
   { value: 'No_Physical_Issue', label: 'No Physical Issue' }
 ]
 
-export default function PhysicalIssueForm({ partyId, physicalIssue, onSuccess, onCancel }: PhysicalIssueFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
+const physicalResults = [
+  { value: 'Three_Month', label: '3 Months', months: 3 },
+  { value: 'Six_Month', label: '6 Months', months: 6 },
+  { value: 'One_Year', label: '1 Year', months: 12 },
+  { value: 'Two_Years', label: '2 Years', months: 24 },
+  { value: 'Disqualified', label: 'Disqualified', months: 0 }
+]
+
+export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, onCancel, isSubmitting = false }: PhysicalIssueFormProps) {
   const [formData, setFormData] = useState({
     type: physicalIssue?.type || '',
     medicalExaminer: physicalIssue?.medicalExaminer || '',
     selfCertified: physicalIssue?.selfCertified || false,
     nationalRegistry: physicalIssue?.nationalRegistry || false,
-    startDate: physicalIssue?.startDate ? new Date(physicalIssue.startDate) : null,
-    expirationDate: physicalIssue?.expirationDate ? new Date(physicalIssue.expirationDate) : null,
-    renewalDate: physicalIssue?.renewalDate ? new Date(physicalIssue.renewalDate) : null,
-    title: physicalIssue?.issue?.title || '',
-    description: physicalIssue?.issue?.description || ''
+    result: physicalIssue?.result || '',
+    startDate: physicalIssue?.startDate ? new Date(physicalIssue.startDate).toISOString().split('T')[0] : '',
+    expirationDate: physicalIssue?.expirationDate ? new Date(physicalIssue.expirationDate).toISOString().split('T')[0] : '',
+    outOfServiceDate: physicalIssue?.outOfServiceDate ? new Date(physicalIssue.outOfServiceDate).toISOString().split('T')[0] : '',
+    backInServiceDate: physicalIssue?.backInServiceDate ? new Date(physicalIssue.backInServiceDate).toISOString().split('T')[0] : '',
+    status: physicalIssue?.status || 'Qualified'
   })
 
-  const handleInputChange = (name: string, value: any) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const payload = {
-        ...formData,
-        partyId: partyId || physicalIssue?.issue?.partyId,
-        startDate: formData.startDate ? formData.startDate.toISOString() : undefined,
-        expirationDate: formData.expirationDate ? formData.expirationDate.toISOString() : undefined,
-        renewalDate: formData.renewalDate ? formData.renewalDate.toISOString() : undefined,
+  // Auto-calculate expiration date when start date or result changes
+  useEffect(() => {
+    if (formData.startDate && formData.result && formData.result !== 'Disqualified') {
+      const selectedResult = physicalResults.find(r => r.value === formData.result)
+      if (selectedResult) {
+        const startDate = new Date(formData.startDate)
+        const expirationDate = new Date(startDate)
+        expirationDate.setMonth(expirationDate.getMonth() + selectedResult.months)
+        
+        setFormData(prev => ({
+          ...prev,
+          expirationDate: expirationDate.toISOString().split('T')[0]
+        }))
       }
-
-      const url = physicalIssue 
-        ? `/api/physical_issues/${physicalIssue.id}`
-        : '/api/physical_issues'
-      
-      const method = physicalIssue ? 'PUT' : 'POST'
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to save physical record')
-      }
-      
-      const savedPhysical = await res.json()
-      if (onSuccess) onSuccess(savedPhysical)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
+    } else if (formData.result === 'Disqualified') {
+      // Clear expiration date for disqualified results
+      setFormData(prev => ({
+        ...prev,
+        expirationDate: '',
+        status: 'Disqualified',
+        outOfServiceDate: formData.startDate // Set out of service to exam date
+      }))
+    } else if (formData.result && formData.result !== 'Disqualified') {
+      // Reset status to qualified for valid results
+      setFormData(prev => ({
+        ...prev,
+        status: 'Qualified',
+        outOfServiceDate: '',
+        backInServiceDate: ''
+      }))
     }
+  }, [formData.startDate, formData.result])
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
   }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const submitData = {
+      ...formData,
+      title: `Physical Exam - ${formData.type}`,  // Generate title like MVR does
+      partyId: physicalIssue ? undefined : partyId,  // Use partyId like MVR
+      // Convert dates to proper format
+      startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+      expirationDate: formData.expirationDate ? new Date(formData.expirationDate).toISOString() : null,
+      outOfServiceDate: formData.outOfServiceDate ? new Date(formData.outOfServiceDate).toISOString() : null,
+      backInServiceDate: formData.backInServiceDate ? new Date(formData.backInServiceDate).toISOString() : null,
+    }
+
+    onSubmit(submitData)
+  }
+
+  const isDisqualified = formData.result === 'Disqualified'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Basic Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-          <CardDescription>Physical examination details</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Stethoscope className="h-5 w-5" />
+            Physical Examination Details
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Physical examination title"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="type">Physical Type</Label>
-              <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select physical type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PHYSICAL_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="medicalExaminer">Medical Examiner</Label>
-              <Input
-                id="medicalExaminer"
-                value={formData.medicalExaminer}
-                onChange={(e) => handleInputChange('medicalExaminer', e.target.value)}
-                placeholder="Name of medical examiner"
-              />
-            </div>
+          {/* Type */}
+          <div className="space-y-2">
+            <Label htmlFor="type">Physical Type *</Label>
+            <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select physical type" />
+              </SelectTrigger>
+              <SelectContent>
+                {physicalTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Medical Examiner */}
+          <div className="space-y-2">
+            <Label htmlFor="medicalExaminer">Medical Examiner</Label>
+            <Input
+              id="medicalExaminer"
+              value={formData.medicalExaminer}
+              onChange={(e) => handleInputChange('medicalExaminer', e.target.value)}
+              placeholder="Name of medical examiner"
+            />
+          </div>
+
+          {/* Checkboxes */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="selfCertified"
                 checked={formData.selfCertified}
-                onCheckedChange={(checked) => handleInputChange('selfCertified', checked)}
+                onCheckedChange={(checked) => handleInputChange('selfCertified', !!checked)}
               />
               <Label htmlFor="selfCertified">Self Certified</Label>
             </div>
-
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="nationalRegistry"
                 checked={formData.nationalRegistry}
-                onCheckedChange={(checked) => handleInputChange('nationalRegistry', checked)}
+                onCheckedChange={(checked) => handleInputChange('nationalRegistry', !!checked)}
               />
               <Label htmlFor="nationalRegistry">National Registry</Label>
             </div>
           </div>
 
+          {/* Start Date */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Additional notes about the physical examination"
-              rows={3}
+            <Label htmlFor="startDate">Exam Date *</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => handleInputChange('startDate', e.target.value)}
+              required
             />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Date Information Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Date Information</CardTitle>
-          <CardDescription>Physical validity period and renewal dates</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Start Date - Simple Input */}
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate ? format(formData.startDate, "yyyy-MM-dd") : ""}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    // Create date without timezone adjustment
-                    const [year, month, day] = e.target.value.split('-')
-                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-                    handleInputChange('startDate', date)
-                  } else {
-                    handleInputChange('startDate', null)
-                  }
-                }}
-                className="w-full"
-              />
-            </div>
+          {/* Result */}
+          <div className="space-y-2">
+            <Label htmlFor="result">Medical Result *</Label>
+            <Select value={formData.result} onValueChange={(value) => handleInputChange('result', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select medical result" />
+              </SelectTrigger>
+              <SelectContent>
+                {physicalResults.map((result) => (
+                  <SelectItem key={result.value} value={result.value}>
+                    {result.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Expiration Date - Simple Input */}
+          {/* Auto-calculated or manual expiration date */}
+          {!isDisqualified && (
             <div className="space-y-2">
-              <Label htmlFor="expirationDate">Expiration Date</Label>
+              <Label htmlFor="expirationDate" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Expiration Date
+                {formData.startDate && formData.result && (
+                  <span className="text-sm text-green-600">(Auto-calculated)</span>
+                )}
+              </Label>
               <Input
                 id="expirationDate"
                 type="date"
-                value={formData.expirationDate ? format(formData.expirationDate, "yyyy-MM-dd") : ""}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    // Create date without timezone adjustment
-                    const [year, month, day] = e.target.value.split('-')
-                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-                    handleInputChange('expirationDate', date)
-                  } else {
-                    handleInputChange('expirationDate', null)
-                  }
-                }}
-                className="w-full"
+                value={formData.expirationDate}
+                onChange={(e) => handleInputChange('expirationDate', e.target.value)}
+                readOnly={!!(formData.startDate && formData.result)}
+                className={formData.startDate && formData.result ? 'bg-green-50' : ''}
               />
             </div>
+          )}
 
-            {/* Renewal Date - Simple Input */}
-            <div className="space-y-2">
-              <Label htmlFor="renewalDate">Renewal Date</Label>
-              <Input
-                id="renewalDate"
-                type="date"
-                value={formData.renewalDate ? format(formData.renewalDate, "yyyy-MM-dd") : ""}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    // Create date without timezone adjustment
-                    const [year, month, day] = e.target.value.split('-')
-                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-                    handleInputChange('renewalDate', date)
-                  } else {
-                    handleInputChange('renewalDate', null)
-                  }
-                }}
-                className="w-full"
-              />
-            </div>
-          </div>
+          {/* Disqualified Status Fields */}
+          {isDisqualified && (
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-red-700 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Disqualification Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="outOfServiceDate">Out of Service Date</Label>
+                  <Input
+                    id="outOfServiceDate"
+                    type="date"
+                    value={formData.outOfServiceDate}
+                    onChange={(e) => handleInputChange('outOfServiceDate', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="backInServiceDate">Back in Service Date</Label>
+                  <Input
+                    id="backInServiceDate"
+                    type="date"
+                    value={formData.backInServiceDate}
+                    onChange={(e) => handleInputChange('backInServiceDate', e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
 
-      {error && (
-        <div className="text-red-600 text-sm">{error}</div>
+      {/* Auto-calculation Info */}
+      {formData.startDate && formData.result && !isDisqualified && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 text-blue-700">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm">
+                <strong>Auto-calculated:</strong> Expiration date set to {formData.startDate} + {
+                  physicalResults.find(r => r.value === formData.result)?.label.toLowerCase()
+                }
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       )}
-      
+
+      {/* Form Actions */}
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {physicalIssue ? 'Update' : 'Create'} Physical
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : physicalIssue ? 'Update Physical' : 'Create Physical'}
         </Button>
       </div>
     </form>

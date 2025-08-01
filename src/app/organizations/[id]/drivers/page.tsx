@@ -219,7 +219,7 @@ export default function DriversPage() {
     return (
       <AppLayout
         name={masterOrg?.name || 'Master'}
-        topNav={[{ label: 'Master', href: '/dashboard', isActive: false }]}
+        topNav={[{ label: 'Master', href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard', isActive: false }]}
         className="p-6"
       >
         <div className="text-center py-12">
@@ -231,7 +231,7 @@ export default function DriversPage() {
 
   const masterName = masterOrg?.name || 'Master'
   const topNav = [
-    { label: 'Master', href: '/dashboard', isActive: false },
+    { label: 'Master', href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard', isActive: false },
     { label: 'Organization', href: `/organizations/${organizationId}`, isActive: false },
     { label: 'Drivers', href: `/organizations/${organizationId}/drivers`, isActive: true },
     { label: 'Equipment', href: `/organizations/${organizationId}/equipment`, isActive: false }

@@ -34,67 +34,97 @@ interface Training {
       id: string
     }
   }
+  category: string
+  expirationPeriodMonths?: number
 }
 
 interface TrainingFormProps {
-  training?: Training | null
-  renewingTraining?: Training | null
-  driverId?: string
-  onSuccess: (training: any) => void
+  personId: string
+  onSubmit: (data: any) => void
   onCancel: () => void
+  isSubmitting?: boolean
+  initialData?: any
+  renewingTraining?: Training | null
 }
 
-// Training types with focus on DOT mandatory training
-const TRAINING_TYPES = [
-  // DOT Required Training
-  'HazMat Annual',
-  'HazMat Initial',
-  'HazMat Security Threat Assessment',
-  // Common Voluntary Training
-  'Defensive Driving',
-  'First Aid/CPR',
-  'DOT Physical Compliance',
-  'Vehicle Inspection',
-  'Hours of Service',
-  'Drug and Alcohol Awareness',
-  'Safety Training',
-  'Customer Service',
-  'Other'
-]
+// Training types organized by category
+const TRAINING_TYPES = {
+  MANDATORY_DOT: [
+    'HazMat Annual',
+    'HazMat Initial', 
+    'HazMat Security Threat Assessment',
+    'HazMat Endorsement Renewal',
+    'Passenger Endorsement',
+    'School Bus Endorsement'
+  ],
+  MANDATORY_ORG: [
+    'Company Safety Orientation',
+    'Equipment Training',
+    'Route Familiarization',
+    'Customer Service',
+    'Load Securement',
+    'Cargo Handling'
+  ],
+  VOLUNTARY: [
+    'Defensive Driving',
+    'First Aid/CPR',
+    'DOT Physical Compliance',
+    'Vehicle Inspection',
+    'Hours of Service',
+    'Drug and Alcohol Awareness',
+    'Safety Training',
+    'Professional Development',
+    'Other'
+  ]
+}
 
-export function TrainingForm({ training, renewingTraining, driverId, onSuccess, onCancel }: TrainingFormProps) {
-  const isEditing = !!training
+// Auto-calculate expiration based on training type and category
+const calculateExpiration = (trainingType: string, category: string, completionDate: Date, customMonths?: number) => {
+  const expiration = new Date(completionDate)
+  
+  if (category === 'MANDATORY_DOT') {
+    // DOT HazMat training has 2-year expiration
+    if (trainingType.toLowerCase().includes('hazmat')) {
+      expiration.setFullYear(completionDate.getFullYear() + 2)
+    } else {
+      // Other DOT training typically 1 year
+      expiration.setFullYear(completionDate.getFullYear() + 1)
+    }
+  } else if (category === 'MANDATORY_ORG') {
+    // Organization-defined training uses custom period
+    if (customMonths) {
+      expiration.setMonth(completionDate.getMonth() + customMonths)
+    } else {
+      // Default to 1 year if no custom period set
+      expiration.setFullYear(completionDate.getFullYear() + 1)
+    }
+  } else if (category === 'VOLUNTARY') {
+    // Voluntary training can have optional expiration
+    // Return null for no expiration, or calculated date if specified
+    return null // No expiration for voluntary by default
+  }
+  
+  return expiration
+}
+
+export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = false, initialData, renewingTraining }: TrainingFormProps) {
+  const isEditing = !!initialData
   const isRenewal = !!renewingTraining
-  const baseTraining = training || renewingTraining
+  const baseTraining = initialData || renewingTraining
 
-  // Calculate default dates
+  // Calculate default dates and expiration
   const getInitialDates = () => {
     const today = new Date()
     
     if (isRenewal && renewingTraining) {
-      // For renewals, suggest completion today and expiration based on training type
-      const expirationDate = new Date(today)
-      
-      // For HazMat training, add 2 years (DOT requirement)
-      if (renewingTraining.trainingType.toLowerCase().includes('hazmat')) {
-        expirationDate.setFullYear(today.getFullYear() + 2)
-      } else {
-        // Default to 1 year for other training
-        expirationDate.setFullYear(today.getFullYear() + 1)
-      }
-      
       return {
         completionDate: today,
-        expirationDate
+        expirationDate: null // Will be calculated based on category
       }
     } else {
-      // For new training, default expiration depends on type
-      const expirationDate = new Date(today)
-      expirationDate.setFullYear(today.getFullYear() + 1) // Default 1 year
-      
       return {
         completionDate: today,
-        expirationDate
+        expirationDate: null
       }
     }
   }
@@ -103,109 +133,103 @@ export function TrainingForm({ training, renewingTraining, driverId, onSuccess, 
 
   const [formData, setFormData] = useState({
     trainingType: baseTraining?.trainingType || '',
+    category: baseTraining?.category || 'VOLUNTARY',
     provider: baseTraining?.provider || '',
     instructor: baseTraining?.instructor || '',
     location: baseTraining?.location || '',
     startDate: baseTraining?.startDate ? new Date(baseTraining.startDate) : undefined as Date | undefined,
     completionDate: baseTraining?.completionDate ? new Date(baseTraining.completionDate) : initialDates.completionDate,
-    expirationDate: baseTraining?.expirationDate ? new Date(baseTraining.expirationDate) : initialDates.expirationDate,
+    expirationDate: baseTraining?.expirationDate ? new Date(baseTraining.expirationDate) : undefined as Date | undefined,
+    expirationPeriodMonths: baseTraining?.expirationPeriodMonths || null,
     certificateNumber: baseTraining?.certificateNumber || '',
     hours: baseTraining?.hours || 0,
     isRequired: baseTraining?.isRequired || false,
-    partyId: baseTraining?.issue?.party?.id || driverId || ''
+    hasExpiration: baseTraining?.expirationDate ? true : false,
+    partyId: baseTraining?.issue?.party?.id || personId || ''
   })
 
-  const [competencies, setCompetencies] = useState<string[]>(
-    baseTraining?.competencies ? baseTraining.competencies.map(c => c.name || c) : []
-  )
-  const [newCompetency, setNewCompetency] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Update expiration date when training type changes (for new training)
+  // Auto-calculate expiration when completion date or category changes
   useEffect(() => {
-    if (!isEditing && formData.trainingType) {
-      const isHazmat = formData.trainingType.toLowerCase().includes('hazmat')
-      const yearsToAdd = isHazmat ? 2 : 1 // HazMat = 2 years, others = 1 year
+    if (formData.completionDate && formData.category && formData.hasExpiration) {
+      const calculatedExpiration = calculateExpiration(
+        formData.trainingType, 
+        formData.category, 
+        formData.completionDate,
+        formData.expirationPeriodMonths || undefined
+      )
       
-      const newExpiration = new Date(formData.completionDate)
-      newExpiration.setFullYear(newExpiration.getFullYear() + yearsToAdd)
+      if (calculatedExpiration) {
+        setFormData(prev => ({
+          ...prev,
+          expirationDate: calculatedExpiration
+        }))
+      }
+    }
+  }, [formData.completionDate, formData.category, formData.trainingType, formData.expirationPeriodMonths, formData.hasExpiration])
+
+  // Auto-set category when training type is selected
+  useEffect(() => {
+    if (formData.trainingType) {
+      let detectedCategory = 'VOLUNTARY'
+      
+      // Check if it's DOT mandatory training
+      if (TRAINING_TYPES.MANDATORY_DOT.includes(formData.trainingType)) {
+        detectedCategory = 'MANDATORY_DOT'
+      } else if (TRAINING_TYPES.MANDATORY_ORG.includes(formData.trainingType)) {
+        detectedCategory = 'MANDATORY_ORG'
+      }
       
       setFormData(prev => ({
         ...prev,
-        expirationDate: newExpiration
+        category: detectedCategory,
+        isRequired: detectedCategory !== 'VOLUNTARY'
       }))
     }
-  }, [formData.trainingType, formData.completionDate, isEditing])
+  }, [formData.trainingType])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [competencies, setCompetencies] = useState<string[]>(
+    baseTraining?.competencies ? baseTraining.competencies.map((c: any) => c.name || c) : []
+  )
+  const [newCompetency, setNewCompetency] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.trainingType || !formData.completionDate || !formData.expirationDate || !formData.partyId) {
+    // Validate required fields
+    if (!formData.trainingType || !formData.completionDate || !formData.partyId) {
       alert('Please fill in all required fields')
       return
     }
 
-    setIsSubmitting(true)
-    
-    try {
-      const requestData = {
-        trainingType: formData.trainingType,
-        provider: formData.provider,
-        instructor: formData.instructor,
-        location: formData.location,
-        startDate: formData.startDate?.toISOString(),
-        completionDate: formData.completionDate.toISOString(),
-        expirationDate: formData.expirationDate.toISOString(),
-        certificateNumber: formData.certificateNumber,
-        hours: formData.hours || undefined,
-        isRequired: formData.isRequired,
-        competencies: competencies.map(c => ({ name: c })),
-        partyId: formData.partyId,
-        title: `${formData.trainingType} Training`,
-        ...(isRenewal && { 
-          previousTrainingId: renewingTraining?.id 
-        })
-      }
-      
-      // For renewals, use minimal renewal data
-      const finalRequestData = isRenewal ? {
-        previousTrainingId: renewingTraining?.id,
-        startDate: formData.startDate?.toISOString(),
-        completionDate: formData.completionDate.toISOString(),
-        expirationDate: formData.expirationDate.toISOString(),
-        certificateNumber: formData.certificateNumber,
-        hours: formData.hours
-      } : requestData
-
-      const url = isRenewal 
-        ? '/api/trainings/renew'
-        : isEditing 
-          ? `/api/trainings/${training?.id}`
-          : '/api/trainings'
-      
-      const method = isEditing ? 'PUT' : 'POST'
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(finalRequestData),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Failed to ${isRenewal ? 'renew' : isEditing ? 'update' : 'create'} training: ${errorText}`)
-      }
-
-      const result = await response.json()
-      onSuccess(result)
-    } catch (error) {
-      console.error('Error submitting training:', error)
-      alert(error instanceof Error ? error.message : 'An error occurred while saving the training')
-    } finally {
-      setIsSubmitting(false)
+    // For mandatory training, expiration is required
+    if ((formData.category === 'MANDATORY_DOT' || formData.category === 'MANDATORY_ORG') && !formData.expirationDate) {
+      alert('Expiration date is required for mandatory training')
+      return
     }
+    
+    const requestData = {
+      trainingType: formData.trainingType,
+      category: formData.category,
+      provider: formData.provider,
+      instructor: formData.instructor,
+      location: formData.location,
+      startDate: formData.startDate?.toISOString(),
+      completionDate: formData.completionDate.toISOString(),
+      expirationDate: formData.expirationDate?.toISOString() || undefined,
+      expirationPeriodMonths: formData.expirationPeriodMonths,
+      certificateNumber: formData.certificateNumber,
+      hours: formData.hours || undefined,
+      isRequired: formData.isRequired,
+      competencies: competencies.map(c => ({ name: c })),
+      partyId: formData.partyId,
+      title: `${formData.trainingType} Training`,
+      ...(isRenewal && { 
+        previousTrainingId: renewingTraining?.id 
+      })
+    }
+    
+    // Call parent's onSubmit function - parent handles the API call
+    onSubmit(requestData)
   }
 
   const addCompetency = () => {
@@ -231,6 +255,33 @@ export function TrainingForm({ training, renewingTraining, driverId, onSuccess, 
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
+            {/* Training Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Training Category <span className="text-red-500">*</span></Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MANDATORY_DOT">
+                    DOT Mandatory
+                    <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
+                  </SelectItem>
+                  <SelectItem value="MANDATORY_ORG">
+                    Organization Mandatory
+                    <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                  </SelectItem>
+                  <SelectItem value="VOLUNTARY">
+                    Voluntary Training
+                    <Badge variant="secondary" className="ml-2 text-xs">Optional</Badge>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Training Type */}
             <div className="space-y-2">
               <Label htmlFor="trainingType">Training Type <span className="text-red-500">*</span></Label>
@@ -242,32 +293,66 @@ export function TrainingForm({ training, renewingTraining, driverId, onSuccess, 
                   <SelectValue placeholder="Select training type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TRAINING_TYPES.map((type) => (
+                  {TRAINING_TYPES[formData.category as keyof typeof TRAINING_TYPES]?.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                       {type.toLowerCase().includes('hazmat') && (
-                        <Badge variant="destructive" className="ml-2 text-xs">DOT Required</Badge>
+                        <Badge variant="destructive" className="ml-2 text-xs">2 yr</Badge>
                       )}
                     </SelectItem>
-                  ))}
+                  )) || []}
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            {/* DOT Required Checkbox */}
-            <div className="space-y-2 flex items-center">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isRequired"
-                  checked={formData.isRequired}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isRequired: !!checked })}
+          {/* Custom Expiration Period for Org Mandatory */}
+          {formData.category === 'MANDATORY_ORG' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="expirationPeriodMonths">Custom Expiration Period (Months)</Label>
+                <Input
+                  id="expirationPeriodMonths"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={formData.expirationPeriodMonths || ''}
+                  onChange={(e) => setFormData({ ...formData, expirationPeriodMonths: parseInt(e.target.value) || null })}
+                  placeholder="e.g., 12 for 1 year"
                 />
-                <Label htmlFor="isRequired" className="text-sm font-medium">
-                  DOT Required Training
-                </Label>
+              </div>
+              <div className="space-y-2 flex items-center">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasExpiration"
+                    checked={formData.hasExpiration}
+                    onCheckedChange={(checked) => setFormData({ ...formData, hasExpiration: !!checked })}
+                  />
+                  <Label htmlFor="hasExpiration" className="text-sm font-medium">
+                    Has Expiration Date
+                  </Label>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Voluntary Training Expiration Option */}
+          {formData.category === 'VOLUNTARY' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 flex items-center">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasExpiration"
+                    checked={formData.hasExpiration}
+                    onCheckedChange={(checked) => setFormData({ ...formData, hasExpiration: !!checked })}
+                  />
+                  <Label htmlFor="hasExpiration" className="text-sm font-medium">
+                    Set Expiration Date (Optional)
+                  </Label>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             {/* Provider */}
@@ -403,34 +488,61 @@ export function TrainingForm({ training, renewingTraining, driverId, onSuccess, 
               </Popover>
             </div>
 
-            {/* Expiration Date */}
-            <div className="space-y-2">
-              <Label>Expiration Date <span className="text-red-500">*</span></Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.expirationDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.expirationDate ? format(formData.expirationDate, "PPP") : "Pick expiration date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.expirationDate}
-                    onSelect={(date) => {
-                      if (date) setFormData({ ...formData, expirationDate: date })
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            {/* Expiration Date - Conditional */}
+            {(formData.category === 'MANDATORY_DOT' || formData.category === 'MANDATORY_ORG' || formData.hasExpiration) && (
+              <div className="space-y-2">
+                <Label>
+                  Expiration Date 
+                  {(formData.category === 'MANDATORY_DOT' || formData.category === 'MANDATORY_ORG') && (
+                    <span className="text-red-500">*</span>
+                  )}
+                  {formData.category === 'MANDATORY_DOT' && formData.trainingType.toLowerCase().includes('hazmat') && (
+                    <Badge variant="secondary" className="ml-2 text-xs">Auto: 2 years</Badge>
+                  )}
+                  {formData.category === 'MANDATORY_ORG' && formData.expirationPeriodMonths && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      Auto: {formData.expirationPeriodMonths} months
+                    </Badge>
+                  )}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.expirationDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.expirationDate ? format(formData.expirationDate, "PPP") : "Pick expiration date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.expirationDate}
+                      onSelect={(date) => {
+                        setFormData({ ...formData, expirationDate: date || undefined })
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {/* No Expiration Message for Voluntary */}
+            {formData.category === 'VOLUNTARY' && !formData.hasExpiration && (
+              <div className="space-y-2">
+                <Label className="text-gray-500">Expiration Date</Label>
+                <div className="p-3 bg-gray-50 rounded-md border-dashed border-2">
+                  <p className="text-sm text-gray-600 text-center">
+                    ✓ No expiration date set - this is voluntary training
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

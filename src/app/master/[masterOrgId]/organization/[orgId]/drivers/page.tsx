@@ -31,32 +31,47 @@ import {
   User
 } from 'lucide-react'
 
-interface Person {
+interface Driver {
   id: string
   firstName: string
   lastName: string
-  dateOfBirth?: Date | null
-  licenseNumber?: string | null
-  phone?: string | null
   email?: string | null
+  phone?: string | null
+  licenseNumber?: string | null
+  dateOfBirth?: Date | null
   address?: string | null
   city?: string | null
   state?: string | null
   zipCode?: string | null
-  party?: {
-    role: Array<{
-      id: string
-      roleType: string
-      organizationId: string
-      locationId?: string | null
-      location?: { id: string; name: string } | null
-    }>
+  roleStartDate: Date
+  roleStatus: string
+  compliance: {
+    totalActiveIssues: number
+    expiringIssues: number
+    licenseCount: number
+    mvrCount: number
+    trainingCount: number
+    physicalCount: number
+    status: 'warning' | 'compliant'
   }
 }
 
 interface Organization {
   id: string
   name: string
+  dotNumber?: string | null
+}
+
+interface DriversResponse {
+  organization: Organization
+  drivers: Driver[]
+  summary: {
+    totalDrivers: number
+    driversWithIssues: number
+    complianceRate: number
+    totalActiveIssues: number
+    totalExpiringIssues: number
+  }
 }
 
 export default function DriversPage() {
@@ -66,8 +81,9 @@ export default function DriversPage() {
   const organizationId = params.orgId as string
   const { masterOrg } = useMasterOrg()
   
-  const [persons, setPersons] = useState<Person[]>([])
+  const [drivers, setDrivers] = useState<Driver[]>([])
   const [organization, setOrganization] = useState<Organization | null>(null)
+  const [summary, setSummary] = useState<DriversResponse['summary'] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -75,7 +91,7 @@ export default function DriversPage() {
   
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
+  const [selectedPerson, setSelectedPerson] = useState<Driver | null>(null)
   
   // Deactivation state
   const [showDeactivateSection, setShowDeactivateSection] = useState(false)
@@ -85,99 +101,75 @@ export default function DriversPage() {
   const [isDeactivating, setIsDeactivating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch all data with proper error handling and race condition prevention
+  // Fetch all data using the new URL-driven API - single optimized call! 🚀
   useEffect(() => {
-    const fetchAllData = async () => {
-      console.log('🔄 Fetching drivers page data for org:', organizationId)
+    const fetchDriversData = async () => {
+      console.log('🚀 Fetching drivers data using URL-driven API for org:', organizationId)
       
       try {
         setIsLoading(true)
-        setError(null) // Clear previous errors
+        setError(null)
         
-        // Fetch all data in parallel with proper error handling
-        const [orgResult, personsResult, orgsResult] = await Promise.allSettled([
-          fetch(`/api/organizations/${organizationId}`),
-          fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`),
-          fetch('/api/organizations')
+        // Single API call with all data pre-filtered and optimized! 
+        const [driversResult, orgsResult] = await Promise.allSettled([
+          fetch(`/api/master/${masterOrgId}/organization/${organizationId}/drivers`),
+          fetch('/api/organizations') // Still need for org selector
         ])
         
-        let hasErrors = false
-        const errors = []
-        
-        // Handle organization data
-        if (orgResult.status === 'fulfilled' && orgResult.value.ok) {
-          const orgData = await orgResult.value.json()
-          setOrganization(orgData)
-          console.log('✅ Organization data loaded')
+        // Handle drivers data (primary)
+        if (driversResult.status === 'fulfilled' && driversResult.value.ok) {
+          const data: DriversResponse = await driversResult.value.json()
+          
+          setOrganization(data.organization)
+          setDrivers(data.drivers)
+          setSummary(data.summary)
+          
+          console.log('✅ URL-driven API success!')
+          console.log(`📊 Loaded ${data.summary.totalDrivers} drivers with ${data.summary.complianceRate}% compliance`)
+          console.log(`⚠️ ${data.summary.driversWithIssues} drivers have expiring issues`)
         } else {
-          hasErrors = true
-          const errorMsg = orgResult.status === 'fulfilled' 
-            ? `Organization API returned ${orgResult.value.status}` 
-            : 'Failed to fetch organization'
-          errors.push(errorMsg)
-          console.error('❌ Failed to fetch organization:', errorMsg)
+          const errorMsg = driversResult.status === 'fulfilled' 
+            ? `Drivers API returned ${driversResult.value.status}` 
+            : 'Failed to fetch drivers data'
+          setError(errorMsg)
+          console.error('❌ URL-driven API failed:', errorMsg)
         }
         
-        // Handle persons data
-        if (personsResult.status === 'fulfilled' && personsResult.value.ok) {
-          const personsData = await personsResult.value.json()
-          setPersons(personsData)
-          console.log('✅ Drivers data loaded:', personsData.length, 'drivers')
-        } else {
-          hasErrors = true
-          const errorMsg = personsResult.status === 'fulfilled' 
-            ? `Drivers API returned ${personsResult.value.status}` 
-            : 'Failed to fetch drivers'
-          errors.push(errorMsg)
-          console.error('❌ Failed to fetch drivers:', errorMsg)
-          setPersons([]) // Set empty array on error
-        }
-        
-        // Handle organizations list data (less critical)
+        // Handle organizations list (for selector)
         if (orgsResult.status === 'fulfilled' && orgsResult.value.ok) {
           const orgsData = await orgsResult.value.json()
           setOrganizations(orgsData)
-          console.log('✅ Organizations list loaded')
         } else {
-          console.error('❌ Failed to fetch organizations list (non-critical)')
-          setOrganizations([]) // Set empty array on error
-        }
-        
-        // Only show error state for critical failures that prevent core functionality
-        // Don't show errors if we at least have some data to work with
-        if (hasErrors && (!organization || persons.length === 0)) {
-          setError(errors.join('; '))
-        } else if (hasErrors) {
-          // Log errors but don't show error box if we have core data
-          console.warn('⚠️ Some API calls failed but core data is available:', errors.join('; '))
+          console.warn('❌ Organizations list failed (non-critical)')
+          setOrganizations([])
         }
         
       } catch (error) {
-        console.error('🔥 Unexpected error fetching drivers data:', error)
+        console.error('🔥 Unexpected error in URL-driven fetch:', error)
         setError('Unexpected error occurred while loading data')
-        // Set safe defaults on error
-        setPersons([])
+        setDrivers([])
         setOrganizations([])
       } finally {
         setIsLoading(false)
-        console.log('🏁 Drivers page data fetch complete')
+        console.log('🏁 URL-driven fetch complete')
       }
     }
 
-    if (organizationId) {
-      fetchAllData()
+    if (organizationId && masterOrgId) {
+      fetchDriversData()
     }
-  }, [organizationId])
+  }, [organizationId, masterOrgId])
 
-  // Refetch persons after updates
-  const fetchPersons = async () => {
+  // Refetch drivers after updates using the new URL-driven API
+  const fetchDrivers = async () => {
     try {
-      console.log('🔄 Refreshing drivers list')
-      const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`)
+      console.log('🔄 Refreshing drivers list using URL-driven API')
+      const response = await fetch(`/api/master/${masterOrgId}/organization/${organizationId}/drivers`)
       if (response.ok) {
-        const data = await response.json()
-        setPersons(data)
-        console.log('✅ Drivers refreshed:', data.length, 'drivers')
+        const data: DriversResponse = await response.json()
+        setDrivers(data.drivers)
+        setSummary(data.summary)
+        console.log('✅ Drivers refreshed:', data.summary.totalDrivers, 'drivers')
       } else {
         console.error('❌ Failed to refresh drivers:', response.status)
       }
@@ -191,8 +183,8 @@ export default function DriversPage() {
             router.push(`/master/${masterOrgId}/organization/${selectedOrg.id}/drivers`)
   }
 
-  const handleEditPerson = (person: Person) => {
-    setSelectedPerson(person)
+  const handleEditPerson = (driver: Driver) => {
+    setSelectedPerson(driver)
     setEndDate(new Date()) // Default to today
     setDeactivationReason('')
     setShowDeactivateSection(false)
@@ -210,21 +202,12 @@ export default function DriversPage() {
     try {
       setIsDeactivating(true)
       
-      // Find the active role for this person in this organization
-      const activeRole = selectedPerson.party?.role?.find(
-        role => role.organizationId === organizationId && role.roleType !== 'master'
-      )
-
-      if (!activeRole) {
-        alert('No active role found for this person')
-        return
-      }
-
+      // Note: Deactivation logic needs to be updated to work with new API structure
+      // For now, we'll use the existing person API endpoint
       const response = await fetch(`/api/persons/${selectedPerson.id}/deactivate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roleId: activeRole.id,
           endDate: endDate.toISOString(),
           reason: deactivationReason
         })
@@ -232,7 +215,7 @@ export default function DriversPage() {
 
       if (response.ok) {
         handleCloseEditModal()
-        fetchPersons() // Refresh the list
+        fetchDrivers() // Refresh using the new URL-driven API
       } else {
         const error = await response.json()
         alert(`Error deactivating person: ${error.error || 'Unknown error'}`)
@@ -331,7 +314,7 @@ export default function DriversPage() {
                   organizationId={organizationId}
                   onSuccess={() => {
                     setShowAddForm(false)
-                    fetchPersons()
+                    fetchDrivers()
                   }}
                   onCancel={() => setShowAddForm(false)}
                 />
@@ -367,73 +350,118 @@ export default function DriversPage() {
           </div>
         )}
 
-        {/* Persons List */}
+        {/* Drivers List with Enhanced Compliance Data */}
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading drivers...</p>
           </div>
-        ) : persons.length > 0 ? (
-          <div className="grid gap-4">
-            {persons.map((person) => {
-              const role = person.party?.role?.[0]
-              return (
-                <Card key={person.id} className="hover:shadow-md transition-shadow">
+        ) : drivers.length > 0 ? (
+          <div className="space-y-4">
+            {/* Summary Statistics */}
+            {summary && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">{summary.totalDrivers}</div>
+                      <div className="text-sm text-blue-700">Total Drivers</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">{summary.complianceRate}%</div>
+                      <div className="text-sm text-green-700">Compliance Rate</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-orange-600">{summary.driversWithIssues}</div>
+                      <div className="text-sm text-orange-700">With Issues</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-red-600">{summary.totalExpiringIssues}</div>
+                      <div className="text-sm text-red-700">Expiring Soon</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Drivers Grid */}
+            <div className="grid gap-4">
+              {drivers.map((driver) => (
+                <Card key={driver.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="space-y-3 flex-1">
-                        {/* Name and Role */}
+                        {/* Name and Compliance Status */}
                         <div className="flex items-center gap-3">
                           <h3 className="text-lg font-semibold">
-                            {person.firstName} {person.lastName}
+                            {driver.firstName} {driver.lastName}
                           </h3>
-                          {role && (
-                            <Badge className={getRoleBadgeColor(role.roleType)}>
-                              {getRoleLabel(role.roleType)}
-                            </Badge>
-                          )}
-                          {role?.location && (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {role.location.name}
-                            </Badge>
-                          )}
+                          <Badge className="bg-blue-100 text-blue-700">
+                            Driver
+                          </Badge>
+                          <Badge 
+                            className={driver.compliance.status === 'warning' 
+                              ? 'bg-orange-100 text-orange-700' 
+                              : 'bg-green-100 text-green-700'
+                            }
+                          >
+                            {driver.compliance.status === 'warning' ? 'Has Expiring Issues' : 'Compliant'}
+                          </Badge>
+                        </div>
+
+                        {/* Compliance Summary */}
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <div className="text-gray-600">
+                            <span className="font-medium">Issues:</span> {driver.compliance.totalActiveIssues}
+                          </div>
+                          <div className={driver.compliance.expiringIssues > 0 ? 'text-orange-600' : 'text-gray-600'}>
+                            <span className="font-medium">Expiring:</span> {driver.compliance.expiringIssues}
+                          </div>
+                          <div className="text-gray-600">
+                            <span className="font-medium">Licenses:</span> {driver.compliance.licenseCount}
+                          </div>
+                          <div className="text-gray-600">
+                            <span className="font-medium">MVRs:</span> {driver.compliance.mvrCount}
+                          </div>
+                          <div className="text-gray-600">
+                            <span className="font-medium">Training:</span> {driver.compliance.trainingCount}
+                          </div>
                         </div>
 
                         {/* Contact Information */}
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                          {person.phone && (
+                          {driver.phone && (
                             <div className="flex items-center gap-1">
                               <Phone className="h-4 w-4" />
-                              {person.phone}
+                              {driver.phone}
                             </div>
                           )}
-                          {person.email && (
+                          {driver.email && (
                             <div className="flex items-center gap-1">
                               <Mail className="h-4 w-4" />
-                              {person.email}
+                              {driver.email}
                             </div>
                           )}
-                          {person.licenseNumber && (
+                          {driver.licenseNumber && (
                             <div className="flex items-center gap-1">
                               <IdCard className="h-4 w-4" />
-                              License: {person.licenseNumber}
+                              License: {driver.licenseNumber}
                             </div>
                           )}
-                          {person.dateOfBirth && (
+                          {driver.dateOfBirth && (
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
-                              DOB: {new Date(person.dateOfBirth).toLocaleDateString()}
+                              DOB: {new Date(driver.dateOfBirth).toLocaleDateString()}
                             </div>
                           )}
                         </div>
 
                         {/* Address */}
-                        {(person.address || person.city || person.state) && (
+                        {(driver.address || driver.city || driver.state) && (
                           <div className="text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
-                              {[person.address, person.city, person.state, person.zipCode]
+                              {[driver.address, driver.city, driver.state, driver.zipCode]
                                 .filter(Boolean)
                                 .join(', ')}
                             </div>
@@ -446,7 +474,7 @@ export default function DriversPage() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/driver/${person.id}`}
+                          onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/driver/${driver.id}`}
                         >
                           <User className="h-4 w-4 mr-1" />
                           View
@@ -455,8 +483,8 @@ export default function DriversPage() {
                     </div>
                   </CardContent>
                 </Card>
-              )
-            })}
+              ))}
+            </div>
           </div>
         ) : (
           <EmptyState
@@ -487,7 +515,7 @@ export default function DriversPage() {
               person={selectedPerson}
               onSuccess={() => {
                 handleCloseEditModal()
-                fetchPersons()
+                fetchDrivers()
               }}
               onCancel={handleCloseEditModal}
               onDeactivate={() => setShowDeactivateSection(true)}

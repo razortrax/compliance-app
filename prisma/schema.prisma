@@ -275,6 +275,19 @@ enum PhysicalType {
   No_Physical_Issue
 }
 
+enum PhysicalResult {
+  Three_Month
+  Six_Month
+  One_Year
+  Two_Years
+  Disqualified
+}
+
+enum PhysicalStatus {
+  Qualified
+  Disqualified
+}
+
 enum DrugAlcoholResult {
   Negative
   Positive
@@ -297,6 +310,12 @@ enum DrugAlcoholAgency {
   Non_DOT
   Drug_Testing_Clearinghouse
   Water_Tech_Energy
+}
+
+enum TrainingCategory {
+  MANDATORY_DOT     // DOT required training (e.g., HazMat with 2-year expiration)
+  MANDATORY_ORG     // Organization-defined mandatory training (custom expiration)
+  VOLUNTARY         // Voluntary training logs (optional expiration)
 }
 
 model mvr_issue {
@@ -324,17 +343,20 @@ model mvr_issue {
 }
 
 model physical_issue {
-  id               String        @id @default(cuid())
-  issueId          String        @unique
-  type             PhysicalType?
-  medicalExaminer  String? // VARCHAR(255)
-  selfCertified    Boolean       @default(false)
-  nationalRegistry Boolean       @default(false)
-  startDate        DateTime? // When physical period started
-  expirationDate   DateTime? // When physical expires
-  renewalDate      DateTime? // When physical was renewed/processed
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                 String          @id @default(cuid())
+  issueId            String          @unique
+  type               PhysicalType?
+  medicalExaminer    String? // VARCHAR(255)
+  selfCertified      Boolean         @default(false)
+  nationalRegistry   Boolean         @default(false)
+  result             PhysicalResult? // Medical result that determines expiration period
+  status             PhysicalStatus  @default(Qualified)
+  startDate          DateTime? // When physical exam was performed
+  expirationDate     DateTime? // Auto-calculated from startDate + result (except when Disqualified)
+  outOfServiceDate   DateTime? // When driver was disqualified (if result = Disqualified)
+  backInServiceDate  DateTime? // When driver was re-qualified after disqualification
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   // Relations
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
@@ -382,22 +404,24 @@ model license_issue {
 }
 
 model training_issue {
-  id                String    @id @default(cuid())
-  issueId           String    @unique
-  trainingType      String // HazMat Annual, Defensive Driving, etc.
-  provider          String? // Training company/organization
-  instructor        String? // Instructor name
-  location          String? // Training location
-  startDate         DateTime? // When training period started
-  completionDate    DateTime // When training was completed
-  expirationDate    DateTime // When training expires
-  certificateNumber String? // Certificate/completion number
-  hours             Float? // Training hours completed
-  isRequired        Boolean   @default(false) // Required vs voluntary
-  competencies      Json? // Skills/topics covered
-  notes             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                     String          @id @default(cuid())
+  issueId                String          @unique
+  trainingType           String          // HazMat Annual, Defensive Driving, etc.
+  category               TrainingCategory @default(VOLUNTARY) // DOT mandatory, org mandatory, or voluntary
+  provider               String?         // Training company/organization
+  instructor             String?         // Instructor name
+  location               String?         // Training location
+  startDate              DateTime?       // When training period started
+  completionDate         DateTime        // When training was completed
+  expirationDate         DateTime?       // When training expires (null for voluntary with no expiration)
+  expirationPeriodMonths Int?            // Custom expiration period for org-defined training
+  certificateNumber      String?         // Certificate/completion number
+  hours                  Float?          // Training hours completed
+  isRequired             Boolean         @default(false) // Required vs voluntary (kept for backward compatibility)
+  competencies           Json?           // Skills/topics covered
+  notes                  String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 
   // Relations
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)

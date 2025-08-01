@@ -30,7 +30,12 @@ function useUrlContext() {
   } else if (hasEquipment) {
     sidebarMenu = 'equipment'  
   } else if (hasOrganization) {
-    sidebarMenu = 'organization'
+    // Check if we're on equipment-related pages
+    if (pathname.includes('/equipment')) {
+      sidebarMenu = 'equipment'
+    } else {
+      sidebarMenu = 'organization'
+    }
   }
   
   // Auto-detect what selectors to show

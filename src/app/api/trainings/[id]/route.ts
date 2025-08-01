@@ -144,8 +144,8 @@ export async function GET(
 
     // Add calculated status
     const today = new Date()
-    const expirationDate = new Date(training.expirationDate)
-    const daysUntilExpiry = Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    const expirationDate = training.expirationDate ? new Date(training.expirationDate) : null
+    const daysUntilExpiry = expirationDate ? Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null
     
     let calculatedStatus = 'current'
     if (daysUntilExpiry < 0) {

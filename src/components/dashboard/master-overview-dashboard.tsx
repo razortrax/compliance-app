@@ -95,7 +95,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
   const fetchOrganizations = useCallback(async () => {
     try {
       const token = await getToken()
-      const response = await fetch('/api/organizations', {
+      const response = await fetch(`/api/master/${masterOrgId}/organizations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -103,40 +103,17 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Raw API data:', data)
+        console.log('📊 URL-driven API data:', data)
         
-        // Separate master company from managed organizations
-        // Master company is the one directly owned by the user (party.userId matches)
-        const masterOrg = data.find((org: any) => org.party?.userId === userId)
-        const subOrganizations = data.filter((org: any) => org.party?.userId !== userId)
-        
-        if (masterOrg) {
-          // Transform master company data
-          const masterWithMetrics = {
-            ...masterOrg,
-            status: 'active' as const, // Master company is always active
-            driversCount: 0, // TODO: Calculate from actual driver data
-            equipmentCount: 0, // TODO: Calculate from actual equipment data  
-            expiringIssues: 0, // TODO: Calculate from actual issues
-            openInspections: 0, // TODO: Calculate from actual inspections
-          }
-          setMasterCompany(masterWithMetrics)
-          console.log('✅ Master company:', masterWithMetrics)
+        // Data is already pre-filtered and structured by the new API
+        if (data.masterCompany) {
+          setMasterCompany(data.masterCompany)
+          console.log('✅ Master company:', data.masterCompany)
         }
         
-        // Transform managed organizations data
-        const organizationsWithMetrics = subOrganizations.map((org: any) => ({
-          ...org,
-          // Extract status from master role relationship, not party status
-          status: org.party?.role?.[0]?.status || 'pending',
-          driversCount: 0, // TODO: Calculate from actual driver data
-          equipmentCount: 0, // TODO: Calculate from actual equipment data  
-          expiringIssues: 0, // TODO: Calculate from actual issues
-          openInspections: 0, // TODO: Calculate from actual inspections
-        }))
+        setOrganizations(data.childOrganizations || [])
+        console.log(`✅ Loaded ${data.totalOrganizations} child organizations`)
         
-        setOrganizations(organizationsWithMetrics)
-        console.log('✅ Managed organizations:', organizationsWithMetrics)
       } else {
         console.warn('🔥 Organizations API failed:', response.status, response.statusText)
         // Don't clear existing data on API errors - just log the error
@@ -150,7 +127,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
     } finally {
       setIsLoading(false)
     }
-  }, [getToken, userId])
+  }, [getToken, masterOrgId])
 
   useEffect(() => {
     fetchOrganizations()
