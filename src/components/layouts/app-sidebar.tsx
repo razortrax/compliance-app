@@ -357,12 +357,22 @@ export function AppSidebar({
         <BarChart3 className="mr-3 h-4 w-4" />
         Overview
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/staff` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Users className="mr-3 h-4 w-4" />
+        Staff
+      </Link>
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/issues` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <AlertTriangle className="mr-3 h-4 w-4" />
         Issues
       </Link>
       <Link 
-        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/roadside_inspections` : "#"} 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/roadside-inspections` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <ShieldCheck className="mr-3 h-4 w-4" />
@@ -375,11 +385,17 @@ export function AppSidebar({
         <Car className="mr-3 h-4 w-4" />
         Accidents
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/audit` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Clipboard className="mr-3 h-4 w-4" />
         Audit
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/preferences` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Settings className="mr-3 h-4 w-4" />
         Preferences
       </Link>
