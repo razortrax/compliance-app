@@ -385,6 +385,7 @@ src/
 - [ ] Registration/licensing (`equipment_license_issue`) - *Equipment-focused*
 
 ### 🟡 Planned - Advanced Features
+- [ ] NHTSA VPIC VIN decoder integration for equipment auto-population
 - [ ] Compliance dashboard with KPIs
 - [ ] Automated expiration alerts and notifications
 - [ ] Audit report generation and export

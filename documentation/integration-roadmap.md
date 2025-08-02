@@ -69,7 +69,36 @@ Post-MVP integration strategy to streamline compliance processes, enhance data a
 
 ---
 
-### **4. GoMotive.com Integration** 🚛 **ADVANCED MAINTENANCE**
+### **4. NHTSA VPIC Decoder Integration** 🚗 **EQUIPMENT AUTO-POPULATION**
+**Purpose**: Automatic vehicle specification population from VIN numbers
+**Service**: NHTSA Vehicle Product Information Catalog (VPIC) - Free government service
+
+#### Auto-Population Features
+- **VIN Decoding**: Automatically populate equipment fields from VIN number
+- **Vehicle Specifications**: Make, model, year, body style, engine type, fuel type
+- **Safety Data**: NHTSA ratings, recall information, safety equipment details
+- **Classification**: Vehicle class, gross weight rating, brake system type
+
+#### Implementation Strategy
+- **Phase 1**: Basic VIN decode API integration for make/model/year auto-population
+- **Phase 2**: Advanced vehicle specifications and safety data integration  
+- **Phase 3**: Real-time recall checking and safety alert integration
+
+#### Technical Details
+- **API Endpoint**: `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/{VIN}?format=json`
+- **Rate Limits**: Free government service, reasonable usage expected
+- **Data Quality**: Official NHTSA database, highly accurate for US vehicles
+- **Legacy Experience**: Previously implemented in FileMaker version with web scraping
+
+#### Business Value
+- **Time Savings**: Eliminate manual equipment data entry
+- **Data Accuracy**: Reduce human error in vehicle specifications
+- **User Experience**: One-click equipment setup from VIN
+- **Compliance**: Ensure accurate vehicle data for DOT reporting
+
+---
+
+### **5. GoMotive.com Integration** 🚛 **ADVANCED MAINTENANCE**
 **Purpose**: Enhanced maintenance management through vehicle tracking data
 **Competitive Advantage**: Superior compliance management vs. Motive's native offering
 
