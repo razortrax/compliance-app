@@ -1,6 +1,8 @@
 // DVIR Auto-Population System
 // Integrates with the unified incident architecture
 
+import { createId } from '@paralleldrive/cuid2'
+
 interface DVIRDocument {
   // Header Information
   reportNumber?: string
@@ -171,65 +173,81 @@ class DVIRProcessor {
     // FOR TESTING: Return realistic mock DVIR data
     return `
 DOT ROADSIDE INSPECTION REPORT
-Report Number: TX-2024-001234
-Inspection Date: 01/15/2024
-Inspection Time: 14:30
-Inspector: Officer John Smith
-Badge Number: 12345
-Agency: Texas Department of Transportation
+Report Number: US1974906108
+Inspection Date: 01/07/2025
+Inspection Time: 12:37 PM EST
+Inspector: Moran Alva Ray
+Badge Number: 1234567890
+Agency: Federal Motor Carrier Safety Administration
 Inspection Level: Level I
+Location: NEWBERRY SC
 
-FACILITY INFORMATION
-Facility Name: Love's Travel Stop
-Facility Address: 1234 Highway 35
-City: Austin
-State: TX
-Zip: 78701
+MOTOR CARRIER INFORMATION
+Motor Carrier: WATERS TECH TRANSPORTATION LLC
+USDOT Number: 3651508
+Address: 725 HIGHWAY 271 SOUTH
+City: FORT SMITH
+State: AR
+Zip: 72908
 
 DRIVER INFORMATION
-Driver Name: Robert Johnson
-License Number: CDL123456789
-License State: TX
-Date of Birth: 03/15/1980
+Driver: Moran Alva Ray
+License Number: 0004046218268
+License State: SC
+Date of Birth: 10/23/1965
 
-EQUIPMENT INFORMATION
+VEHICLE IDENTIFICATION
 Unit 1 - Tractor Truck
-Make: Peterbilt
-Model: 579
-Year: 2019
-VIN: 1XP5DB9X1KD123456
-Plate: ABC123
-State: TX
-CVSA Sticker: 12345678
+Make: Freightliner
+Model: Cascadia
+Year: 2024
+VIN: 1XKDD903P5S486670
+Plate: 2264406
+State: SC
+Equipment ID: 233
+GVWR: 52350
+Mileage: 6600
+CVSA Sticker: Yes
+OOS Sticker: Yes
 
-Unit 2 - Trailer
+Unit 2 - Straight Truck  
 Make: Great Dane
-Model: Flatbed
-Year: 2020
-VIN: 1GRAA0625LB789012
-Plate: TRL456
-State: TX
+Model: GDAN
+Year: 2024
+VIN: 1GRA0622KMR51658
+Plate: PT205588
+State: AR
+Mileage: 69000
+
+BRAKE MEASUREMENTS
+Steer Axle: Yes
+Long Stroke: No
+Adjustment: No
 
 VIOLATIONS FOUND
 Violation 1:
-Code: 393.75(a)
-Section: 393.75(a)
-Unit: 1
-Description: Tire - Tread depth less than 2/32 inch
-Severity: OUT_OF_SERVICE
-OOS: Yes
-Citation: 2024-TX-789
-
-Violation 2:
-Code: 396.3(a)(1)
-Section: 396.3(a)(1)
-Unit: 1
-Description: Brake adjustment - Manual slack adjuster
+Code: 393.5(A1-B4LAC)
+Section: 393.5(A1-B4LAC)
+Unit: 2
+Description: Brake - Audible air leak from a brake chamber
 Severity: WARNING
 OOS: No
+Citation: N
 
-INSPECTION RESULT: OUT_OF_SERVICE
-Inspector Comments: Vehicle placed out of service due to tire violation. Must repair before returning to service.
+HAZARDOUS MATERIALS
+HM Type: Non-Bulk
+Cargo Tank: Unaffirmed
+Rep Class: HM Class 8
+B Corrosive material: Y
+HMSP Required: Yes
+
+INSPECTION RESULT: SATISFACTORY
+Inspector Comments: The undersigned certifies that all violations noted on this report have been corrected and action has been taken to assure compliance with the Federal Motor Carrier Safety and Hazardous Materials Regulations. Results are received into the inspection portal in Southern Portal.
+
+Report Prepared By: St Michael Vigapo Tampa
+Badge ID: US1507
+Agency: ALVIN SOX WRIGHT
+Date: 1/9/24
 `
   }
   
@@ -442,8 +460,8 @@ export { DVIRProcessor }
 // Utility function to create incident from DVIR
 export async function createIncidentFromDVIR(
   dvir: DVIRDocument,
-  driverId: string,
-  organizationId: string
+  driverId?: string,
+  organizationId?: string
 ) {
   // Convert DVIR to unified incident format
   return {
@@ -504,6 +522,180 @@ export async function createIncidentFromDVIR(
     })),
     
     title: `RSIN - ${dvir.inspectionLocation}`,
-    description: `Roadside inspection on ${dvir.inspectionDate}`
+    description: `Roadside inspection on ${dvir.inspectionDate}`,
+    
+    // NEW: Suggested party record creation
+    suggestedRecords: {
+      createInspector: !!dvir.inspectorName,
+      createAgency: !!dvir.agencyName,
+      createEquipment: dvir.equipment.filter(eq => eq.vin && eq.make),
+      createDriver: !!(dvir.driverName && dvir.driverLicense)
+    }
+  }
+}
+
+// NEW: Enhanced party record creation utilities
+export async function createMissingRecordsFromDVIR(
+  dvir: DVIRDocument, 
+  organizationId: string,
+  db: any // Prisma client
+) {
+  const createdRecords: any = {}
+  
+  try {
+    // 1. Create Inspector as Staff Member (if not exists)
+    if (dvir.inspectorName && dvir.agencyName) {
+      // Check if inspector exists
+      const existingInspector = await db.staff.findFirst({
+        where: {
+          position: { contains: 'Inspector' },
+          // Could match by name if needed
+        }
+      })
+      
+      if (!existingInspector) {
+        console.log(`🔍 Creating inspector record: ${dvir.inspectorName}`)
+        
+        // Create party for inspector
+        const inspectorParty = await db.party.create({
+          data: {
+            id: createId(),
+            status: 'active'
+          }
+        })
+        
+        // Create person record
+        const [firstName, ...lastNameParts] = dvir.inspectorName.split(' ')
+        await db.person.create({
+          data: {
+            id: createId(),
+            partyId: inspectorParty.id,
+            firstName,
+            lastName: lastNameParts.join(' ') || 'Inspector',
+            email: `${firstName.toLowerCase()}@${dvir.agencyName?.toLowerCase().replace(/\s+/g, '')}.gov`
+          }
+        })
+        
+        // Create staff record
+        const staff = await db.staff.create({
+          data: {
+            id: createId(),
+            partyId: inspectorParty.id,
+            position: 'DOT Inspector',
+            department: dvir.agencyName || 'DOT',
+            canApproveCAFs: true,
+            canSignCAFs: true
+          }
+        })
+        
+        createdRecords.inspector = staff
+      }
+    }
+    
+    // 2. Create Equipment Records (if VIN doesn't exist)
+    for (const equipment of dvir.equipment || []) {
+      if (equipment.vin) {
+        const existingEquipment = await db.equipment.findFirst({
+          where: { vinNumber: equipment.vin }
+        })
+        
+        if (!existingEquipment && equipment.make) {
+          console.log(`🚛 Creating equipment record: ${equipment.year} ${equipment.make} ${equipment.model}`)
+          
+          // Create party for equipment
+          const equipmentParty = await db.party.create({
+            data: {
+              id: createId(),
+              status: 'active'
+            }
+          })
+          
+          // Create equipment record
+          const newEquipment = await db.equipment.create({
+            data: {
+              id: createId(),
+              partyId: equipmentParty.id,
+              vehicleType: equipment.unitType || 'Unknown',
+              make: equipment.make,
+              model: equipment.model || null,
+              year: equipment.year || null,
+              vinNumber: equipment.vin,
+              plateNumber: equipment.plateNumber || null,
+              registrationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
+            }
+          })
+          
+          // Create role linking to organization
+          await db.role.create({
+            data: {
+              id: createId(),
+              partyId: equipmentParty.id,
+              roleType: 'EQUIPMENT',
+              organizationId,
+              status: 'active',
+              isActive: true
+            }
+          })
+          
+          createdRecords.equipment = createdRecords.equipment || []
+          createdRecords.equipment.push(newEquipment)
+        }
+      }
+    }
+    
+    // 3. Create Driver Record (if license doesn't exist)
+    if (dvir.driverName && dvir.driverLicense) {
+      const existingDriver = await db.person.findFirst({
+        where: { licenseNumber: dvir.driverLicense }
+      })
+      
+      if (!existingDriver) {
+        console.log(`👤 Creating driver record: ${dvir.driverName} (${dvir.driverLicense})`)
+        
+        // Create party for driver
+        const driverParty = await db.party.create({
+          data: {
+            id: createId(),
+            status: 'active'
+          }
+        })
+        
+        // Parse driver name
+        const [firstName, ...lastNameParts] = dvir.driverName.split(' ')
+        
+        // Create person record
+        const driver = await db.person.create({
+          data: {
+            id: createId(),
+            partyId: driverParty.id,
+            firstName,
+            lastName: lastNameParts.join(' ') || 'Driver',
+            licenseNumber: dvir.driverLicense,
+            dateOfBirth: dvir.driverDOB ? new Date(dvir.driverDOB) : null
+          }
+        })
+        
+        // Create role linking to organization
+        await db.role.create({
+          data: {
+            id: createId(),
+            partyId: driverParty.id,
+            roleType: 'PERSON',
+            organizationId,
+            status: 'active',
+            isActive: true
+          }
+        })
+        
+        createdRecords.driver = driver
+      }
+    }
+    
+    console.log('✅ Created records from DVIR:', Object.keys(createdRecords))
+    return createdRecords
+    
+  } catch (error) {
+    console.error('❌ Error creating records from DVIR:', error)
+    throw error
   }
 } 
