@@ -1,0 +1,60 @@
+{
+  "pages": {
+    "/master/[masterOrgId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/page.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/master/[masterOrgId]/organization/[orgId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/organization/[orgId]/page.js"
+    ],
+    "/master/[masterOrgId]/organization/[orgId]/drivers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/organization/[orgId]/drivers/page.js"
+    ],
+    "/master/[masterOrgId]/organization/[orgId]/locations/[locationId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/organization/[orgId]/locations/[locationId]/page.js"
+    ],
+    "/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/page.js"
+    ],
+    "/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/roadside-inspections/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/roadside-inspections/page.js"
+    ],
+    "/organizations/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/organizations/[id]/page.js"
+    ],
+    "/organizations/[id]/drivers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/organizations/[id]/drivers/page.js"
+    ],
+    "/organizations/[id]/equipment/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/organizations/[id]/equipment/page.js"
+    ],
+    "/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/accidents/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/accidents/page.js"
+    ]
+  }
+}

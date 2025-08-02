@@ -167,7 +167,70 @@ class DVIRProcessor {
     // AWS Textract implementation
     // Returns raw text extracted from the document
     // TODO: Implement AWS Textract integration
-    return "Mock extracted text from AWS Textract"
+    
+    // FOR TESTING: Return realistic mock DVIR data
+    return `
+DOT ROADSIDE INSPECTION REPORT
+Report Number: TX-2024-001234
+Inspection Date: 01/15/2024
+Inspection Time: 14:30
+Inspector: Officer John Smith
+Badge Number: 12345
+Agency: Texas Department of Transportation
+Inspection Level: Level I
+
+FACILITY INFORMATION
+Facility Name: Love's Travel Stop
+Facility Address: 1234 Highway 35
+City: Austin
+State: TX
+Zip: 78701
+
+DRIVER INFORMATION
+Driver Name: Robert Johnson
+License Number: CDL123456789
+License State: TX
+Date of Birth: 03/15/1980
+
+EQUIPMENT INFORMATION
+Unit 1 - Tractor Truck
+Make: Peterbilt
+Model: 579
+Year: 2019
+VIN: 1XP5DB9X1KD123456
+Plate: ABC123
+State: TX
+CVSA Sticker: 12345678
+
+Unit 2 - Trailer
+Make: Great Dane
+Model: Flatbed
+Year: 2020
+VIN: 1GRAA0625LB789012
+Plate: TRL456
+State: TX
+
+VIOLATIONS FOUND
+Violation 1:
+Code: 393.75(a)
+Section: 393.75(a)
+Unit: 1
+Description: Tire - Tread depth less than 2/32 inch
+Severity: OUT_OF_SERVICE
+OOS: Yes
+Citation: 2024-TX-789
+
+Violation 2:
+Code: 396.3(a)(1)
+Section: 396.3(a)(1)
+Unit: 1
+Description: Brake adjustment - Manual slack adjuster
+Severity: WARNING
+OOS: No
+
+INSPECTION RESULT: OUT_OF_SERVICE
+Inspector Comments: Vehicle placed out of service due to tire violation. Must repair before returning to service.
+`
   }
   
   private async extractWithGoogleVision(file: File): Promise<string> {
