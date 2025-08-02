@@ -1,6 +1,17 @@
-# Fleetrax - Fleet DOT Compliance Management Platform
+# Fleetrax - Fleet DOT Compliance Management
 
-A comprehensive SaaS platform for fleet DOT compliance management, built with Next.js 14, TypeScript, and modern web technologies.
+A comprehensive SaaS platform for managing fleet DOT compliance requirements, including driver qualifications, vehicle inspections, maintenance records, and regulatory documentation.
+
+## 🏢 **Important: Proprietary Software**
+
+**This is proprietary, commercial software.** 
+
+- ✅ **Viewing for learning**: Educational purposes only
+- ❌ **Commercial use prohibited**: Cannot be used to compete or offer similar services  
+- ❌ **No redistribution**: Cannot be shared or republished
+- 📄 **License**: See [LICENSE](./LICENSE) file for complete terms
+
+For commercial licensing inquiries: [your-email@domain.com]
 
 ## 🚀 Latest Features
 
