@@ -170,17 +170,17 @@ class DVIRProcessor {
     // Returns raw text extracted from the document
     // TODO: Implement AWS Textract integration
     
-    // FOR TESTING: Return realistic mock DVIR data
+    // Mock data for testing (replace with actual OCR when credentials added)
     return `
 DOT ROADSIDE INSPECTION REPORT
 Report Number: US1974906108
 Inspection Date: 01/07/2025
 Inspection Time: 12:37 PM EST
-Inspector: Moran Alva Ray
-Badge Number: 1234567890
+Inspector: Officer Sarah Martinez
+Badge Number: DOT-8847
 Agency: Federal Motor Carrier Safety Administration
-Inspection Level: Level I
 Location: NEWBERRY SC
+Inspection Level: Level I
 
 MOTOR CARRIER INFORMATION
 Motor Carrier: WATERS TECH TRANSPORTATION LLC
@@ -210,7 +210,7 @@ Mileage: 6600
 CVSA Sticker: Yes
 OOS Sticker: Yes
 
-Unit 2 - Straight Truck  
+Unit 2 - Straight Truck
 Make: Great Dane
 Model: GDAN
 Year: 2024
@@ -244,10 +244,10 @@ HMSP Required: Yes
 INSPECTION RESULT: SATISFACTORY
 Inspector Comments: The undersigned certifies that all violations noted on this report have been corrected and action has been taken to assure compliance with the Federal Motor Carrier Safety and Hazardous Materials Regulations. Results are received into the inspection portal in Southern Portal.
 
-Report Prepared By: St Michael Vigapo Tampa
-Badge ID: US1507
-Agency: ALVIN SOX WRIGHT
-Date: 1/9/24
+Report Prepared By: Officer Sarah Martinez
+Badge ID: DOT-8847
+Agency: Federal Motor Carrier Safety Administration
+Date: 1/7/25
 `
   }
   

@@ -42,7 +42,7 @@ async function createTestDVIRData() {
     // 2. Create Test Driver (Robert Johnson from mock DVIR)
     console.log('👤 Creating test driver...')
     
-    // Create party for driver
+    // Create test driver that matches mock DVIR data
     const driverParty = await prisma.party.create({
       data: {
         id: createId(),
@@ -50,21 +50,16 @@ async function createTestDVIRData() {
       }
     })
 
-    // Create person (driver)
     const testDriver = await prisma.person.create({
       data: {
         id: createId(),
         partyId: driverParty.id,
-        firstName: 'Robert',
-        lastName: 'Johnson',
-        dateOfBirth: new Date('1980-03-15'),
-        licenseNumber: 'CDL123456789',
-        phone: '512-555-0101',
-        email: 'robert.johnson@test.com',
-        address: '2000 Driver Lane',
-        city: 'Austin',
-        state: 'TX',
-        zipCode: '78702'
+        firstName: 'Moran',
+        lastName: 'Alva Ray',
+        licenseNumber: '0004046218268',
+        dateOfBirth: new Date('1965-10-23'),
+        email: 'moran.ray@example.com',
+        phone: '803-555-0102'
       }
     })
 
@@ -83,7 +78,8 @@ async function createTestDVIRData() {
     // 3. Create Test Equipment (Peterbilt + Trailer from mock DVIR)
     console.log('🚛 Creating test equipment...')
     
-    // Create Peterbilt Tractor
+    // Create equipment that matches mock DVIR data
+    // Unit 1 - Tractor Truck (Freightliner Cascadia)
     const tractorParty = await prisma.party.create({
       data: {
         id: createId(),
@@ -96,28 +92,16 @@ async function createTestDVIRData() {
         id: createId(),
         partyId: tractorParty.id,
         vehicleType: 'Tractor Truck',
-        make: 'Peterbilt',
-        model: '579',
-        year: 2019,
-        vinNumber: '1XP5DB9X1KD123456',
-        plateNumber: 'ABC123',
-        registrationExpiry: new Date('2025-12-31')
+        make: 'Freightliner',
+        model: 'Cascadia',
+        year: 2024,
+        vinNumber: '1XKDD903P5S486670',
+        plateNumber: '2264406',
+        registrationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
       }
     })
 
-    // Create tractor role
-    await prisma.role.create({
-      data: {
-        id: createId(),
-        partyId: tractorParty.id,
-        roleType: 'EQUIPMENT',
-        organizationId: testOrg.id,
-        status: 'active',
-        isActive: true
-      }
-    })
-
-    // Create Great Dane Trailer
+    // Unit 2 - Straight Truck (Great Dane)
     const trailerParty = await prisma.party.create({
       data: {
         id: createId(),
@@ -129,17 +113,28 @@ async function createTestDVIRData() {
       data: {
         id: createId(),
         partyId: trailerParty.id,
-        vehicleType: 'Trailer',
+        vehicleType: 'Straight Truck',
         make: 'Great Dane',
-        model: 'Flatbed',
-        year: 2020,
-        vinNumber: '1GRAA0625LB789012',
-        plateNumber: 'TRL456',
-        registrationExpiry: new Date('2025-12-31')
+        model: 'GDAN',
+        year: 2024,
+        vinNumber: '1GRA0622KMR51658',
+        plateNumber: 'PT205588',
+        registrationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
       }
     })
 
-    // Create trailer role
+    // Create roles linking equipment to organization
+    await prisma.role.create({
+      data: {
+        id: createId(),
+        partyId: tractorParty.id,
+        roleType: 'EQUIPMENT',
+        organizationId: testOrg.id,
+        status: 'active',
+        isActive: true
+      }
+    })
+
     await prisma.role.create({
       data: {
         id: createId(),
@@ -165,18 +160,12 @@ async function createTestDVIRData() {
     console.log(`Found ${violations.length} violation codes in database`)
 
     console.log('\n✅ Test data created successfully!')
-    console.log('\n📋 **Test Data Summary:**')
-    console.log(`🏢 Organization: ${testOrg.name} (${testOrg.dotNumber})`)
-    console.log(`👤 Driver: ${testDriver.firstName} ${testDriver.lastName} (${testDriver.licenseNumber})`)
-    console.log(`🚛 Tractor: ${testTractor.year} ${testTractor.make} ${testTractor.model} (${testTractor.vinNumber})`)
-    console.log(`🚚 Trailer: ${testTrailer.year} ${testTrailer.make} ${testTrailer.model} (${testTrailer.vinNumber})`)
-    console.log(`⚠️  Violations: ${violations.length} codes available`)
-
-    console.log('\n🧪 **Ready to Test DVIR Upload!**')
-    console.log('1. Go to Roadside Inspections page')
-    console.log('2. Click "Upload DVIR" button') 
-    console.log('3. Upload any PDF/image file (mock data will be used)')
-    console.log('4. Verify auto-population with the data above')
+    console.log('📋 Data Summary:')
+    console.log(`   Organization: ${testOrg.name} (DOT: ${testOrg.dotNumber})`)
+    console.log(`   Driver: Moran Alva Ray (License: 0004046218268)`)
+    console.log(`   Equipment 1: 2024 Freightliner Cascadia (VIN: 1XKDD903P5S486670)`)
+    console.log(`   Equipment 2: 2024 Great Dane GDAN (VIN: 1GRA0622KMR51658)`)
+    console.log('🧪 Ready for DVIR auto-population testing!')
 
   } catch (error) {
     console.error('❌ Error creating test data:', error)
