@@ -197,34 +197,81 @@ export async function POST(req: NextRequest) {
 
     // Create equipment with party model
     const result = await db.$transaction(async (tx) => {
-      // 1. Create party record
-      const party = await tx.party.create({
-        data: {
-          id: createId(),
-          status: 'active'
-        }
-      })
+      let party
+      let equipment
+      
+      // 1. Check if equipment with this VIN already exists
+      if (vinNumber) {
+        equipment = await tx.equipment.findUnique({
+          where: { vinNumber },
+          include: { party: true }
+        })
+      }
 
-      // 2. Create equipment record
-      const equipment = await tx.equipment.create({
-        data: {
-          id: createId(),
-          partyId: party.id,
-          vehicleType,
-          make: make || null,
-          model: model || null,
-          year: year ? parseInt(year) : null,
-          vinNumber: vinNumber || null,
-          locationId: locationId || null
+      if (equipment) {
+        // Equipment exists - reuse the existing party and equipment
+        party = equipment.party
+        console.log('🔄 Found existing equipment with VIN:', vinNumber, 'Party ID:', party.id)
+        
+        // Check if there's already an active role for this organization
+        const existingRole = await tx.role.findFirst({
+          where: {
+            partyId: party.id,
+            organizationId,
+            roleType: 'equipment',
+            isActive: true
+          }
+        })
+        
+        if (existingRole) {
+          console.log('⚠️ Equipment already assigned to this organization')
+          throw new Error('Equipment is already assigned to this organization')
         }
-      })
+        
+        // Deactivate previous roles if equipment is changing organizations
+        await tx.role.updateMany({
+          where: {
+            partyId: party.id,
+            roleType: 'equipment',
+            isActive: true
+          },
+          data: {
+            isActive: false,
+            endDate: new Date()
+          }
+        })
+        
+      } else {
+        // New equipment - create party and equipment
+        party = await tx.party.create({
+          data: {
+            id: createId(),
+            status: 'active'
+          }
+        })
 
-      // 3. Create role relationship
+        equipment = await tx.equipment.create({
+          data: {
+            id: createId(),
+            partyId: party.id,
+            vehicleType,
+            make: make || null,
+            model: model || null,
+            year: year ? parseInt(year) : null,
+            vinNumber: vinNumber || null,
+            locationId: locationId || null
+          }
+        })
+        
+        console.log('✅ Created new equipment with VIN:', vinNumber)
+      }
+
+      // 3. Create new role relationship
       await tx.role.create({
         data: {
           id: createId(),
           partyId: party.id,
-          roleType: 'EQUIPMENT_OF',
+          roleType: 'equipment',
           organizationId,
           locationId: locationId || null,
           status: 'active',
@@ -232,12 +279,13 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      console.log('✅ Created equipment with party model:', {
+      console.log('✅ Created equipment role for organization:', {
         equipmentId: equipment.id,
         partyId: party.id,
         vehicle: `${equipment.make} ${equipment.model} ${equipment.year}`,
         type: vehicleType,
-        org: organizationId
+        org: organizationId,
+        existing: !!vinNumber && equipment.id !== party.id // Simple check if reused
       })
 
       return equipment

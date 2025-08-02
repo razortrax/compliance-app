@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
+import { ViolationType, ViolationSeverity } from '@prisma/client'
 
 interface IncidentData {
   // Basic incident information
@@ -225,18 +226,62 @@ export async function POST(request: NextRequest) {
       // Create violations
       if (body.violations && body.violations.length > 0) {
         for (const violation of body.violations) {
+          // Map severity values to Prisma enum
+          let mappedSeverity: ViolationSeverity | null = null
+          if (violation.severity) {
+            switch (violation.severity.toUpperCase()) {
+              case 'WARNING':
+                mappedSeverity = ViolationSeverity.Warning
+                break
+              case 'CITATION':
+                mappedSeverity = ViolationSeverity.Citation
+                break
+              case 'OUT_OF_SERVICE':
+              case 'OOS':
+                mappedSeverity = ViolationSeverity.Out_Of_Service
+                break
+              default:
+                console.warn(`Unknown severity: ${violation.severity}`)
+                mappedSeverity = null
+            }
+          }
+
+          // Map violation type values to Prisma enum
+          let mappedViolationType: ViolationType | null = null
+          if (violation.violationType) {
+            switch (violation.violationType.toUpperCase()) {
+              case 'DRIVER':
+              case 'DRIVER_QUALIFICATION':
+                mappedViolationType = ViolationType.Driver_Qualification
+                break
+              case 'DRIVER_PERFORMANCE':
+                mappedViolationType = ViolationType.Driver_Performance
+                break
+              case 'EQUIPMENT':
+                mappedViolationType = ViolationType.Equipment
+                break
+              case 'COMPANY':
+              case 'OTHER':
+                mappedViolationType = ViolationType.Company
+                break
+              default:
+                console.warn(`Unknown violation type: ${violation.violationType}`)
+                mappedViolationType = ViolationType.Company
+            }
+          }
+
           await tx.incident_violation.create({
             data: {
               incidentId: incident.id,
               violationCode: violation.violationCode,
-              section: violation.section,
-              unitNumber: violation.unitNumber,
+              section: violation.section || null,
+              unitNumber: violation.unitNumber || null,
               outOfService: violation.outOfService || false,
-              citationNumber: violation.citationNumber,
-              severity: violation.severity as any,
+              citationNumber: violation.citationNumber || null,
+              severity: mappedSeverity,
               description: violation.description,
-              inspectorComments: violation.inspectorComments,
-              violationType: violation.violationType as any
+              inspectorComments: violation.inspectorComments || null,
+              violationType: mappedViolationType
             }
           })
         }

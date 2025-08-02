@@ -420,10 +420,13 @@ export function AppSidebar({
         <Stethoscope className="mr-3 h-4 w-4" />
         Physicals
       </Link>
-      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
+      <Link 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/drugalcohol` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Users className="mr-3 h-4 w-4" />
-        Drug & Alcohol <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
-      </div>
+        Drug & Alcohol
+      </Link>
       <Link 
         href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/training` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
@@ -431,14 +434,20 @@ export function AppSidebar({
         <GraduationCap className="mr-3 h-4 w-4" />
         Training
       </Link>
-      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
+      <Link 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/roadside-inspections` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <ShieldCheck className="mr-3 h-4 w-4" />
-        RSIN <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
-      </div>
-      <div className="flex items-center px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
+        Roadside Inspections
+      </Link>
+      <Link 
+        href={driverId && masterOrgId && currentOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driverId}/accidents` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Car className="mr-3 h-4 w-4" />
-        Accidents <Badge variant="secondary" className="ml-2 text-xs">Coming Soon</Badge>
-      </div>
+        Accidents
+      </Link>
     </nav>
   )
 

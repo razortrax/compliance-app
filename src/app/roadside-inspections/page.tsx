@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { UnifiedIncidentForm } from '@/components/incidents/unified-incident-form'
-import { DVERUploadModal } from '@/components/incidents/dver-upload-modal'
-import { createIncidentFromDVER, type DVERDocument } from '@/lib/dver-automation'
+import { DVIRUploadModal } from '@/components/incidents/dvir-upload-modal'
+import { createIncidentFromDVIR, type DVIRDocument } from '@/lib/dvir-automation'
 import { Plus, FileText, Truck, Zap, Upload } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -62,9 +62,9 @@ export default function RoadsideInspectionsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isDVERModalOpen, setIsDVERModalOpen] = useState(false)
+  const [isDVIRModalOpen, setIsDVIRModalOpen] = useState(false)
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
-  const [dverPrefilledData, setDverPrefilledData] = useState<any>(null)
+      const [dvirPrefilledData, setDvirPrefilledData] = useState<any>(null)
 
   const fetchIncidents = async () => {
     if (!partyId) return
@@ -100,7 +100,7 @@ export default function RoadsideInspectionsPage() {
       
       if (res.ok) {
         setIsCreateModalOpen(false)
-        setDverPrefilledData(null) // Clear any prefilled data
+        setDvirPrefilledData(null) // Clear any prefilled data
         fetchIncidents()
       } else {
         const error = await res.json()
@@ -112,19 +112,19 @@ export default function RoadsideInspectionsPage() {
     }
   }
 
-  const handleDVERProcessed = async (dver: DVERDocument) => {
+  const handleDVIRProcessed = async (dvir: DVIRDocument) => {
     try {
-      // Convert DVER to incident format and create automatically
-      const incident = await createIncidentFromDVER(dver, partyId || '')
+      // Convert DVIR to incident format and create automatically
+      const incident = await createIncidentFromDVIR(dvir, '', partyId || '')
       
       // Refresh the incidents list
       fetchIncidents()
       
       // Show success message
-      alert(`RSIN created successfully from DVER! Found ${dver.violations?.length || 0} violations.`)
+      alert(`RSIN created successfully from DVIR! Found ${dvir.violations?.length || 0} violations.`)
     } catch (error) {
-      console.error('Error creating incident from DVER:', error)
-      alert('Error creating incident from DVER')
+      console.error('Error creating incident from DVIR:', error)
+      alert('Error creating incident from DVIR')
     }
   }
 
@@ -191,14 +191,14 @@ export default function RoadsideInspectionsPage() {
                   incidentType="ROADSIDE_INSPECTION"
                   onSubmit={handleCreateIncident}
                   partyId={partyId || undefined}
-                  initialData={dverPrefilledData}
+                  initialData={dvirPrefilledData}
                 />
               </DialogContent>
             </Dialog>
             
-            <Button variant="outline" onClick={() => setIsDVERModalOpen(true)}>
+                            <Button variant="outline" onClick={() => setIsDVIRModalOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
-              Upload DVER
+                              Upload DVIR
             </Button>
           </div>
         </div>
@@ -351,10 +351,10 @@ export default function RoadsideInspectionsPage() {
           </div>
         )}
         
-        <DVERUploadModal
-          isOpen={isDVERModalOpen}
-          onClose={() => setIsDVERModalOpen(false)}
-          onDVERProcessed={handleDVERProcessed}
+        <DVIRUploadModal
+          isOpen={isDVIRModalOpen}
+          onClose={() => setIsDVIRModalOpen(false)}
+          onDVIRProcessed={handleDVIRProcessed}
         />
       </div>
     </AppLayout>

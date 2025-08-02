@@ -19,7 +19,8 @@ interface TrainingIssueData {
   isRequired?: boolean
   competencies?: any[]
   notes?: string
-  partyId: string
+  partyId?: string  // Optional - will be resolved from personId if not provided
+  personId?: string // Accept person ID and resolve to party ID
   title: string
   description?: string
   priority?: string
@@ -225,6 +226,16 @@ export async function GET(request: NextRequest) {
     // Add calculated status similar to licenses
     const trainingsWithStatus = trainings.map(training => {
       const today = new Date()
+      
+      // Handle training without expiration date (voluntary training)
+      if (!training.expirationDate) {
+        return {
+          ...training,
+          calculatedStatus: 'current',
+          daysUntilExpiry: null
+        }
+      }
+      
       const expirationDate = new Date(training.expirationDate)
       const daysUntilExpiry = Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
       
@@ -268,13 +279,31 @@ export async function POST(request: NextRequest) {
     const body: TrainingIssueData = await request.json()
     
     // Validate required fields
-    if (!body.trainingType || !body.completionDate || !body.expirationDate || !body.partyId) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!body.trainingType || !body.completionDate || (!body.partyId && !body.personId)) {
+
+      return Response.json({ error: 'Missing required fields (need trainingType, completionDate, and either partyId or personId)' }, { status: 400 })
+    }
+
+    // Resolve personId to partyId if needed
+    let resolvedPartyId = body.partyId
+
+    
+              if (!resolvedPartyId && body.personId) {
+      const person = await db.person.findUnique({
+        where: { id: body.personId },
+        select: { partyId: true }
+      })
+      
+      if (!person) {
+        return Response.json({ error: 'Person not found' }, { status: 404 })
+      }
+      
+      resolvedPartyId = person.partyId
     }
 
     // Check if user has access to the party (same logic as licenses)
     const party = await db.party.findUnique({
-      where: { id: body.partyId },
+      where: { id: resolvedPartyId! },
       include: {
         person: true,
         organization: true,
@@ -306,7 +335,7 @@ export async function POST(request: NextRequest) {
       // Get the driver's role to find their organization and location
       const driverRole = await db.role.findFirst({
         where: {
-          partyId: body.partyId,
+          partyId: resolvedPartyId!,
           isActive: true
         }
       })
@@ -382,10 +411,10 @@ export async function POST(request: NextRequest) {
           issueType: 'training',
           status: 'active',
           priority: body.priority || 'medium',
-          partyId: body.partyId,
+          partyId: resolvedPartyId!,
           title: body.title,
           description: body.description,
-          dueDate: new Date(body.expirationDate),
+          dueDate: body.expirationDate ? new Date(body.expirationDate) : null,
           updatedAt: new Date()
         }
       })
@@ -400,7 +429,7 @@ export async function POST(request: NextRequest) {
           location: body.location,
           startDate: body.startDate ? new Date(body.startDate) : null,
           completionDate: new Date(body.completionDate),
-          expirationDate: new Date(body.expirationDate),
+          expirationDate: body.expirationDate ? new Date(body.expirationDate) : null,
           certificateNumber: body.certificateNumber,
           hours: body.hours,
           isRequired: body.isRequired || false,

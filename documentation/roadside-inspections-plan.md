@@ -154,8 +154,8 @@ overallResult       RinsResult?
 driverLicense       String?
 driverLicenseState  String?
 driverDOB           DateTime?
-dverReceived        Boolean   @default(false)
-dverSource          DverSource?
+dvirReceived        Boolean   @default(false)
+dvirSource          DvirSource?
 entryMethod         EntryMethod @default(Manual_Entry)
 ```
 

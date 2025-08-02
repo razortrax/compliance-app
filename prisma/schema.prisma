@@ -620,7 +620,7 @@ enum RinsResult {
   Out_Of_Service
 }
 
-enum DverSource {
+enum DvirSource {
   Driver_Reported
   FMCSA_Portal_Check
   Third_Party_Report
@@ -683,17 +683,7 @@ model violation_code {
   incident_violations incident_violation[] // Link to actual violations
 }
 
-// Optional: Track violation data snapshots for audit trail
-model violation_snapshot {
-  id          String   @id @default(cuid())
-  monthKey    String // "2025-01", "2025-02"
-  fileName    String // Original CSV filename
-  recordCount Int // Number of records processed
-  importedAt  DateTime @default(now())
-  importedBy  String? // User who triggered import
-  filePath    String? // Storage path for audit
-  notes       String? // Import notes/errors
-}
+// violation_snapshot table removed - not being used in the application
 
 // CAF System - Phase 2 Implementation
 model staff {

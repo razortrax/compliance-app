@@ -8,10 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { cn } from '@/lib/utils'
-import { CalendarIcon, Plus, X, Loader2 } from 'lucide-react'
+import { Plus, X, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface Training {
@@ -145,7 +142,7 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
     hours: baseTraining?.hours || 0,
     isRequired: baseTraining?.isRequired || false,
     hasExpiration: baseTraining?.expirationDate ? true : false,
-    partyId: baseTraining?.issue?.party?.id || personId || ''
+    personId: personId || ''
   })
 
   // Auto-calculate expiration when completion date or category changes
@@ -196,7 +193,7 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
     e.preventDefault()
     
     // Validate required fields
-    if (!formData.trainingType || !formData.completionDate || !formData.partyId) {
+    if (!formData.trainingType || !formData.completionDate || !formData.personId) {
       alert('Please fill in all required fields')
       return
     }
@@ -221,7 +218,7 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
       hours: formData.hours || undefined,
       isRequired: formData.isRequired,
       competencies: competencies.map(c => ({ name: c })),
-      partyId: formData.partyId,
+      personId: formData.personId, // Using personId for cleaner API
       title: `${formData.trainingType} Training`,
       ...(isRenewal && { 
         previousTrainingId: renewingTraining?.id 
@@ -284,7 +281,7 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
 
             {/* Training Type */}
             <div className="space-y-2">
-              <Label htmlFor="trainingType">Training Type <span className="text-red-500">*</span></Label>
+                              <Label htmlFor="trainingType">Training Type <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.trainingType}
                 onValueChange={(value) => setFormData({ ...formData, trainingType: value })}
@@ -432,60 +429,31 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
           <div className="grid grid-cols-3 gap-4">
             {/* Start Date */}
             <div className="space-y-2">
-              <Label>Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(formData.startDate, "PPP") : "Pick start date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.startDate}
-                    onSelect={(date) => {
-                      setFormData({ ...formData, startDate: date || undefined })
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={formData.startDate ? format(new Date(formData.startDate), 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : undefined
+                  setFormData({ ...formData, startDate: date })
+                }}
+              />
             </div>
 
             {/* Completion Date */}
             <div className="space-y-2">
-              <Label>Completion Date <span className="text-red-500">*</span></Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.completionDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.completionDate ? format(formData.completionDate, "PPP") : "Pick completion date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.completionDate}
-                    onSelect={(date) => {
-                      if (date) setFormData({ ...formData, completionDate: date })
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="completionDate">Completion Date <span className="text-red-500">*</span></Label>
+              <Input
+                id="completionDate"
+                type="date"
+                value={formData.completionDate ? format(new Date(formData.completionDate), 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : undefined
+                  setFormData({ ...formData, completionDate: date })
+                }}
+                required
+              />
             </div>
 
             {/* Expiration Date - Conditional */}
@@ -505,30 +473,15 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
                     </Badge>
                   )}
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.expirationDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.expirationDate ? format(formData.expirationDate, "PPP") : "Pick expiration date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.expirationDate}
-                      onSelect={(date) => {
-                        setFormData({ ...formData, expirationDate: date || undefined })
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Input
+                  id="expirationDate"
+                  type="date"
+                  value={formData.expirationDate ? format(new Date(formData.expirationDate), 'yyyy-MM-dd') : ''}
+                  onChange={(e) => {
+                    const date = e.target.value ? new Date(e.target.value) : undefined
+                    setFormData({ ...formData, expirationDate: date })
+                  }}
+                />
               </div>
             )}
 

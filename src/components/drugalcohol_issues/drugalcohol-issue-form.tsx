@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { format } from 'date-fns'
 
 interface DrugAlcoholIssueFormProps {
   partyId?: string
@@ -52,7 +53,11 @@ export default function DrugAlcoholIssueForm({ partyId, drugAlcoholIssue, onSucc
     isDrug: drugAlcoholIssue?.isDrug || false,
     isAlcohol: drugAlcoholIssue?.isAlcohol || false,
     clinic: drugAlcoholIssue?.clinic || '',
-    title: drugAlcoholIssue?.issue?.title || ''
+    title: drugAlcoholIssue?.issue?.title || '',
+    // Add Gold Standard date fields
+    testDate: drugAlcoholIssue?.testDate ? new Date(drugAlcoholIssue.testDate) : undefined,
+    resultDate: drugAlcoholIssue?.resultDate ? new Date(drugAlcoholIssue.resultDate) : undefined,
+    notificationDate: drugAlcoholIssue?.notificationDate ? new Date(drugAlcoholIssue.notificationDate) : undefined
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -269,7 +274,58 @@ export default function DrugAlcoholIssueForm({ partyId, drugAlcoholIssue, onSucc
         </CardContent>
       </Card>
 
+      {/* Dates Card - Gold Standard HTML5 Date Pickers */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Testing Dates</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Notification Date */}
+            <div className="space-y-2">
+              <Label htmlFor="notificationDate">Notification Date</Label>
+              <Input
+                id="notificationDate"
+                type="date"
+                value={formData.notificationDate ? format(formData.notificationDate, 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : undefined
+                  handleInputChange('notificationDate', date)
+                }}
+              />
+            </div>
 
+            {/* Test Date */}
+            <div className="space-y-2">
+              <Label htmlFor="testDate">Test Date <span className="text-red-500">*</span></Label>
+              <Input
+                id="testDate"
+                type="date"
+                value={formData.testDate ? format(formData.testDate, 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : undefined
+                  handleInputChange('testDate', date)
+                }}
+                required
+              />
+            </div>
+
+            {/* Result Date */}
+            <div className="space-y-2">
+              <Label htmlFor="resultDate">Result Date</Label>
+              <Input
+                id="resultDate"
+                type="date"
+                value={formData.resultDate ? format(formData.resultDate, 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : undefined
+                  handleInputChange('resultDate', date)
+                }}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Error Display */}
       {error && (

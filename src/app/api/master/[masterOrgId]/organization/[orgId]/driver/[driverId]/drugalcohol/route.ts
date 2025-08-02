@@ -16,8 +16,8 @@ export async function GET(
 
     const { masterOrgId, orgId, driverId } = params
 
-    // Fetch all the contextual data in one query - MVR Gold Standard pattern
-    const [masterOrg, organization, driver, trainings] = await Promise.all([
+    // Fetch all the contextual data in one query - Gold Standard pattern
+    const [masterOrg, organization, driver, drugAlcoholTests] = await Promise.all([
       // Master organization
       db.organization.findUnique({
         where: { id: masterOrgId },
@@ -44,8 +44,8 @@ export async function GET(
         }
       }),
 
-      // Training issues for this driver
-      db.training_issue.findMany({
+      // Drug & alcohol issues for this driver
+      db.drugalcohol_issue.findMany({
         where: {
           issue: {
             party: {
@@ -67,8 +67,7 @@ export async function GET(
           }
         },
         orderBy: [
-          { isRequired: 'desc' }, // Required training first
-          { expirationDate: 'desc' }
+          { createdAt: 'desc' }
         ]
       })
     ])
@@ -85,38 +84,38 @@ export async function GET(
       return NextResponse.json({ error: 'Driver not found' }, { status: 404 })
     }
 
-    // Transform training data to match frontend interface
-    const transformedTrainings = trainings.map((training: any) => ({
-      id: training.id,
-      trainingType: training.trainingType,
-      provider: training.provider,
-      instructor: training.instructor,
-      location: training.location,
-      startDate: training.startDate?.toISOString() || null,
-      completionDate: training.completionDate.toISOString(),
-      expirationDate: training.expirationDate?.toISOString() || null,
-      certificateNumber: training.certificateNumber,
-      hours: training.hours,
-      isRequired: training.isRequired,
-      competencies: training.competencies,
-      notes: training.notes,
-      issue: training.issue
+    // Transform drug & alcohol data to match frontend interface
+    const transformedTests = drugAlcoholTests.map((test: any) => ({
+      id: test.id,
+      result: test.result,
+      substance: test.substance,
+      lab: test.lab,
+      accreditedBy: test.accreditedBy,
+      reason: test.reason,
+      agency: test.agency,
+      specimenNumber: test.specimenNumber,
+      isDrug: test.isDrug,
+      isAlcohol: test.isAlcohol,
+      clinic: test.clinic,
+      notes: test.notes,
+      createdAt: test.createdAt.toISOString(),
+      issue: test.issue
     }))
 
-    // Return structured data that matches MVR pattern
+    // Return structured data that matches Gold Standard pattern
     const responseData = {
       masterOrg,
       organization,
       driver,
-      trainings: transformedTrainings
+      drugAlcoholTests: transformedTests
     }
 
     return NextResponse.json(responseData)
 
   } catch (error) {
-    console.error('Error fetching driver training data:', error)
+    console.error('Error fetching driver drug & alcohol data:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch driver training data' },
+      { error: 'Failed to fetch driver drug & alcohol data' },
       { status: 500 }
     )
   }

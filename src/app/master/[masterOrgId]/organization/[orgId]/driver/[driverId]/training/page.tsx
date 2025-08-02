@@ -344,6 +344,49 @@ export default function MasterDriverTrainingPage() {
     }
   }
 
+  // URL-driven data loading - Gold Standard pattern! 🚀
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Single URL-driven API call with all contextual data pre-filtered! 
+        const [trainingResult, orgsResult] = await Promise.allSettled([
+          fetch(`/api/master/${masterOrgId}/organization/${orgId}/driver/${driverId}/training`),
+          fetch('/api/organizations') // Still need for org selector
+        ])
+        
+        // Handle training data (primary)
+        if (trainingResult.status === 'fulfilled' && trainingResult.value.ok) {
+          const pageData: PageData = await trainingResult.value.json()
+          setData(pageData)
+          console.log('✅ URL-driven training API success!')
+          console.log(`📚 Loaded ${pageData.trainings.length} training records for ${pageData.driver.firstName} ${pageData.driver.lastName}`)
+        } else {
+          const error = trainingResult.status === 'fulfilled' 
+            ? await trainingResult.value.text()
+            : trainingResult.reason
+          throw new Error(`Failed to fetch training data: ${error}`)
+        }
+        
+        // Handle organizations data (secondary)
+        if (orgsResult.status === 'fulfilled' && orgsResult.value.ok) {
+          const orgs = await orgsResult.value.json()
+          setOrganizations(orgs)
+        }
+        
+      } catch (err) {
+        console.error('❌ Training data fetch error:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load training data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [masterOrgId, orgId, driverId])
+
   useEffect(() => {
     if (selectedTraining?.issue.id) {
       refreshAttachments()
@@ -702,7 +745,7 @@ export default function MasterDriverTrainingPage() {
           </DialogHeader>
           <div className="px-1">
             <TrainingForm
-              personId={data.driver.id}
+              personId={driverId}
               onSubmit={handleAddTraining}
               onCancel={() => setIsAddDialogOpen(false)}
               isSubmitting={isSubmitting}
@@ -719,7 +762,7 @@ export default function MasterDriverTrainingPage() {
           </DialogHeader>
           <div className="px-1">
             <TrainingForm
-              personId={data.driver.id}
+              personId={driverId}
               initialData={selectedTraining}
               onSubmit={handleEditTraining}
               onCancel={() => setIsEditDialogOpen(false)}
@@ -737,7 +780,7 @@ export default function MasterDriverTrainingPage() {
           </DialogHeader>
           <div className="px-1">
             <TrainingForm
-              personId={data.driver.id}
+              personId={driverId}
               renewingTraining={selectedTraining}
               onSubmit={handleRenewTraining}
               onCancel={() => setIsRenewalDialogOpen(false)}

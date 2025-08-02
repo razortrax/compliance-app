@@ -361,17 +361,20 @@ export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
     >
       <div className="max-w-7xl mx-auto h-full">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Stethoscope className="h-6 w-6" />
-                Physical Examinations
+          {/* Driver and Physical Header - Gold Standard Pattern */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="space-y-1">
+              <p className="text-sm text-gray-600">{data.organization.name}</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {data.driver.firstName} {data.driver.lastName} - Physical Examinations
               </h1>
-              <p className="text-gray-600 mt-1">
-                Physical examination records for {driver.firstName} {driver.lastName}
-              </p>
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span>Total Records: {data.physicalIssues.length}</span>
+                <span>•</span>
+                <span>Active: {sortedPhysicals.filter(p => p.issue.status === 'Active').length}</span>
+              </div>
             </div>
+            
             <div className="flex items-center gap-3">
               {selectedPhysical && (
                 <>

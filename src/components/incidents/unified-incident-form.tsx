@@ -43,8 +43,8 @@ interface RoadsideData {
   driverLicense?: string
   driverLicenseState?: string
   driverDOB?: string
-  dverReceived: boolean
-  dverSource?: string
+  dvirReceived: boolean
+  dvirSource?: string
   entryMethod: string
 }
 
@@ -132,7 +132,7 @@ export function UnifiedIncidentForm({ incidentType, onSubmit, onCancel, initialD
         needsDrugTest: false,
       } : undefined,
       roadsideData: incidentType === 'ROADSIDE_INSPECTION' ? {
-        dverReceived: false,
+        dvirReceived: false,
         entryMethod: 'Manual_Entry',
       } : undefined,
       ...initialData,

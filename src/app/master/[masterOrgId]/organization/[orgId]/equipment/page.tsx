@@ -13,7 +13,6 @@ import { SectionHeader } from "@/components/ui/section-header"
 import { 
   Truck, 
   Plus, 
-  Edit, 
   MapPin,
   Hash,
   Eye
@@ -70,8 +69,7 @@ export default function EquipmentPage() {
   const [masterOrg, setMasterOrg] = useState<Organization | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null)
+
 
   // Fetch all data using URL-driven API 🚀
   useEffect(() => {
@@ -125,15 +123,7 @@ export default function EquipmentPage() {
     fetchData()
   }, [masterOrgId, organizationId])
 
-  const handleEditEquipment = (item: Equipment) => {
-    setSelectedEquipment(item)
-    setShowEditModal(true)
-  }
 
-  const handleCloseEditModal = () => {
-    setShowEditModal(false)
-    setSelectedEquipment(null)
-  }
 
   const refreshData = async () => {
     const response = await fetch(`/api/master/${masterOrgId}/organization/${organizationId}/equipment`)
@@ -266,28 +256,7 @@ export default function EquipmentPage() {
           }
         />
 
-        {/* Edit Equipment Modal */}
-        <Dialog open={showEditModal} onOpenChange={handleCloseEditModal}>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Equipment</DialogTitle>
-              <DialogDescription>
-                Update equipment details
-              </DialogDescription>
-            </DialogHeader>
-            {selectedEquipment && (
-              <EquipmentForm
-                organizationId={organizationId}
-                equipment={selectedEquipment}
-                onSuccess={() => {
-                  handleCloseEditModal()
-                  refreshData()
-                }}
-                onCancel={handleCloseEditModal}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+
 
         {/* Equipment Summary Cards */}
         {Object.keys(data.summary.equipmentByType).length > 0 && (
@@ -362,14 +331,6 @@ export default function EquipmentPage() {
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditEquipment(item)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
                       </Button>
                     </div>
                   </div>

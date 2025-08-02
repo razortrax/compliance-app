@@ -148,12 +148,14 @@ export async function GET(
     const daysUntilExpiry = expirationDate ? Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null
     
     let calculatedStatus = 'current'
-    if (daysUntilExpiry < 0) {
-      calculatedStatus = 'expired'
-    } else if (daysUntilExpiry <= 15) {
-      calculatedStatus = 'critical'
-    } else if (daysUntilExpiry <= 30) {
-      calculatedStatus = 'warning'
+    if (daysUntilExpiry !== null) {
+      if (daysUntilExpiry < 0) {
+        calculatedStatus = 'expired'
+      } else if (daysUntilExpiry <= 15) {
+        calculatedStatus = 'critical'
+      } else if (daysUntilExpiry <= 30) {
+        calculatedStatus = 'warning'
+      }
     }
 
     return Response.json({
