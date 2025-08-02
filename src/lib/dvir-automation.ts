@@ -457,7 +457,126 @@ Date: 1/9/24
 export type { DVIRDocument, DVIREquipment, DVIRViolation }
 export { DVIRProcessor }
 
-// Utility function to create incident from DVIR
+/**
+ * Check for missing records and create ONLY external parties (Inspector, Agency)
+ * Driver and Equipment records should already exist - if missing, notify user
+ */
+export async function checkAndCreateExternalRecordsFromDVIR(
+  dvir: DVIRDocument,
+  organizationId: string,
+  db: any // Prisma client
+) {
+  const createdRecords: any = {}
+  const missingRecords: any = {}
+
+  try {
+    // 1. Create Inspector as Staff Member (if not exists) - OK to auto-create
+    if (dvir.inspectorName && dvir.agencyName) {
+      const existingInspector = await db.staff.findFirst({
+        where: {
+          position: { contains: 'Inspector' },
+          // Could match by name if needed
+        }
+      })
+
+      if (!existingInspector) {
+        console.log(`🔍 Creating inspector record: ${dvir.inspectorName}`)
+
+        // Create party for inspector
+        const inspectorParty = await db.party.create({
+          data: {
+            id: createId(),
+            status: 'active'
+          }
+        })
+
+        // Create person record
+        const [firstName, ...lastNameParts] = dvir.inspectorName.split(' ')
+        await db.person.create({
+          data: {
+            id: createId(),
+            partyId: inspectorParty.id,
+            firstName,
+            lastName: lastNameParts.join(' ') || 'Inspector',
+            email: `${firstName.toLowerCase()}@${dvir.agencyName?.toLowerCase().replace(/\s+/g, '')}.gov`
+          }
+        })
+
+        // Create staff record
+        const staff = await db.staff.create({
+          data: {
+            id: createId(),
+            partyId: inspectorParty.id,
+            position: 'DOT Inspector',
+            department: dvir.agencyName || 'DOT',
+            canApproveCAFs: true,
+            canSignCAFs: true
+          }
+        })
+
+        createdRecords.inspector = staff
+      }
+    }
+
+    // 2. CHECK Equipment Records (DO NOT CREATE - notify if missing)
+    for (const equipment of dvir.equipment || []) {
+      if (equipment.vin) {
+        const existingEquipment = await db.equipment.findFirst({
+          where: { vinNumber: equipment.vin }
+        })
+
+        if (!existingEquipment && equipment.make) {
+          console.log(`❌ MISSING EQUIPMENT: ${equipment.year} ${equipment.make} ${equipment.model} (VIN: ${equipment.vin})`)
+          
+          missingRecords.equipment = missingRecords.equipment || []
+          missingRecords.equipment.push({
+            vin: equipment.vin,
+            description: `${equipment.year} ${equipment.make} ${equipment.model}`,
+            unitType: equipment.unitType,
+            unitNumber: equipment.unitNumber
+          })
+        }
+      }
+    }
+
+    // 3. CHECK Driver Record (DO NOT CREATE - notify if missing)
+    if (dvir.driverName && dvir.driverLicense) {
+      const existingDriver = await db.person.findFirst({
+        where: { licenseNumber: dvir.driverLicense }
+      })
+
+      if (!existingDriver) {
+        console.log(`❌ MISSING DRIVER: ${dvir.driverName} (License: ${dvir.driverLicense})`)
+        
+        missingRecords.driver = {
+          name: dvir.driverName,
+          license: dvir.driverLicense,
+          licenseState: dvir.driverLicenseState,
+          dob: dvir.driverDOB
+        }
+      }
+    }
+
+    const result = {
+      created: createdRecords,
+      missing: missingRecords,
+      canProceed: Object.keys(missingRecords).length === 0
+    }
+
+    if (result.canProceed) {
+      console.log('✅ All required records exist, ready to create DVIR incident')
+    } else {
+      console.log('⚠️ Missing critical records - user must add them first:', missingRecords)
+    }
+
+    return result
+
+  } catch (error) {
+    console.error('❌ Error checking records from DVIR:', error)
+    throw error
+  }
+}
+
 export async function createIncidentFromDVIR(
   dvir: DVIRDocument,
   driverId?: string,
@@ -524,178 +643,12 @@ export async function createIncidentFromDVIR(
     title: `RSIN - ${dvir.inspectionLocation}`,
     description: `Roadside inspection on ${dvir.inspectionDate}`,
     
-    // NEW: Suggested party record creation
+    // UPDATED: Only suggest external record creation
     suggestedRecords: {
       createInspector: !!dvir.inspectorName,
       createAgency: !!dvir.agencyName,
-      createEquipment: dvir.equipment.filter(eq => eq.vin && eq.make),
-      createDriver: !!(dvir.driverName && dvir.driverLicense)
+      requiresExistingEquipment: dvir.equipment.filter(eq => eq.vin && eq.make),
+      requiresExistingDriver: !!(dvir.driverName && dvir.driverLicense)
     }
-  }
-}
-
-// NEW: Enhanced party record creation utilities
-export async function createMissingRecordsFromDVIR(
-  dvir: DVIRDocument, 
-  organizationId: string,
-  db: any // Prisma client
-) {
-  const createdRecords: any = {}
-  
-  try {
-    // 1. Create Inspector as Staff Member (if not exists)
-    if (dvir.inspectorName && dvir.agencyName) {
-      // Check if inspector exists
-      const existingInspector = await db.staff.findFirst({
-        where: {
-          position: { contains: 'Inspector' },
-          // Could match by name if needed
-        }
-      })
-      
-      if (!existingInspector) {
-        console.log(`🔍 Creating inspector record: ${dvir.inspectorName}`)
-        
-        // Create party for inspector
-        const inspectorParty = await db.party.create({
-          data: {
-            id: createId(),
-            status: 'active'
-          }
-        })
-        
-        // Create person record
-        const [firstName, ...lastNameParts] = dvir.inspectorName.split(' ')
-        await db.person.create({
-          data: {
-            id: createId(),
-            partyId: inspectorParty.id,
-            firstName,
-            lastName: lastNameParts.join(' ') || 'Inspector',
-            email: `${firstName.toLowerCase()}@${dvir.agencyName?.toLowerCase().replace(/\s+/g, '')}.gov`
-          }
-        })
-        
-        // Create staff record
-        const staff = await db.staff.create({
-          data: {
-            id: createId(),
-            partyId: inspectorParty.id,
-            position: 'DOT Inspector',
-            department: dvir.agencyName || 'DOT',
-            canApproveCAFs: true,
-            canSignCAFs: true
-          }
-        })
-        
-        createdRecords.inspector = staff
-      }
-    }
-    
-    // 2. Create Equipment Records (if VIN doesn't exist)
-    for (const equipment of dvir.equipment || []) {
-      if (equipment.vin) {
-        const existingEquipment = await db.equipment.findFirst({
-          where: { vinNumber: equipment.vin }
-        })
-        
-        if (!existingEquipment && equipment.make) {
-          console.log(`🚛 Creating equipment record: ${equipment.year} ${equipment.make} ${equipment.model}`)
-          
-          // Create party for equipment
-          const equipmentParty = await db.party.create({
-            data: {
-              id: createId(),
-              status: 'active'
-            }
-          })
-          
-          // Create equipment record
-          const newEquipment = await db.equipment.create({
-            data: {
-              id: createId(),
-              partyId: equipmentParty.id,
-              vehicleType: equipment.unitType || 'Unknown',
-              make: equipment.make,
-              model: equipment.model || null,
-              year: equipment.year || null,
-              vinNumber: equipment.vin,
-              plateNumber: equipment.plateNumber || null,
-              registrationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
-            }
-          })
-          
-          // Create role linking to organization
-          await db.role.create({
-            data: {
-              id: createId(),
-              partyId: equipmentParty.id,
-              roleType: 'EQUIPMENT',
-              organizationId,
-              status: 'active',
-              isActive: true
-            }
-          })
-          
-          createdRecords.equipment = createdRecords.equipment || []
-          createdRecords.equipment.push(newEquipment)
-        }
-      }
-    }
-    
-    // 3. Create Driver Record (if license doesn't exist)
-    if (dvir.driverName && dvir.driverLicense) {
-      const existingDriver = await db.person.findFirst({
-        where: { licenseNumber: dvir.driverLicense }
-      })
-      
-      if (!existingDriver) {
-        console.log(`👤 Creating driver record: ${dvir.driverName} (${dvir.driverLicense})`)
-        
-        // Create party for driver
-        const driverParty = await db.party.create({
-          data: {
-            id: createId(),
-            status: 'active'
-          }
-        })
-        
-        // Parse driver name
-        const [firstName, ...lastNameParts] = dvir.driverName.split(' ')
-        
-        // Create person record
-        const driver = await db.person.create({
-          data: {
-            id: createId(),
-            partyId: driverParty.id,
-            firstName,
-            lastName: lastNameParts.join(' ') || 'Driver',
-            licenseNumber: dvir.driverLicense,
-            dateOfBirth: dvir.driverDOB ? new Date(dvir.driverDOB) : null
-          }
-        })
-        
-        // Create role linking to organization
-        await db.role.create({
-          data: {
-            id: createId(),
-            partyId: driverParty.id,
-            roleType: 'PERSON',
-            organizationId,
-            status: 'active',
-            isActive: true
-          }
-        })
-        
-        createdRecords.driver = driver
-      }
-    }
-    
-    console.log('✅ Created records from DVIR:', Object.keys(createdRecords))
-    return createdRecords
-    
-  } catch (error) {
-    console.error('❌ Error creating records from DVIR:', error)
-    throw error
   }
 } 

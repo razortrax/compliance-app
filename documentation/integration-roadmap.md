@@ -120,6 +120,76 @@ Post-MVP integration strategy to streamline compliance processes, enhance data a
 
 ---
 
+### **6. DVIR Auto-Population System** 📄 **INTELLIGENT DOCUMENT PROCESSING**
+**Purpose**: Automatic RSIN creation from uploaded DVIR documents using OCR
+**Status**: Built and ready for OCR integration
+
+#### Core Business Logic
+- **Driver & Equipment**: Must exist in Fleetrax before DVIR processing
+- **Inspector & Agency**: Auto-created as external staff/organizations
+- **Missing Records**: User notified and must add required records first
+- **Data Validation**: Ensures compliance workflow integrity
+
+#### Auto-Population Features
+- **OCR Document Processing**: Extract structured data from DVIR PDFs
+- **Intelligent Matching**: Match drivers by license, equipment by VIN
+- **External Party Creation**: Auto-create Inspector and Agency records
+- **Pre-Population**: Auto-fill RSIN forms with extracted data
+- **Violation Detection**: Extract and match DOT violation codes
+- **Attachment Linking**: Link original DVIR document to RSIN
+
+#### Implementation Strategy
+- **Phase 1**: Enhanced mock data testing (COMPLETE)
+- **Phase 2**: OCR service integration (AWS Textract recommended)
+- **Phase 3**: UI integration with upload button next to "New RSIN"
+- **Phase 4**: Batch processing for multiple DVIR documents
+
+#### Business Workflow
+```
+1. User uploads DVIR document
+2. OCR extracts structured data
+3. System checks for existing Driver/Equipment records
+   → If missing: Display required records, block processing
+   → If found: Continue to step 4
+4. Auto-create Inspector/Agency records (if new)
+5. Pre-populate RSIN form with extracted data
+6. User reviews and submits RSIN
+7. Link original DVIR as attachment
+```
+
+#### Technical Implementation
+- **OCR Services**: AWS Textract (primary), Google Vision (fallback)
+- **Data Extraction**: `DVIRProcessor` class with parsing logic
+- **Record Checking**: `checkAndCreateExternalRecordsFromDVIR()`
+- **Form Pre-Population**: `createIncidentFromDVIR()`
+- **File Management**: DigitalOcean Spaces for DVIR storage
+
+#### Cost Structure
+- **AWS Textract**: $1.50 per 1,000 pages (Free tier: 1,000/month)
+- **Google Vision**: $1.50 per 1,000 pages (Free tier: 1,000/month)
+- **Monthly Estimates**: 100 DVIRs = $0.15, 1,000 DVIRs = $1.50
+
+#### Data Quality & Compliance
+- **Driver Validation**: Ensures proper onboarding before inspections
+- **Equipment Validation**: Prevents orphaned inspection records
+- **Inspector Tracking**: Complete audit trail for DOT officials
+- **Document Linking**: Original DVIR always attached to RSIN
+
+#### Testing & Development
+- **Mock Data Testing**: Available without OCR setup
+- **Test Database**: `scripts/create-test-dvir-data.ts`
+- **OCR Setup Guide**: `scripts/setup-aws-textract.md`
+- **Real Document Support**: Handles signed scans and digital DVIRs
+
+#### Business Value
+- **Time Savings**: Eliminate manual RSIN data entry
+- **Data Accuracy**: Reduce human error in violation tracking
+- **Compliance Assurance**: Ensure proper driver/equipment validation
+- **Audit Trail**: Complete document-to-record linking
+- **Scalability**: Handle high-volume inspection processing
+
+---
+
 ## Implementation Timeline
 
 ### **Q2 2025: Foundation**
