@@ -11,7 +11,7 @@ A comprehensive SaaS platform for managing fleet DOT compliance requirements, in
 - ❌ **No redistribution**: Cannot be shared or republished
 - 📄 **License**: See [LICENSE](./LICENSE) file for complete terms
 
-For commercial licensing inquiries: [your-email@domain.com]
+For commercial licensing inquiries: patrick@traxsys.ai
 
 ## 🚀 Latest Features
 

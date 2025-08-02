@@ -100,6 +100,10 @@ feat(driver): add license expiration color coding
 ---
 
 ## 🆘 Need Help?
-If you're unsure about anything, create an issue or ping the project owner directly.
+If you have questions about contributing, please contact:
 
-Thank you for contributing to safer fleets with ComplianceApp!
+**Patrick Lensing**  
+Email: patrick@traxsys.ai  
+Company: TraxSys Inc
+
+Thank you for contributing to safer fleets with Fleetrax!
