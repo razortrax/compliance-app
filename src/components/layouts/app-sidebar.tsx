@@ -358,11 +358,11 @@ export function AppSidebar({
         Overview
       </Link>
       <Link 
-        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/staff` : "#"} 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/other-stuff` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
         <Users className="mr-3 h-4 w-4" />
-        Staff
+        Other Stuff
       </Link>
       <Link 
         href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/issues` : "#"} 

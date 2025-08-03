@@ -71,22 +71,27 @@ export default function OrganizationAuditPage() {
     )
   }
 
-  // Top navigation breadcrumb
+  // Correct static top navigation - NEVER make these dynamic!
   const topNav = [
     { 
-      label: masterOrg?.name || 'Master', 
-      href: `/master/${masterOrgId}`,
+      label: 'Master', 
+      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
       isActive: false
     },
     { 
-      label: organization?.name || 'Organization', 
-      href: `/master/${masterOrgId}/organization/${orgId}`,
-      isActive: false
-    },
-    { 
-      label: 'Audit', 
-      href: `/master/${masterOrgId}/organization/${orgId}/audit`,
+      label: 'Organization', 
+      href: `/organizations/${orgId}`,
       isActive: true
+    },
+    { 
+      label: 'Drivers', 
+      href: `/organizations/${orgId}/drivers`,
+      isActive: false
+    },
+    { 
+      label: 'Equipment', 
+      href: `/organizations/${orgId}/equipment`,
+      isActive: false
     }
   ]
 
