@@ -1,7 +1,1 @@
-{
-  "/organizations/[id]/page": "app/organizations/[id]/page.js",
-  "/master/[masterOrgId]/organization/[orgId]/drivers/page": "app/master/[masterOrgId]/organization/[orgId]/drivers/page.js",
-  "/organizations/[id]/drivers/page": "app/organizations/[id]/drivers/page.js",
-  "/master/[masterOrgId]/organization/[orgId]/page": "app/master/[masterOrgId]/organization/[orgId]/page.js",
-  "/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/page": "app/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/page.js"
-}
+{}
