@@ -29,3 +29,7 @@ Thumbs.db
 # Build artifacts
 .next/
 out/
+# Environment backup files (SECURITY CRITICAL)
+.env.*.backup
+.env.backup*
+*.env.backup
