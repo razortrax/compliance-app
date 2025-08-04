@@ -177,18 +177,65 @@ model data_sharing_consent {
 model equipment {
   id                 String         @id
   partyId            String         @unique
-  vehicleType        String
+  
+  // Basic equipment information
   make               String?
   model              String?
   year               Int?
-  vinNumber          String?        @unique
+  vin                String?        @unique // Changed from vinNumber to match CSV
   plateNumber        String?
   registrationExpiry DateTime?
+  
+  // Status and classification
+  statusId           String?
+  status             EquipmentStatus? @relation(fields: [statusId], references: [id])
+  
+  // Weight specifications
+  eqpWeightGross        Int?
+  eqpWeightGrossRating  Int?
+  eqpWeightGrossTagged  Int?
+  
+  // Fuel and engine information
+  fuelTypeId         String?
+  fuelType           EquipmentFuelType? @relation(fields: [fuelTypeId], references: [id])
+  engineModel        String?
+  engineDisplacement String?
+  driveType          String?
+  dateOfManufacture  DateTime?
+  countCylinders     Int?
+  
+  // Physical characteristics
+  countAxles         Int?
+  colorId            String?
+  color              EquipmentColor? @relation(fields: [colorId], references: [id])
+  tireSize           String?
+  
+  // Usage tracking
+  startMileage       Int?
+  startDate          DateTime?
+  retireMileage      Int?
+  retireDate         DateTime?
+  
+  // Vehicle classification
+  vehicleTypeId      String?
+  vehicleType        EquipmentVehicleType? @relation(fields: [vehicleTypeId], references: [id])
+  
+  // Ownership information  
+  ownershipTypeId    String?
+  ownershipType      EquipmentOwnershipType? @relation(fields: [ownershipTypeId], references: [id])
+  
+  // Category
+  categoryId         String?
+  category           EquipmentCategory? @relation(fields: [categoryId], references: [id])
+  
+  // Location assignment
   locationId         String?        // Equipment can be assigned to specific location
-  activity_logs      activity_log[] // Enhanced activity tracking for equipment
-  party              party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
   location           location?      @relation(fields: [locationId], references: [id])
-
+  
+  // Relationships
+  party              party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  activity_logs      activity_log[] // Enhanced activity tracking for equipment
+  
   // Incident involvement relationships (unified)
   incident_involvement incident_equipment_involvement[]
 }
@@ -211,6 +258,7 @@ model issue {
   drugalcohol_issue         drugalcohol_issue?
   party                     party                      @relation(fields: [partyId], references: [id])
   license_issue             license_issue?
+  registration_issue        registration_issue?
   training_issue            training_issue?
   attachments               attachment[]               // Issue can have multiple attachments
   activity_logs             activity_log[]             // Enhanced activity tracking for issues
@@ -403,6 +451,28 @@ model license_issue {
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
+model registration_issue {
+  id           String              @id @default(cuid())
+  issueId      String              @unique
+  plateNumber  String              // License plate number
+  state        String              // State of registration (2 character)
+  startDate    DateTime            // Registration start date
+  expirationDate DateTime          // Registration expiration date (1 year after start)
+  renewalDate  DateTime?           // Date registration was renewed before expiration
+  status       RegistrationStatus  @default(Active) // Active, Expired
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  // Relations
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+enum RegistrationStatus {
+  Active
+  Expired
+}
+
 model training_issue {
   id                     String          @id @default(cuid())
   issueId                String          @unique
@@ -553,6 +623,15 @@ model organization {
   corrective_action_forms corrective_action_form[] // CAF system support
   activity_logs           activity_log[]           // Enhanced activity tracking
   organization_tags       organization_tag[]       // Custom tag management
+  
+  // Equipment enum management - organizations can customize their equipment options
+  equipmentStatuses       EquipmentStatus[]
+  equipmentFuelTypes      EquipmentFuelType[]
+  equipmentVehicleTypes   EquipmentVehicleType[]
+  equipmentColors         EquipmentColor[]
+  equipmentOwnershipTypes EquipmentOwnershipType[]
+  equipmentCategories     EquipmentCategory[]
+  
   party                   party                    @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
@@ -798,4 +877,121 @@ enum SignatureType {
   COMPLETION // Staff completing the CAF
   APPROVAL // Supervisor approving completion
   WITNESS // Witness to completion (if required)
+}
+
+// Equipment-related lookup tables for dynamic enum management
+model EquipmentStatus {
+  id          String @id @default(cuid())
+  code        String // ACTIVE, INACTIVE, MAINTENANCE, RETIRED
+  label       String
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Organization that manages this option (null = system default)
+  organizationId String?
+  organization   organization? @relation(fields: [organizationId], references: [id])
+  
+  // Usage tracking
+  equipment equipment[]
+  
+  @@unique([code, organizationId])
+  @@map("equipment_status")
+}
+
+model EquipmentFuelType {
+  id          String @id @default(cuid())
+  code        String // Gasoline, Diesel, Propane, Electric
+  label       String
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  organizationId String?
+  organization   organization? @relation(fields: [organizationId], references: [id])
+  
+  equipment equipment[]
+  
+  @@unique([code, organizationId])
+  @@map("equipment_fuel_type")
+}
+
+model EquipmentVehicleType {
+  id          String @id @default(cuid())
+  code        String // PDC-Day Cab, PSC-Sleeper Cab, etc.
+  label       String
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  organizationId String?
+  organization   organization? @relation(fields: [organizationId], references: [id])
+  
+  equipment equipment[]
+  
+  @@unique([code, organizationId])
+  @@map("equipment_vehicle_type")
+}
+
+model EquipmentColor {
+  id          String @id @default(cuid())
+  code        String // White, Black, Red, etc.
+  label       String
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  organizationId String?
+  organization   organization? @relation(fields: [organizationId], references: [id])
+  
+  equipment equipment[]
+  
+  @@unique([code, organizationId])
+  @@map("equipment_color")
+}
+
+model EquipmentOwnershipType {
+  id          String @id @default(cuid())
+  code        String // Owner Operator, Leased, Owned, Rent
+  label       String
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  organizationId String?
+  organization   organization? @relation(fields: [organizationId], references: [id])
+  
+  equipment equipment[]
+  
+  @@unique([code, organizationId])
+  @@map("equipment_ownership_type")
+}
+
+model EquipmentCategory {
+  id          String @id @default(cuid())
+  code        String // Power, Trailer
+  label       String
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  organizationId String?
+  organization   organization? @relation(fields: [organizationId], references: [id])
+  
+  equipment equipment[]
+  
+  @@unique([code, organizationId])
+  @@map("equipment_category")
 }

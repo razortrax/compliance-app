@@ -38,10 +38,6 @@ function useUrlContext() {
     }
   }
   
-  // Auto-detect what selectors to show
-  const showOrgSelector = hasMaster // Show org selector if we're in a master context
-  const showDriverEquipmentSelector = hasOrganization // Show driver/equipment selector if we're in an org context
-  
   return {
     // Context IDs
     masterOrgId,
@@ -50,23 +46,11 @@ function useUrlContext() {
     equipmentId,
     // Auto-detected UI state
     sidebarMenu,
-    showOrgSelector,
-    showDriverEquipmentSelector,
     // Context flags
     hasDriver,
     hasEquipment, 
     hasOrganization,
     hasMaster
-  }
-}
-
-export interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
-  party?: {
-    userId?: string | null
-    status?: string
   }
 }
 
@@ -80,18 +64,11 @@ interface AppLayoutProps {
     isActive?: boolean
   }>
   // Legacy props (backwards compatibility)
-  showOrgSelector?: boolean
-  showDriverEquipmentSelector?: boolean
   sidebarMenu?: 'organization' | 'driver' | 'equipment'
   driverId?: string
   equipmentId?: string
   masterOrgId?: string
   currentOrgId?: string
-  // Organization selector props
-  organizations?: Organization[]
-  isSheetOpen?: boolean
-  onSheetOpenChange?: (open: boolean) => void
-  onOrganizationSelect?: (org: Organization) => void
   // Content configuration
   className?: string
 }
@@ -101,18 +78,11 @@ export function AppLayout({
   name,
   topNav = [],
   // Legacy props
-  showOrgSelector,
-  showDriverEquipmentSelector,
   sidebarMenu,
   driverId,
   equipmentId,
   masterOrgId,
   currentOrgId,
-  // Common props
-  organizations,
-  isSheetOpen,
-  onSheetOpenChange,
-  onOrganizationSelect,
   className = ""
 }: AppLayoutProps) {
   const { user } = useUser()
@@ -121,13 +91,14 @@ export function AppLayout({
   const urlContext = useUrlContext()
   
   // Use legacy props if provided, otherwise fall back to URL context
-  const finalShowOrgSelector = showOrgSelector ?? urlContext.showOrgSelector
-  const finalShowDriverEquipmentSelector = showDriverEquipmentSelector ?? urlContext.showDriverEquipmentSelector
   const finalSidebarMenu = sidebarMenu ?? urlContext.sidebarMenu
   const finalDriverId = driverId ?? urlContext.driverId
   const finalEquipmentId = equipmentId ?? urlContext.equipmentId
   const finalMasterOrgId = masterOrgId ?? urlContext.masterOrgId
   const finalCurrentOrgId = currentOrgId ?? urlContext.orgId
+  
+  // Show sidebar if we have organization context or are on organization/driver/equipment pages
+  const showSidebar = finalMasterOrgId || finalCurrentOrgId || finalSidebarMenu
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -138,20 +109,14 @@ export function AppLayout({
       />
       
       <div className="flex">
-        {/* Sidebar - only show if we have selectors or menu */}
-        {(finalShowOrgSelector || finalShowDriverEquipmentSelector || finalSidebarMenu) && (
+        {/* Sidebar - show when we have context */}
+        {showSidebar && (
           <AppSidebar
-            showOrgSelector={finalShowOrgSelector}
-            showDriverEquipmentSelector={finalShowDriverEquipmentSelector}
             menuType={finalSidebarMenu}
             driverId={finalDriverId}
             equipmentId={finalEquipmentId}
             masterOrgId={finalMasterOrgId}
-            organizations={organizations}
             currentOrgId={finalCurrentOrgId}
-            isSheetOpen={isSheetOpen}
-            onSheetOpenChange={onSheetOpenChange}
-            onOrganizationSelect={onOrganizationSelect}
           />
         )}
         

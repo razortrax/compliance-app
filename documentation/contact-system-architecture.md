@@ -396,6 +396,181 @@ function ContactForm({ partyId, roleId, contact }: ContactFormProps) {
 ✅ **Audit Trail**: Contact changes tracked with proper attribution  
 ✅ **Scalable**: Supports multiple contact methods and future expansion  
 
+## Planned Enhancements
+
+### Personal Relationships & Emergency Contacts
+
+#### Relationship Types
+Extend the contact system to support personal relationships for drivers and staff:
+
+- **Family**: Spouse, Child, Parent, Sibling, Guardian
+- **Emergency**: Emergency Contact, Alternate Emergency Contact  
+- **Professional**: Doctor, Lawyer, Accountant, Insurance Agent
+- **Personal**: Friend, Neighbor, Religious Leader
+
+#### Database Enhancement
+```sql
+contact_relationship {
+  id                String    @id @default(cuid())
+  contactId         String    -- FK to contact table
+  relationshipType  String    -- spouse, child, doctor, lawyer, etc.
+  relationshipLabel String?   -- Custom label like "Primary Care Physician"
+  isPrimary         Boolean   @default(false)
+  isEmergency       Boolean   @default(false)
+  notes             String?   -- Additional relationship notes
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  contact   contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+```
+
+#### Integration Points
+- **Driver Pages**: Emergency contacts section with relationship context
+- **Staff Pages**: Professional contacts (supervisor, HR representative)
+- **Organization "Others" Tab**: Link external parties as professional contacts
+- **Incident Reports**: Quick access to emergency contacts during incidents
+
+### Dedicated Contact Tables
+
+#### Specialized Contact Storage
+Replace the generic `value` field with dedicated tables for better validation and formatting:
+
+```sql
+phone_contact {
+  id          String    @id @default(cuid())
+  contactId   String    @unique -- FK to contact table
+  countryCode String    @default("+1")
+  areaCode    String    -- 3 digits
+  number      String    -- 7 digits
+  extension   String?   -- Optional extension
+  formatted   String    -- Display format: (555) 123-4567 x123
+  
+  contact     contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+email_contact {
+  id              String    @id @default(cuid())
+  contactId       String    @unique -- FK to contact table
+  emailAddress    String    -- Full email address
+  domain          String    -- Domain part for filtering/grouping
+  isValidated     Boolean   @default(false)
+  validatedAt     DateTime?
+  bounceCount     Int       @default(0)
+  lastBouncedAt   DateTime?
+  
+  contact         contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+address_contact {
+  id            String    @id @default(cuid())
+  contactId     String    @unique -- FK to contact table
+  addressLine1  String    -- Street address
+  addressLine2  String?   -- Apt, Suite, etc.
+  city          String
+  state         String    -- 2-letter state code
+  zipCode       String    -- 5 or 9 digit ZIP
+  county        String?   -- County name
+  country       String    @default("US")
+  latitude      Decimal?  -- For mapping/routing
+  longitude     Decimal?  -- For mapping/routing
+  isValidated   Boolean   @default(false)
+  validatedAt   DateTime?
+  
+  contact       contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+```
+
+#### Benefits of Dedicated Tables
+- **Better Validation**: Phone formatting, email validation, address verification
+- **Enhanced Search**: Search by area code, domain, ZIP code, etc.
+- **Geographic Features**: Map integration, distance calculations
+- **Communication Features**: SMS sending, email bounce handling
+- **Reporting**: Contact statistics by region, carrier, domain
+
+### Supervisor Relationships Enhancement
+
+#### Current Implementation Issues
+The current supervisor system uses a self-referential `staff.supervisorId` field, which has limitations:
+- Only supports staff-to-staff relationships
+- Cannot link supervisors who aren't formal staff members
+- Limited to organizational hierarchy
+- No support for matrix management or temporary assignments
+
+#### Enhanced Supervisor System
+```sql
+supervision_relationship {
+  id              String    @id @default(cuid())
+  supervisorId    String    -- FK to party (supervisor can be any party)
+  superviseeId    String    -- FK to party (supervisee)
+  relationshipType String   -- direct, matrix, temporary, mentor
+  organizationId  String    -- FK to organization context
+  locationId      String?   -- Optional location context
+  
+  startDate       DateTime  @default(now())
+  endDate         DateTime? -- For temporary assignments
+  isActive        Boolean   @default(true)
+  isPrimary       Boolean   @default(false) -- Primary supervisor
+  
+  // Permissions & Authority
+  canApproveTimeOff Boolean @default(false)
+  canApproveCAFs    Boolean @default(false)
+  canAccessRecords  Boolean @default(false)
+  authorityLevel    String  @default("basic") -- basic, intermediate, full
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations  
+  supervisor    party        @relation("Supervisor", fields: [supervisorId], references: [id])
+  supervisee    party        @relation("Supervisee", fields: [superviseeId], references: [id])
+  organization  organization @relation(fields: [organizationId], references: [id])
+  location      location?    @relation(fields: [locationId], references: [id])
+}
+```
+
+#### Supervision Features
+- **Party Model Integration**: Any party can be a supervisor (staff, external consultants, etc.)
+- **Multiple Supervisors**: Support matrix management with primary/secondary supervisors
+- **Temporary Assignments**: Project supervisors, training supervisors
+- **Location Context**: Different supervisors for different locations
+- **Authority Levels**: Granular permissions for different supervisor types
+- **Audit Trail**: Track supervision changes over time
+
+#### Integration with Existing Systems
+- **CAF System**: Use supervision relationships for CAF assignment and approval
+- **Driver Management**: Link drivers to fleet supervisors or safety managers
+- **Staff Management**: Enhanced organizational chart with multi-level relationships
+- **Incident Management**: Auto-assign incidents to appropriate supervisors
+
+### Implementation Roadmap
+
+#### Phase 4: Personal Relationships (Post Core System)
+1. **Relationship Types**: Define and implement relationship categories
+2. **Emergency Contacts**: Quick access emergency contact system
+3. **Professional Networks**: Link external parties as professional contacts
+4. **Organization Integration**: Connect "Others" tab with personal relationships
+
+#### Phase 5: Dedicated Contact Tables (Performance & Features)
+1. **Table Migration**: Migrate from generic contact values to specialized tables
+2. **Enhanced Validation**: Implement phone/email/address validation
+3. **Search & Filtering**: Advanced contact search capabilities
+4. **Geographic Features**: Address validation and mapping integration
+
+#### Phase 6: Enhanced Supervision (Organizational Management)
+1. **Supervision Model**: Implement party-based supervision relationships
+2. **Authority Management**: Define and implement supervisor permissions
+3. **Matrix Management**: Support complex organizational structures
+4. **Migration Strategy**: Migrate existing staff.supervisorId relationships
+
+#### Phase 7: Integration & Optimization
+1. **Cross-System Integration**: Connect all contact features across driver/staff/incident systems
+2. **Performance Optimization**: Optimize queries for complex relationship traversals
+3. **Reporting & Analytics**: Contact relationship reporting and organizational charts
+4. **Mobile Optimization**: Mobile-first contact management interfaces
+
 ---
 
 **This architecture provides the foundation for comprehensive contact management while maintaining clear separation between personal and organizational contact information.** 

@@ -285,5 +285,12 @@ GET /api/organizations/{orgId}/inspectors     // For annual inspection forms
 3. **Search Functionality**: Implement robust search for large contact databases
 4. **Import/Export**: Allow bulk import of external organization data
 5. **Integration Testing**: Verify all form selectors work correctly with new data structure
+6. **Contact System Integration**: Coordinate with planned contact system enhancements (see `contact-system-architecture.md`) for personal relationships, emergency contacts, and enhanced supervision features
+
+## 🔗 **Related Documentation**
+
+- **Contact System Architecture**: `contact-system-architecture.md` - Contains planned enhancements for personal relationships, emergency contacts, and supervision systems that will integrate with the Others tab
+- **Current Status**: `current-status.md` - Overall project status and implementation priorities
+- **Navigation Standards**: `navigation-standards.md` - UI consistency requirements for Others tab implementation
 
 This system provides a comprehensive foundation for managing external relationships while maintaining consistency with the existing party model architecture. 

@@ -80,11 +80,25 @@ export default function MasterDriverOverviewPage() {
   const [error, setError] = useState<string | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
     fetchOrganizations()
+    fetchUserRole()
   }, [masterOrgId, orgId, driverId])
+
+  const fetchUserRole = async () => {
+    try {
+      const response = await fetch('/api/user/role')
+      if (response.ok) {
+        const data = await response.json()
+        setUserRole(data.role?.roleType || null)
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -184,21 +198,20 @@ export default function MasterDriverOverviewPage() {
 
   // Build standard navigation
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    data.masterOrg,
-    data.organization,
-    undefined, // No location context
-    'drivers' // Current section is drivers
+    masterOrgId,
+    orgId,
+    driverId,
+    userRole || undefined
   )
 
   return (
       <AppLayout 
         name={data.masterOrg.name}
         topNav={topNav}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
+        sidebarMenu="driver"
+        driverId={driverId}
+        masterOrgId={masterOrgId}
+        currentOrgId={orgId}
         className="p-6"
       >
       <div className="max-w-7xl mx-auto space-y-6">

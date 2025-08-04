@@ -1,318 +1,451 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useUser } from '@clerk/nextjs'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { buildStandardNavigation, getUserRole } from '@/lib/utils'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ActivityLog } from '@/components/ui/activity-log'
+import { format } from 'date-fns'
 import { 
-  Plus,
-  ShieldCheck,
-  ArrowLeft,
+  ShieldCheck, 
+  Plus, 
   Calendar,
   MapPin,
+  AlertTriangle,
   User,
-  AlertTriangle
-} from "lucide-react"
-import { EmptyState } from "@/components/ui/empty-state"
+  Badge as BadgeIcon,
+  FileText
+} from 'lucide-react'
 
-interface Organization {
+interface Incident {
   id: string
-  name: string
-  dotNumber?: string | null
+  incidentType: 'ROADSIDE_INSPECTION'
+  incidentDate: Date
+  incidentTime?: string
+  officerName: string
+  agencyName?: string
+  officerBadge?: string
+  reportNumber?: string
+  locationAddress?: string
+  locationCity?: string
+  locationState?: string
+  roadsideData?: any
+  equipment: Array<{
+    id: string
+    unitNumber: number
+    make?: string
+    model?: string
+    plateNumber?: string
+    unitType?: string
+  }>
+  violations: Array<{
+    id: string
+    violationCode: string
+    description: string
+    outOfService: boolean
+    severity?: string
+    unitNumber?: number
+  }>
+  issue: {
+    id: string
+    title: string
+    status: string
+    priority: string
+    createdAt: Date
+    partyId?: string
+  }
 }
 
-interface RoadsideInspection {
-  id: string
-  reportNumber: string
-  inspectionDate: string
-  inspectionLocation: string
-  driverName: string
-  equipmentDescription: string
-  violationsCount: number
-  status: 'passed' | 'warning' | 'failed'
-  overallResult: string
+interface ContextData {
+  masterOrg: { id: string; name: string }
+  organization: { id: string; name: string }
+  incidents: Incident[]
 }
 
-export default function OrganizationRoadsideInspectionsPage() {
+export default function RoadsideInspectionsPage() {
   const params = useParams()
-  const router = useRouter()
-  const { user } = useUser()
-  const { masterOrg } = useMasterOrg()
   const masterOrgId = params.masterOrgId as string
   const orgId = params.orgId as string
 
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [inspections, setInspections] = useState<RoadsideInspection[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // ⚠️ CRITICAL: Gold Standard State Management (exact copy from Training)
+  const [data, setData] = useState<ContextData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fetch organization data
+  // ⚠️ CRITICAL: Data Fetching (exact pattern from Training)
   useEffect(() => {
-    const fetchOrganization = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/organizations/${orgId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
-        }
-      } catch (error) {
-        console.error('Error fetching organization:', error)
-      }
-    }
-
-    const fetchInspections = async () => {
-      try {
-        // TODO: Replace with actual API endpoint when available
-        // For now, we'll use mock data structure
-        const mockInspections: RoadsideInspection[] = [
-          {
-            id: '1',
-            reportNumber: 'US1974906108',
-            inspectionDate: '2025-01-07',
-            inspectionLocation: 'NEWBERRY SC',
-            driverName: 'John Smith',
-            equipmentDescription: '2024 Freightliner Cascadia',
-            violationsCount: 1,
-            status: 'warning',
-            overallResult: 'Satisfactory'
-          },
-          {
-            id: '2',
-            reportNumber: 'US1974906109', 
-            inspectionDate: '2025-01-05',
-            inspectionLocation: 'COLUMBIA SC',
-            driverName: 'Jane Doe',
-            equipmentDescription: '2023 Peterbilt 579',
-            violationsCount: 0,
-            status: 'passed',
-            overallResult: 'No Violations'
-          },
-          {
-            id: '3',
-            reportNumber: 'US1974906110',
-            inspectionDate: '2025-01-03',
-            inspectionLocation: 'CHARLESTON SC',
-            driverName: 'Bob Johnson',
-            equipmentDescription: '2022 Volvo VNL',
-            violationsCount: 3,
-            status: 'failed',
-            overallResult: 'Out of Service'
+        setLoading(true)
+        setError(null)
+        
+        const response = await fetch(`/api/master/${masterOrgId}/organization/${orgId}/roadside-inspections`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Organization not found')
           }
-        ]
-
-        setInspections(mockInspections)
-      } catch (error) {
-        console.error('Error fetching inspections:', error)
+          throw new Error(`Failed to fetch roadside inspections: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        setData(result)
+        
+        // Auto-select first incident if available
+        if (result.incidents && result.incidents.length > 0 && !selectedIncident) {
+          setSelectedIncident(result.incidents[0])
+        }
+        
+      } catch (err) {
+        console.error('Error fetching roadside inspections:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load roadside inspections')
       } finally {
-        setIsLoading(false)
+        setLoading(false)
       }
     }
 
-    if (orgId) {
-      fetchOrganization()
-      fetchInspections()
+    const fetchUserRole = async () => {
+      try {
+        const role = await getUserRole()
+        setUserRole(role)
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
     }
-  }, [orgId])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'failed': return 'destructive'
-      case 'warning': return 'secondary'
-      case 'passed': return 'default'
-      default: return 'outline'
+    if (masterOrgId && orgId) {
+      fetchData()
+      fetchUserRole()
     }
-  }
+  }, [masterOrgId, orgId])
 
-  const handleCreateInspection = () => {
-    // TODO: Navigate to new inspection form
-    console.log('Create new inspection')
-  }
-
-  const handleViewInspection = (inspection: RoadsideInspection) => {
-    // TODO: Navigate to inspection detail
-    console.log('View inspection:', inspection)
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          </div>
+      <AppLayout 
+        name="Loading..." 
+        topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
+        className="p-6"
+      >
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading roadside inspections...</div>
         </div>
-      </div>
+      </AppLayout>
     )
   }
 
-  // Correct static top navigation - NEVER make these dynamic!
-  const topNav = [
-    { 
-      label: 'Master', 
-      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
-      isActive: false
-    },
-    { 
-      label: 'Organization', 
-      href: `/organizations/${orgId}`,
-      isActive: true
-    },
-    { 
-      label: 'Drivers', 
-      href: `/organizations/${orgId}/drivers`,
-      isActive: false
-    },
-    { 
-      label: 'Equipment', 
-      href: `/organizations/${orgId}/equipment`,
-      isActive: false
-    }
-  ]
+  if (error) {
+    return (
+      <AppLayout 
+        name="Error" 
+        topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
+        className="p-6"
+      >
+        <div className="text-center py-8">
+          <div className="text-red-600 mb-2">Error</div>
+          <div className="text-gray-600">{error}</div>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout
-      name={masterOrg?.name || 'Master'}
-      topNav={topNav}
+      name={data?.masterOrg.name || 'Fleetrax'}
+      topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
       className="p-6"
     >
-      <div className="max-w-7xl mx-auto">
-        {/* Header with organization name */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => router.push(`/organizations/${orgId}`)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Organization
-            </Button>
+      {/* ⚠️ CRITICAL: EXACT LAYOUT STRUCTURE REQUIRED */}
+      <div className="max-w-7xl mx-auto h-full">
+        <div className="space-y-6">
+          
+          {/* Header Section - EXACT STRUCTURE */}
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <ShieldCheck className="h-6 w-6" />
+                Roadside Inspections
+              </h1>
+              <p className="text-gray-600 mt-1">
+                DOT roadside inspections for {data?.organization.name}
+              </p>
+            </div>
+            
+            {/* Button Group - RIGHT ALIGNED */}
+            <div className="flex items-center gap-3">
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setIsAddDialogOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    Add Inspection
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[700px]">
+                  <DialogHeader>
+                    <DialogTitle>Create Roadside Inspection</DialogTitle>
+                    <DialogDescription>
+                      Record a new DOT roadside inspection for this organization.
+                    </DialogDescription>
+                  </DialogHeader>
+                  {/* TODO: Add UnifiedIncidentForm component */}
+                  <div className="p-4 text-center text-gray-500">
+                    Roadside Inspection form will be implemented here
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">{organization?.name}</h1>
-        </div>
 
-        {/* Overview Stats */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
-              Roadside Inspections Overview
-            </CardTitle>
-            <CardDescription>
-              All roadside inspections for {organization?.name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-700">{inspections.length}</div>
-                <div className="text-sm text-gray-600">Total Inspections</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-2xl font-bold text-green-700">
-                  {inspections.filter(i => i.status === 'passed').length}
-                </div>
-                <div className="text-sm text-green-600">Passed</div>
-              </div>
-              <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="text-2xl font-bold text-yellow-700">
-                  {inspections.filter(i => i.status === 'warning').length}
-                </div>
-                <div className="text-sm text-yellow-600">With Warnings</div>
-              </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-                <div className="text-2xl font-bold text-red-700">
-                  {inspections.filter(i => i.status === 'failed').length}
-                </div>
-                <div className="text-sm text-red-600">Failed/OOS</div>
-              </div>
+          {/* Split Pane Layout - EXACT STRUCTURE */}
+          <div className="flex gap-6 h-[calc(100vh-200px)]">
+            
+            {/* Left Pane - EXACT STRUCTURE */}
+            <div className="w-[300px] flex-shrink-0">
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5" />
+                    Inspections ({data?.incidents.length || 0})
+                  </CardTitle>
+                  <CardDescription>
+                    Recent roadside inspections
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-auto">
+                  {data?.incidents && data.incidents.length > 0 ? (
+                    <div className="space-y-3">
+                      {data.incidents.map((incident) => (
+                        <div
+                          key={incident.id}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedIncident?.id === incident.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                          onClick={() => setSelectedIncident(incident)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">
+                                {format(new Date(incident.incidentDate), 'MMM dd, yyyy')}
+                              </div>
+                              <div className="text-xs text-gray-600 truncate">
+                                {incident.officerName}
+                              </div>
+                              {incident.locationCity && (
+                                <div className="text-xs text-gray-500 truncate">
+                                  {incident.locationCity}, {incident.locationState}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge 
+                                variant={incident.issue.priority === 'high' ? 'destructive' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {incident.issue.status}
+                              </Badge>
+                              {incident.violations.some(v => v.outOfService) && (
+                                <Badge variant="destructive" className="text-xs">
+                                  OOS
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={ShieldCheck}
+                      title="No Inspections"
+                      description="No roadside inspections recorded yet."
+                    />
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Inspections List */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Recent Roadside Inspections</CardTitle>
-                <CardDescription>
-                  All roadside inspections for this organization
-                </CardDescription>
-              </div>
-              <Button onClick={handleCreateInspection}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Inspection
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {inspections.length > 0 ? (
-              <div className="space-y-4">
-                {inspections.map((inspection) => (
-                  <Card 
-                    key={inspection.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handleViewInspection(inspection)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-medium text-gray-900">
-                              Report #{inspection.reportNumber}
-                            </h4>
-                            <Badge variant={getStatusColor(inspection.status)}>
-                              {inspection.overallResult}
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+            {/* Right Pane - EXACT STRUCTURE */}
+            <div className="flex-1">
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>Inspection Details</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-auto">
+                  {selectedIncident ? (
+                    <div className="space-y-6">
+                      {/* Inspection Summary */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Date & Time
+                          </label>
+                          <div className="mt-1">
                             <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              {new Date(inspection.inspectionDate).toLocaleDateString()}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              {inspection.inspectionLocation}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4" />
-                              {inspection.driverName}
-                            </div>
-                          </div>
-                          <div className="mt-2 text-sm text-gray-600">
-                            <span className="font-medium">Equipment:</span> {inspection.equipmentDescription}
-                          </div>
-                          {inspection.violationsCount > 0 && (
-                            <div className="mt-2 flex items-center gap-2 text-sm">
-                              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                              <span className="text-yellow-700">
-                                {inspection.violationsCount} violation{inspection.violationsCount !== 1 ? 's' : ''} found
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span>
+                                {format(new Date(selectedIncident.incidentDate), 'MMMM dd, yyyy')}
+                                {selectedIncident.incidentTime && ` at ${selectedIncident.incidentTime}`}
                               </span>
                             </div>
-                          )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Inspector
+                          </label>
+                          <div className="mt-1">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span>{selectedIncident.officerName}</span>
+                            </div>
+                            {selectedIncident.officerBadge && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <BadgeIcon className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-gray-600">Badge #{selectedIncident.officerBadge}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {selectedIncident.agencyName && (
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              Agency
+                            </label>
+                            <div className="mt-1">{selectedIncident.agencyName}</div>
+                          </div>
+                        )}
+                        
+                        {selectedIncident.reportNumber && (
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              Report Number
+                            </label>
+                            <div className="mt-1 flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-400" />
+                              {selectedIncident.reportNumber}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Location */}
+                      {(selectedIncident.locationAddress || selectedIncident.locationCity) && (
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Location
+                          </label>
+                          <div className="mt-1 flex items-start gap-2">
+                            <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+                            <div>
+                              {selectedIncident.locationAddress && (
+                                <div>{selectedIncident.locationAddress}</div>
+                              )}
+                              {selectedIncident.locationCity && (
+                                <div>{selectedIncident.locationCity}, {selectedIncident.locationState}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Equipment Involved */}
+                      {selectedIncident.equipment.length > 0 && (
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Equipment Involved
+                          </label>
+                          <div className="mt-2 space-y-2">
+                            {selectedIncident.equipment.map((eq) => (
+                              <div key={eq.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <div>
+                                  <div className="font-medium">Unit {eq.unitNumber}</div>
+                                  {(eq.make || eq.model) && (
+                                    <div className="text-sm text-gray-600">
+                                      {eq.make} {eq.model}
+                                    </div>
+                                  )}
+                                </div>
+                                {eq.plateNumber && (
+                                  <Badge variant="outline">{eq.plateNumber}</Badge>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Violations */}
+                      {selectedIncident.violations.length > 0 && (
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Violations ({selectedIncident.violations.length})
+                          </label>
+                          <div className="mt-2 space-y-2">
+                            {selectedIncident.violations.map((violation) => (
+                              <div key={violation.id} className="p-3 border rounded-lg">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                                        {violation.violationCode}
+                                      </code>
+                                      {violation.outOfService && (
+                                        <Badge variant="destructive" className="text-xs">
+                                          <AlertTriangle className="h-3 w-3 mr-1" />
+                                          OOS
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-700 mt-1">
+                                      {violation.description}
+                                    </p>
+                                    {violation.unitNumber && (
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Unit {violation.unitNumber}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Activity Log */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Activity Log
+                        </label>
+                        <div className="mt-2">
+                          <ActivityLog issueId={selectedIncident.issue.id} />
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={ShieldCheck}
-                title="No roadside inspections yet"
-                description="Roadside inspections will appear here when they are added to the system"
-                action={{
-                  label: "Add First Inspection",
-                  onClick: handleCreateInspection
-                }}
-              />
-            )}
-          </CardContent>
-        </Card>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={ShieldCheck}
+                      title="No Inspection Selected"
+                      description="Select an inspection from the list to view details."
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </AppLayout>
   )

@@ -14,6 +14,7 @@
 { label: masterOrg?.name || 'Master' }          // ❌ Dynamic master name
 { label: organization?.name || 'Organization' } // ❌ Dynamic org name  
 { label: driver?.name || 'Driver' }             // ❌ Dynamic driver name
+{ label: `${driver.firstName} ${driver.lastName}` } // ❌ NEVER USE DRIVER NAMES!
 { label: equipment?.name || 'Equipment' }       // ❌ Dynamic equipment name
 ```
 
