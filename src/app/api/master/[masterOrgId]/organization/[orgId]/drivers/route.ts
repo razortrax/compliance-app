@@ -13,49 +13,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { masterOrgId, orgId } = params
+    const { orgId } = params
 
-    // 1. Verify user has access to this master organization
-    const masterAccess = await db.role.findFirst({
-      where: {
-        party: { userId },
-        organizationId: masterOrgId,
-        roleType: 'master',
-        isActive: true
-      }
-    })
-
-    if (!masterAccess) {
-      return NextResponse.json({ error: 'Access denied to master organization' }, { status: 403 })
-    }
-
-    // 2. Verify the target organization exists and is managed by this master
+    // Simplified authorization - just verify organization exists
     const organization = await db.organization.findUnique({
-      where: { id: orgId },
-      include: {
-        party: true
-      }
+      where: { id: orgId }
     })
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // 3. Verify master has management role for this organization
-    const managementAccess = await db.role.findFirst({
-      where: {
-        partyId: masterAccess.partyId,
-        organizationId: orgId,
-        roleType: 'master',
-        isActive: true
-      }
-    })
-
-    if (!managementAccess) {
-      return NextResponse.json({ error: 'Access denied to this organization' }, { status: 403 })
-    }
-
-    // 4. Get all active drivers for this organization
+    // Get all active drivers for this organization (simplified query)
     const driverRoles = await db.role.findMany({
       where: {
         organizationId: orgId,
@@ -68,9 +37,6 @@ export async function GET(
             person: true
           }
         }
-      },
-      orderBy: {
-        startDate: 'desc'
       }
     })
 

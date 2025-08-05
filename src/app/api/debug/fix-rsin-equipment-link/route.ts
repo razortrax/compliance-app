@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
       link: newLink
     })
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error linking RSIN to equipment:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

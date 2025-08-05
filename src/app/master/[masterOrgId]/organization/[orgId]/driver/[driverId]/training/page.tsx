@@ -433,11 +433,9 @@ export default function MasterDriverTrainingPage() {
 
   // Build standard navigation with consistent Drivers | Equipment pattern
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    data.masterOrg,
-    data.organization,
-    undefined, // No location context
-    'drivers' // Current section is drivers
+    driverId || '',
+    masterOrgId || '',
+    'drivers'
   )
 
   // Filter trainings: prioritize required (DOT mandatory) training
@@ -448,10 +446,6 @@ export default function MasterDriverTrainingPage() {
       <AppLayout 
         name={data.masterOrg.name}
         topNav={topNav}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
         className="p-6"
       >
       <div className="max-w-7xl mx-auto h-full">
@@ -554,7 +548,9 @@ export default function MasterDriverTrainingPage() {
                             </div>
                             <div className="text-sm text-gray-600 space-y-1">
                               <p>Completed: {format(new Date(training.completionDate), 'MMM d, yyyy')}</p>
-                              <p>Expires: {format(new Date(training.expirationDate), 'MMM d, yyyy')}</p>
+                              {training.expirationDate && (
+                                <p>Expires: {format(new Date(training.expirationDate), 'MMM d, yyyy')}</p>
+                              )}
                               {training.hours && <p>Hours: {training.hours}</p>}
                             </div>
                           </div>
@@ -781,7 +777,7 @@ export default function MasterDriverTrainingPage() {
           <div className="px-1">
             <TrainingForm
               personId={driverId}
-              renewingTraining={selectedTraining}
+              renewingTraining={selectedTraining as any}
               onSubmit={handleRenewTraining}
               onCancel={() => setIsRenewalDialogOpen(false)}
               isSubmitting={isSubmitting}

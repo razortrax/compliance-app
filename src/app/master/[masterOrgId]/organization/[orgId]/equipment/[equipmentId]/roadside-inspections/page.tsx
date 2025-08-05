@@ -272,7 +272,7 @@ export default function EquipmentRoadsideInspectionsPage() {
     <AppLayout
       name={data.masterOrg.name}
       sidebarMenu="equipment"
-      navigation={buildStandardNavigation(masterOrgId, orgId)}
+      topNav={buildStandardNavigation(masterOrgId, orgId)}
       className="p-6"
     >
       <div className="space-y-6">
@@ -372,28 +372,10 @@ export default function EquipmentRoadsideInspectionsPage() {
                     icon={Shield}
                     title="No roadside inspections"
                     description="This equipment has no recorded roadside inspections"
-                    action={
-                      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add First Inspection
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Create Roadside Inspection</DialogTitle>
-                          </DialogHeader>
-                          <EnhancedRoadsideInspectionForm
-                            onSubmit={handleAddRoadsideInspection}
-                            onCancel={() => setIsAddDialogOpen(false)}
-                            preSelectedEquipmentIds={[equipmentId]}
-                            organizationId={orgId}
-                            masterOrgId={masterOrgId}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    }
+                    action={{
+                      label: "Add First Inspection",
+                      onClick: () => setIsAddDialogOpen(true)
+                    }}
                   />
                 )}
               </div>
@@ -546,9 +528,7 @@ export default function EquipmentRoadsideInspectionsPage() {
                   <div>
                     <h4 className="font-medium mb-3">Activity Log</h4>
                     <ActivityLog 
-                      entityType="roadside_inspection"
-                      entityId={selectedRoadsideInspection.id}
-                      limit={5}
+                      issueId={selectedRoadsideInspection.id}
                     />
                   </div>
                 </CardContent>
@@ -563,6 +543,22 @@ export default function EquipmentRoadsideInspectionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Add Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Roadside Inspection</DialogTitle>
+          </DialogHeader>
+          <EnhancedRoadsideInspectionForm
+            onSubmit={handleAddRoadsideInspection}
+            onCancel={() => setIsAddDialogOpen(false)}
+            preSelectedEquipmentIds={[equipmentId]}
+            organizationId={orgId}
+            masterOrgId={masterOrgId}
+          />
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   )
 } 

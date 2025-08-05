@@ -379,21 +379,15 @@ export default function MVRIssuePage({ params }: MVRIssuePageProps) {
 
   // Build standard navigation with consistent Drivers | Equipment pattern
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    data.masterOrg,
-    data.organization,
-    undefined, // No location context
-    'drivers' // Current section is drivers
+    driverId || '',
+    masterOrgId || '',
+    'drivers'
   )
 
   return (
           <AppLayout 
         name={data.masterOrg.name}
         topNav={topNav}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
         className="p-6"
       >
       <div className="max-w-7xl mx-auto h-full">

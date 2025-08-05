@@ -91,11 +91,10 @@ async function createTestDVIRData() {
       data: {
         id: createId(),
         partyId: tractorParty.id,
-        vehicleType: 'Tractor Truck',
         make: 'Freightliner',
         model: 'Cascadia',
         year: 2024,
-        vinNumber: '1XKDD903P5S486670',
+        vin: '1XKDD903P5S486670',
         plateNumber: '2264406',
         registrationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
       }
@@ -113,11 +112,10 @@ async function createTestDVIRData() {
       data: {
         id: createId(),
         partyId: trailerParty.id,
-        vehicleType: 'Straight Truck',
         make: 'Great Dane',
         model: 'GDAN',
         year: 2024,
-        vinNumber: '1GRA0622KMR51658',
+        vin: '1GRA0622KMR51658',
         plateNumber: 'PT205588',
         registrationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
       }

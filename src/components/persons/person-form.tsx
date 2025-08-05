@@ -59,7 +59,7 @@ export function PersonForm({ organizationId, person, onSuccess, onCancel, onDeac
   const [formData, setFormData] = useState({
     firstName: person?.firstName || '',
     lastName: person?.lastName || '',
-    roleType: 'DRIVER', // Always DRIVER from drivers page
+    roleType: 'driver', // Fixed: lowercase to match API expectations
     locationId: person?.party?.role?.[0]?.locationId || 'none'
   })
 

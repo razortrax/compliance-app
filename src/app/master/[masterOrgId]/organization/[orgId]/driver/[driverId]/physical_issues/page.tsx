@@ -341,22 +341,15 @@ export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
 
   // Build standard navigation - FIXED to be static
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    data.masterOrg,
-    data.organization,
-    undefined, // No location context
-    'drivers' // Current section is drivers (Equipment would show as Equipment)
+    driverId || '',
+    masterOrgId || '',
+    'drivers'
   )
 
   return (
     <AppLayout 
       name={data.masterOrg.name}
       topNav={topNav}
-      showOrgSelector={true}
-      organizations={organizations}
-      onOrganizationSelect={handleOrganizationSelect}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
       className="p-6"
     >
       <div className="max-w-7xl mx-auto h-full">

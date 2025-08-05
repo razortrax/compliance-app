@@ -84,7 +84,7 @@ async function findSpeedyShipping() {
       console.log(`   🚛 Equipment: ${equipment.length}`)
       if (equipment.length > 0) {
         equipment.forEach((eq, index) => {
-          console.log(`      ${index + 1}. ${eq.vehicleType} - ${eq.make} ${eq.model} (${eq.year})`)
+          console.log(`      ${index + 1}. ${eq.vehicleTypeId || 'No Type'} - ${eq.make} ${eq.model} (${eq.year})`)
         })
       }
     }
@@ -126,7 +126,7 @@ async function findSpeedyShipping() {
     if (orphanedEquipment.length > 0) {
       console.log(`⚠️  Found ${orphanedEquipment.length} orphaned equipment:`)
       orphanedEquipment.forEach((eq, index) => {
-        console.log(`   ${index + 1}. ${eq.vehicleType} - ${eq.make} ${eq.model} (Party ID: ${eq.partyId})`)
+        console.log(`   ${index + 1}. ${eq.vehicleTypeId || 'No Type'} - ${eq.make} ${eq.model} (Party ID: ${eq.partyId})`)
       })
     }
     

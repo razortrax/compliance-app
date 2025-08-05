@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { AppLayout, Organization } from '@/components/layouts/app-layout'
+import { AppLayout } from '@/components/layouts/app-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -101,7 +101,7 @@ export default function DriverAccidentsPage({
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const { masterOrg, loading: masterOrgLoading } = useMasterOrg()
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [organizations, setOrganizations] = useState<any[]>([]) // Changed to any[] as Organization type is removed
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   // Gold Standard: URL-driven data loading
@@ -199,7 +199,7 @@ export default function DriverAccidentsPage({
     }
   }
 
-  const handleOrganizationSelect = (org: Organization) => {
+  const handleOrganizationSelect = (org: any) => { // Changed to any as Organization type is removed
     // Navigate to the same driver in the new organization
     window.location.href = `/master/${masterOrgId}/organization/${org.id}/driver/${driverId}/accidents`
   }
@@ -238,10 +238,8 @@ export default function DriverAccidentsPage({
 
   // Build navigation
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' },
-    data?.masterOrg,
-    data?.organization,
-    data?.driver,
+    driverId || '',
+    masterOrgId || '',
     'drivers'
   )
 
@@ -254,10 +252,6 @@ export default function DriverAccidentsPage({
       <AppLayout
         name="Loading..."
         topNav={[]}
-        organizations={[]}
-        onOrganizationSelect={() => {}}
-        isSheetOpen={false}
-        onSheetOpenChange={() => {}}
         className="p-6"
       >
         <div className="flex items-center justify-center h-64">
@@ -272,10 +266,6 @@ export default function DriverAccidentsPage({
       <AppLayout
         name="Error"
         topNav={[]}
-        organizations={[]}
-        onOrganizationSelect={() => {}}
-        isSheetOpen={false}
-        onSheetOpenChange={() => {}}
         className="p-6"
       >
         <div className="flex items-center justify-center h-64">
@@ -289,10 +279,6 @@ export default function DriverAccidentsPage({
     <AppLayout 
       name={data.masterOrg.name}
       topNav={topNav}
-      organizations={organizations}
-      onOrganizationSelect={handleOrganizationSelect}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
       className="p-6"
     >
       <div className="max-w-7xl mx-auto h-full">

@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface StaffFormProps {
@@ -207,131 +206,132 @@ export const StaffForm: React.FC<StaffFormProps> = ({
   )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Staff Member</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Person Selection/Creation */}
-            <div>
-              <Label>Person</Label>
-              <Tabs value={personTab} onValueChange={(value) => setPersonTab(value as 'existing' | 'new')} className="mt-2">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="existing">Select Existing</TabsTrigger>
-                  <TabsTrigger value="new" disabled={!!staff}>Create New</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="existing" className="mt-4">
-                  <Select 
-                    value={formData.selectedPersonId} 
-                    onValueChange={value => handleInputChange('selectedPersonId', value)}
-                    required={personTab === 'existing'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a person" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availablePersonsForSelection.map(person => (
-                        <SelectItem key={person.partyId} value={person.partyId}>
-                          {person.firstName} {person.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TabsContent>
-                
-                <TabsContent value="new" className="mt-4 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name *</Label>
-                      <Input
-                        id="firstName"
-                        value={newPersonData.firstName}
-                        onChange={e => handleNewPersonChange('firstName', e.target.value)}
-                        placeholder="John"
-                        required={personTab === 'new'}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name *</Label>
-                      <Input
-                        id="lastName"
-                        value={newPersonData.lastName}
-                        onChange={e => handleNewPersonChange('lastName', e.target.value)}
-                        placeholder="Doe"
-                        required={personTab === 'new'}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newPersonData.email}
-                        onChange={e => handleNewPersonChange('email', e.target.value)}
-                        placeholder="john.doe@company.com"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={newPersonData.phone}
-                        onChange={e => handleNewPersonChange('phone', e.target.value)}
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      value={newPersonData.address}
-                      onChange={e => handleNewPersonChange('address', e.target.value)}
-                      placeholder="123 Main St"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        value={newPersonData.city}
-                        onChange={e => handleNewPersonChange('city', e.target.value)}
-                        placeholder="Springfield"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="state">State</Label>
-                      <Input
-                        id="state"
-                        value={newPersonData.state}
-                        onChange={e => handleNewPersonChange('state', e.target.value)}
-                        placeholder="IL"
-                        maxLength={2}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="zipCode">ZIP Code</Label>
-                      <Input
-                        id="zipCode"
-                        value={newPersonData.zipCode}
-                        onChange={e => handleNewPersonChange('zipCode', e.target.value)}
-                        placeholder="62701"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+    <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Person Selection/Creation */}
+        <div>
+          <Label className="text-base font-medium">Staff Member</Label>
+          <Tabs value={personTab} onValueChange={(value) => setPersonTab(value as 'existing' | 'new')} className="mt-2">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="existing">Select Existing</TabsTrigger>
+              <TabsTrigger value="new" disabled={!!staff}>Create New</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="existing" className="mt-4">
+              <Select 
+                value={formData.selectedPersonId} 
+                onValueChange={value => handleInputChange('selectedPersonId', value)}
+                required={personTab === 'existing'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a person" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePersonsForSelection.map(person => (
+                    <SelectItem key={person.partyId} value={person.partyId}>
+                      {person.firstName} {person.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </TabsContent>
+            
+            <TabsContent value="new" className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={newPersonData.firstName}
+                    onChange={e => handleNewPersonChange('firstName', e.target.value)}
+                    placeholder="John"
+                    required={personTab === 'new'}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    value={newPersonData.lastName}
+                    onChange={e => handleNewPersonChange('lastName', e.target.value)}
+                    placeholder="Doe"
+                    required={personTab === 'new'}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newPersonData.email}
+                    onChange={e => handleNewPersonChange('email', e.target.value)}
+                    placeholder="john.doe@company.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={newPersonData.phone}
+                    onChange={e => handleNewPersonChange('phone', e.target.value)}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={newPersonData.address}
+                  onChange={e => handleNewPersonChange('address', e.target.value)}
+                  placeholder="123 Main St"
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={newPersonData.city}
+                    onChange={e => handleNewPersonChange('city', e.target.value)}
+                    placeholder="Springfield"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={newPersonData.state}
+                    onChange={e => handleNewPersonChange('state', e.target.value)}
+                    placeholder="IL"
+                    maxLength={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zipCode">ZIP Code</Label>
+                  <Input
+                    id="zipCode"
+                    value={newPersonData.zipCode}
+                    onChange={e => handleNewPersonChange('zipCode', e.target.value)}
+                    placeholder="62701"
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
 
+        <div className="h-px bg-gray-200 my-4"></div>
+
+        {/* Role & Department Information */}
+        <div>
+          <Label className="text-base font-medium">Role & Department</Label>
+          <div className="grid grid-cols-2 gap-4 mt-2">
             <div>
               <Label htmlFor="employeeId">Employee ID (Optional)</Label>
               <Input
@@ -341,14 +341,6 @@ export const StaffForm: React.FC<StaffFormProps> = ({
                 placeholder="EMP001"
               />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Role & Department</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div>
               <Label htmlFor="position">Position/Job Title</Label>
               <Input
@@ -358,7 +350,9 @@ export const StaffForm: React.FC<StaffFormProps> = ({
                 placeholder="Safety Manager, Operations Manager, etc."
               />
             </div>
-
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <Label htmlFor="department">Department</Label>
               <Input
@@ -368,7 +362,6 @@ export const StaffForm: React.FC<StaffFormProps> = ({
                 placeholder="Safety, Operations, Maintenance, etc."
               />
             </div>
-
             <div>
               <Label htmlFor="supervisor">Supervisor (Optional)</Label>
               <Select 
@@ -391,53 +384,53 @@ export const StaffForm: React.FC<StaffFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* CAF Permissions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>CAF Permissions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="canSignCAFs"
-              checked={formData.canSignCAFs}
-              onCheckedChange={checked => handleInputChange('canSignCAFs', checked)}
-            />
-            <Label htmlFor="canSignCAFs" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Can sign Corrective Action Forms (CAFs)
-            </Label>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="canApproveCAFs"
-              checked={formData.canApproveCAFs}
-              onCheckedChange={checked => handleInputChange('canApproveCAFs', checked)}
-            />
-            <Label htmlFor="canApproveCAFs" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Can approve Corrective Action Forms (CAFs)
-            </Label>
-          </div>
+        </div>
 
-          <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded">
-            <strong>Note:</strong> CAF permissions are used for the corrective action workflow in roadside inspections and accidents. 
-            Staff with signing permissions can complete assigned CAFs, while staff with approval permissions can review and approve completed CAFs.
-          </div>
-        </CardContent>
-      </Card>
+        <div className="h-px bg-gray-200 my-4"></div>
 
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : staff ? 'Update Staff' : 'Add Staff'}
-        </Button>
-      </div>
-    </form>
+        {/* CAF Permissions */}
+        <div>
+          <Label className="text-base font-medium">CAF Permissions</Label>
+          <div className="mt-3 space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="canSignCAFs"
+                checked={formData.canSignCAFs}
+                onCheckedChange={checked => handleInputChange('canSignCAFs', checked)}
+              />
+              <Label htmlFor="canSignCAFs" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Can sign Corrective Action Forms (CAFs)
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="canApproveCAFs"
+                checked={formData.canApproveCAFs}
+                onCheckedChange={checked => handleInputChange('canApproveCAFs', checked)}
+              />
+              <Label htmlFor="canApproveCAFs" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Can approve Corrective Action Forms (CAFs)
+              </Label>
+            </div>
+
+            <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded">
+              <strong>Note:</strong> CAF permissions are used for the corrective action workflow in roadside inspections and accidents. 
+              Staff with signing permissions can complete assigned CAFs, while staff with approval permissions can review and approve completed CAFs.
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-4 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : staff ? 'Update Staff' : 'Add Staff'}
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 } 

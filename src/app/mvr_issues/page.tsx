@@ -14,7 +14,16 @@ import { AddAddonModal } from '@/components/licenses/add-addon-modal'
 import { Plus, Car, Edit, Trash2, Calendar, MapPin, AlertTriangle, CheckCircle, Clock, XCircle, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { buildStandardDriverNavigation } from '@/lib/utils'
-import type { Organization } from '@/components/layouts/app-layout'
+
+interface Organization {
+  id: string
+  name: string
+  dotNumber: string | null
+  party: {
+    userId: string | null
+    status: string
+  }
+}
 
 interface MvrIssue {
   id: string
@@ -260,14 +269,8 @@ export default function MvrIssuesPage() {
       <AppLayout
         name={masterOrg?.name || 'Master'}
         topNav={[]}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         className="p-6"
-        organizations={organizations}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
-        onOrganizationSelect={handleOrganizationSelect}
       >
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
@@ -284,8 +287,6 @@ export default function MvrIssuesPage() {
       <AppLayout
         name={masterOrg?.name || 'Master'}
         topNav={[]}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId}
         masterOrgId={masterOrg?.id}
@@ -306,8 +307,6 @@ export default function MvrIssuesPage() {
       <AppLayout
         name={masterOrg?.name || 'Master'}
         topNav={[]}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId}
         masterOrgId={masterOrg?.id}
@@ -326,8 +325,8 @@ export default function MvrIssuesPage() {
   }
 
   // Calculate and display navigation
-  const role = driver.party?.role?.[0]
-  const organization = role?.organization
+  const userRole = driver.party?.role?.[0]
+  const organization = userRole?.organization
   
   let displayName = 'Master'
   if (masterOrg) {
@@ -337,11 +336,9 @@ export default function MvrIssuesPage() {
   }
   
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' },
-    masterOrg,
-    organization,
-    undefined,
-    'drivers'
+    masterOrg?.id || '',
+    organization?.id || '',
+    userRole
   )
 
   return (
@@ -349,17 +346,11 @@ export default function MvrIssuesPage() {
       <AppLayout
       name={displayName}
       topNav={topNav}
-      showOrgSelector={true}
-      showDriverEquipmentSelector={true}
       sidebarMenu="driver"
       driverId={driverId}
       masterOrgId={masterOrg?.id}
       currentOrgId={organization?.id}
       className="p-6"
-      organizations={organizations}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
-      onOrganizationSelect={handleOrganizationSelect}
     >
       <div className="max-w-7xl mx-auto h-full">
         {/* Driver and MVR Header */}

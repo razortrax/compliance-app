@@ -12,7 +12,7 @@ import { ActivityLog } from '@/components/ui/activity-log'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
-  Edit, Plus, FileText, IdCard, CheckCircle, AlertCircle, Clock
+  Edit, Plus, FileText, IdCard, CheckCircle, AlertCircle, Clock, X
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -47,6 +47,11 @@ interface Driver {
   firstName: string
   lastName: string
   licenseNumber?: string
+  party: {
+    person: {
+      id: string
+    }
+  }
 }
 
 interface MasterOrg {
@@ -79,6 +84,8 @@ export default function MasterDriverLicensesPage() {
   const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false)
   const [showAddAddonModal, setShowAddAddonModal] = useState(false)
   const [attachments, setAttachments] = useState<any[]>([])
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [showRenewalForm, setShowRenewalForm] = useState(false)
 
   // Smart expiration status function - MVR Gold Standard
   const getExpirationStatus = (license: License) => {
@@ -322,21 +329,15 @@ export default function MasterDriverLicensesPage() {
 
   // Build standard navigation with consistent Drivers | Equipment pattern
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    data.masterOrg,
-    data.organization,
-    undefined, // No location context
-    'drivers' // Current section is drivers
+    driverId || '',
+    masterOrgId || '',
+    'drivers'
   )
 
   return (
       <AppLayout 
         name={data.masterOrg.name}
         topNav={topNav}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
         className="p-6"
       >
       <div className="max-w-7xl mx-auto h-full">
@@ -459,7 +460,10 @@ export default function MasterDriverLicensesPage() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => setIsEditDialogOpen(true)}
+                      onClick={() => {
+                        setSelectedLicense(selectedLicense)
+                        setShowEditForm(true)
+                      }}
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
@@ -467,7 +471,10 @@ export default function MasterDriverLicensesPage() {
                     <Button 
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsRenewalDialogOpen(true)}
+                      onClick={() => {
+                        setSelectedLicense(selectedLicense)
+                        setShowRenewalForm(true)
+                      }}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Renew
@@ -545,36 +552,68 @@ export default function MasterDriverLicensesPage() {
       </div>
 
       {/* Edit License Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit License</DialogTitle>
-          </DialogHeader>
-          <div className="px-1">
-            <LicenseForm
-              license={selectedLicense}
-              onSuccess={handleEditSuccess}
-              onCancel={() => setIsEditDialogOpen(false)}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showEditForm && selectedLicense && (
+        <Dialog open={showEditForm} onOpenChange={() => setShowEditForm(false)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit License</DialogTitle>
+            </DialogHeader>
+            <div className="px-1">
+              <LicenseForm
+                driverId={driverId}
+                license={selectedLicense as any}
+                onSuccess={() => {
+                  setShowEditForm(false)
+                  fetchData() // Refresh data
+                  setSelectedLicense(null)
+                }}
+                onCancel={() => {
+                  setShowEditForm(false)
+                  setSelectedLicense(null)
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Renewal License Dialog */}
-      <Dialog open={isRenewalDialogOpen} onOpenChange={setIsRenewalDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Renew License</DialogTitle>
-          </DialogHeader>
-          <div className="px-1">
-            <LicenseForm
-              renewingLicense={selectedLicense}
-              onSuccess={handleRenewalSuccess}
-              onCancel={() => setIsRenewalDialogOpen(false)}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Renew License Dialog */}
+      {showRenewalForm && selectedLicense && (
+        <Dialog open={showRenewalForm} onOpenChange={() => setShowRenewalForm(false)}>
+          <Card className="fixed inset-4 z-50 bg-white shadow-2xl rounded-lg overflow-hidden">
+            <CardHeader className="border-b bg-gray-50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-semibold text-gray-800">Renew License</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRenewalForm(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="overflow-y-auto max-h-[calc(100%-120px)]">
+              <div className="p-6">
+                <LicenseForm
+                  driverId={driverId}
+                  renewingLicense={selectedLicense as any}
+                  onSuccess={() => {
+                    setShowRenewalForm(false)
+                    fetchData() // Refresh data
+                    setSelectedLicense(null)
+                  }}
+                  onCancel={() => {
+                    setShowRenewalForm(false)
+                    setSelectedLicense(null)
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Dialog>
+      )}
 
 
     </AppLayout>

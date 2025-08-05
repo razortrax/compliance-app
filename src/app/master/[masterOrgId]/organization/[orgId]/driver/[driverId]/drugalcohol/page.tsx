@@ -264,10 +264,8 @@ export default function MasterDriverDrugAlcoholPage() {
 
   // Build standard navigation
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' },
-    data.masterOrg,
-    data.organization,
-    undefined,
+    driverId || '',
+    masterOrgId || '',
     'drivers'
   )
 
@@ -275,10 +273,6 @@ export default function MasterDriverDrugAlcoholPage() {
     <AppLayout 
       name={data.masterOrg.name}
       topNav={topNav}
-      organizations={organizations}
-      onOrganizationSelect={() => {}}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
       className="p-6"
     >
       <div className="max-w-7xl mx-auto h-full">

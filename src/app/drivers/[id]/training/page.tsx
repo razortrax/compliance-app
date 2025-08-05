@@ -1,19 +1,21 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { buildStandardDriverNavigation } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { TrainingForm } from '@/components/training/training-form'
-import { AddAddonModal } from '@/components/licenses/add-addon-modal'
+import { ActivityLog } from '@/components/ui/activity-log'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AddAddonModal } from '@/components/ui/add-addon-modal'
+import { useMasterOrg } from '@/hooks/use-master-org'
+import { getUserRole, buildStandardDriverNavigation } from '@/lib/utils'
 import {
   Edit, Plus, FileText, GraduationCap, ArrowLeft, Loader2, CheckCircle, AlertCircle
 } from 'lucide-react'
-import type { Organization } from '@/components/layouts/app-layout'
 
 interface Person {
   id: string
@@ -84,7 +86,7 @@ export default function DriverTrainingPage() {
   const [showAddAddonModal, setShowAddAddonModal] = useState(false)
   const [attachments, setAttachments] = useState<any[]>([])
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set())
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [organizations, setOrganizations] = useState<any[]>([]) // Changed to any[] as Organization type was removed
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   // Helper function to calculate expiration status
@@ -143,7 +145,7 @@ export default function DriverTrainingPage() {
 
   // Robust mapping for sidebar/layout: always provide a fallback party object.
   // This ensures the UI does not break if a master user has not yet created an organization.
-  const mapToSidebarOrg = (org: any): Organization => ({
+  const mapToSidebarOrg = (org: any) => ({
     id: org?.id || '',
     name: org?.name || 'No Organization',
     dotNumber: org?.dotNumber || null,
@@ -170,7 +172,7 @@ export default function DriverTrainingPage() {
     }
   }
 
-  const handleOrganizationSelect = (selectedOrg: Organization) => {
+  const handleOrganizationSelect = (selectedOrg: any) => { // Changed to any as Organization type was removed
     setIsSheetOpen(false)
     window.location.href = `/organizations/${selectedOrg.id}/drivers`
   }
@@ -237,8 +239,6 @@ export default function DriverTrainingPage() {
         driverId={driverId}
         masterOrgId={masterOrg?.id}
         topNav={[]}
-        organizations={organizations as Organization[]}
-        onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
       >
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin" />
@@ -254,8 +254,6 @@ export default function DriverTrainingPage() {
         driverId={driverId}
         masterOrgId={masterOrg?.id}
         topNav={[]}
-        organizations={organizations as Organization[]}
-        onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
       >
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -282,29 +280,19 @@ export default function DriverTrainingPage() {
   
   // Build standardized top navigation
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    masterOrg,
-    organization,
-    undefined, // No location context in this view
-    'drivers'
+    masterOrg?.id || '',
+    organization?.id || '',
+    driverId,
+    role?.roleType
   )
   
   return (
     <>
-      <AppLayout
-        name={displayName}
-        topNav={topNav}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
-        sidebarMenu="driver" 
+      <AppLayout 
+        sidebarMenu="driver"
         driverId={driverId}
         masterOrgId={masterOrg?.id}
-        currentOrgId={organization?.id}
-        className="p-6"
-        organizations={organizations as Organization[]}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
-        onOrganizationSelect={handleOrganizationSelect as (org: Organization) => void}
+        topNav={topNav}
       >
         <div className="max-w-7xl mx-auto h-full">
           {/* Driver and Training Header */}
@@ -480,9 +468,9 @@ export default function DriverTrainingPage() {
                     </CardHeader>
                     <CardContent className="overflow-y-auto max-h-[calc(100%-120px)]">
                       <TrainingForm
-                        driverId={driverId}
-                        renewingTraining={selectedTraining || undefined}
-                        onSuccess={() => {
+                        personId={driver.party.id}
+                        renewingTraining={selectedTraining || null}
+                        onSubmit={() => {
                           setShowRenewalForm(false)
                           fetchTrainings()
                           // Keep training selected - user can see the renewal result
@@ -515,8 +503,8 @@ export default function DriverTrainingPage() {
                     </CardHeader>
                     <CardContent className="overflow-y-auto max-h-[calc(100%-120px)]">
                       <TrainingForm
-                        driverId={driverId}
-                        onSuccess={() => {
+                        personId={driver.party.id}
+                        onSubmit={() => {
                           setShowAddForm(false)
                           fetchTrainings()
                         }}
@@ -550,9 +538,9 @@ export default function DriverTrainingPage() {
                     </CardHeader>
                     <CardContent className="overflow-y-auto max-h-[calc(100%-120px)]">
                       <TrainingForm
-                        driverId={driverId}
-                        training={selectedTraining || undefined}
-                        onSuccess={async () => {
+                        personId={driver.party.id}
+                        initialData={selectedTraining || undefined}
+                        onSubmit={async () => {
                           setShowEditForm(false)
                           // Refresh the training list and update the selected training with fresh data
                           await refreshSelectedTrainingAfterEdit()

@@ -178,6 +178,13 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
     setIsLoading(true)
 
     try {
+      // Client-side validation for required fields
+      if (!formData.categoryId) {
+        alert('Please select a category (Power Unit or Trailer)')
+        setIsLoading(false)
+        return
+      }
+
       const payload = {
         // Basic Information
         make: formData.make || null,
@@ -330,8 +337,20 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="categoryId">Category</Label>
-              <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
+              <Label htmlFor="categoryId">
+                Category <span className="text-red-500">*</span>
+              </Label>
+              <Select 
+                value={formData.categoryId} 
+                onValueChange={(value) => {
+                  handleInputChange('categoryId', value)
+                  // Clear vehicle type if switching to Trailer category
+                  const selectedCategory = categoryOptions.find(cat => cat.id === value)
+                  if (selectedCategory?.code !== 'Power') {
+                    handleInputChange('vehicleTypeId', '')
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -345,19 +364,25 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="vehicleTypeId">Vehicle Type</Label>
-              <Select value={formData.vehicleTypeId} onValueChange={(value) => handleInputChange('vehicleTypeId', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicleTypeOptions.map(type => (
-                    <SelectItem key={type.id} value={type.id}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Only show Vehicle Type for Power Unit category */}
+            {(() => {
+              const selectedCategory = categoryOptions.find(cat => cat.id === formData.categoryId)
+              return selectedCategory?.code === 'Power' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="vehicleTypeId">Vehicle Type</Label>
+                  <Select value={formData.vehicleTypeId} onValueChange={(value) => handleInputChange('vehicleTypeId', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vehicle type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicleTypeOptions.map(type => (
+                        <SelectItem key={type.id} value={type.id}>{type.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null
+            })()}
             <div className="space-y-2">
               <Label htmlFor="ownershipTypeId">Ownership Type</Label>
               <Select value={formData.ownershipTypeId} onValueChange={(value) => handleInputChange('ownershipTypeId', value)}>

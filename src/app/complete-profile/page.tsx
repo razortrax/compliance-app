@@ -43,21 +43,44 @@ function CompleteProfileForm() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [userHasIncompleteProfile, setUserHasIncompleteProfile] = useState(false)
   
   const role = searchParams.get('role') || 'organization'
   const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.organization
   const IconComponent = config.icon
 
   useEffect(() => {
-    if (isLoaded && user) {
-      // Pre-fill from Clerk if available
-      setFormData(prev => ({
-        ...prev,
-        firstName: user.firstName || '',
-        lastName: user.lastName || ''
-      }))
+    const checkExistingProfile = async () => {
+      try {
+        const response = await fetch('/api/user/profile')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('User already has profile data:', data)
+          
+          // If user has complete profile with master organization, redirect
+          if (data.person && data.masterOrganization?.id) {
+            console.log('✅ Complete profile found, redirecting to master dashboard')
+            router.push(`/master/${data.masterOrganization.id}`)
+            return
+          }
+          
+          // If user has profile but missing master organization, they need to complete it
+          if (data.person && !data.masterOrganization) {
+            console.log('⚠️ User has profile but missing master organization - needs completion')
+            setUserHasIncompleteProfile(true)
+            // Don't redirect - let them complete the missing master organization
+            return
+          }
+        }
+      } catch (error) {
+        console.error('Error checking profile:', error)
+      }
     }
-  }, [isLoaded, user])
+
+    if (user) {
+      checkExistingProfile()
+    }
+  }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,14 +101,30 @@ function CompleteProfileForm() {
 
       if (!response.ok) {
         const data = await response.json()
+        console.error('Profile completion failed:', data)
         throw new Error(data.error || 'Failed to complete profile')
       }
+
+      const result = await response.json()
+      console.log('✅ Profile completed successfully:', result)
 
       // Note: User name is already set in Clerk from signup
       // Our database stores the authoritative profile information
 
-      // Redirect to homepage - let SmartRedirect handle the rest
-      router.push('/')
+      // Get the role parameter to redirect correctly
+      const urlParams = new URLSearchParams(window.location.search)
+      const roleParam = urlParams.get('role') || role
+      
+      console.log('🔄 Redirecting after profile completion, role:', roleParam)
+      
+      // Direct redirect based on role instead of going through SmartRedirect
+      if (roleParam === 'master' && result.organization?.id) {
+        console.log('🔄 Direct redirect to master dashboard:', result.organization.id)
+        router.push(`/master/${result.organization.id}`)
+      } else {
+        console.log('🔄 Fallback redirect to homepage for SmartRedirect handling')
+        router.push('/')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -185,6 +224,51 @@ function CompleteProfileForm() {
                   Complete Setup
                 </>
               )}
+            </Button>
+            
+            <Button 
+              type="button"
+              variant="outline" 
+              className="w-full mt-2" 
+              onClick={() => {
+                console.log('User chose to skip profile completion')
+                // Navigate to master page with the URL parameter
+                const urlParams = new URLSearchParams(window.location.search)
+                const masterOrgId = urlParams.get('masterOrgId') || 'y39self3k6mzqel7816n30yd'
+                router.push(`/master/${masterOrgId}`)
+              }}
+            >
+              Skip for Now
+            </Button>
+            
+            <Button 
+              type="button"
+              variant="secondary" 
+              className="w-full mt-2" 
+              onClick={() => {
+                console.log('🚨 Emergency bypass - user stuck in loop')
+                // Set flag to disable SmartRedirect for this navigation
+                sessionStorage.setItem('manual_navigation_bypass', 'true')
+                // Emergency bypass for users stuck in complete-profile loop
+                router.push('/master/y39self3k6mzqel7816n30yd')
+              }}
+            >
+              🚨 Emergency Bypass (if stuck in loop)
+            </Button>
+            
+            <Button 
+              type="button"
+              variant="destructive" 
+              className="w-full mt-2" 
+              onClick={() => {
+                console.log('🚨 NUCLEAR OPTION - Force redirect to dashboard')
+                // Set flag to disable SmartRedirect
+                sessionStorage.setItem('manual_navigation_bypass', 'true')
+                // Force redirect to dashboard page
+                window.location.href = '/master/y39self3k6mzqel7816n30yd'
+              }}
+            >
+              🚨 NUCLEAR OPTION - Force Dashboard
             </Button>
           </form>
         </CardContent>

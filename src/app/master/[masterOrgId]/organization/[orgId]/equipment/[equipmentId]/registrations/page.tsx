@@ -128,11 +128,15 @@ export default function EquipmentRegistrationsPage() {
     // Refresh data after successful create/update
     fetchData()
     
+    // Auto-select the new/updated registration in the detail view
+    setTimeout(() => {
+      setSelectedRegistration(registration)
+    }, 100) // Small delay to ensure data is refreshed
+    
     // Close all modals
     setShowAddForm(false)
     setShowEditForm(false)
     setShowRenewalForm(false)
-    setSelectedRegistration(null)
   }
 
   const handleEditRegistration = (registration: Registration) => {
@@ -163,7 +167,7 @@ export default function EquipmentRegistrationsPage() {
     return (
       <AppLayout
         name={data?.masterOrg?.name || 'Loading...'}
-        topNav={buildStandardNavigation(masterOrgId, orgId, userRole)}
+        topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
         sidebarMenu="equipment"
         equipmentId={equipmentId}
         masterOrgId={masterOrgId}
@@ -184,7 +188,7 @@ export default function EquipmentRegistrationsPage() {
     return (
       <AppLayout
         name="Error"
-        topNav={buildStandardNavigation(masterOrgId, orgId, userRole)}
+        topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
         sidebarMenu="equipment"
         equipmentId={equipmentId}
         masterOrgId={masterOrgId}
@@ -403,6 +407,15 @@ export default function EquipmentRegistrationsPage() {
                         </div>
                       )}
 
+                      {/* Gold Standard Add Ons Section */}
+                      <div className="border-t pt-4">
+                        <ActivityLog 
+                          issueId={selectedRegistration.issue.id}
+                          title="Add Ons Log"
+                          showAddButton={true}
+                        />
+                      </div>
+
                       {/* Action Buttons */}
                       <div className="flex gap-2 pt-4 border-t">
                         <Dialog open={showEditForm} onOpenChange={setShowEditForm}>
@@ -419,7 +432,7 @@ export default function EquipmentRegistrationsPage() {
                             <div className="px-1">
                               <RegistrationForm
                                 equipmentId={equipmentId}
-                                registration={selectedRegistration}
+                                registration={selectedRegistration as any}
                                 onSuccess={handleFormSuccess}
                                 onCancel={() => setShowEditForm(false)}
                               />
@@ -442,8 +455,7 @@ export default function EquipmentRegistrationsPage() {
                               <div className="px-1">
                                 <RegistrationForm
                                   equipmentId={equipmentId}
-                                  isRenewal={true}
-                                  registration={selectedRegistration}
+                                  renewingRegistration={selectedRegistration as any}
                                   onSuccess={handleFormSuccess}
                                   onCancel={() => setShowRenewalForm(false)}
                                 />
@@ -466,6 +478,7 @@ export default function EquipmentRegistrationsPage() {
           </div>
         </div>
       </div>
+      {/* Add Addon Modal - REMOVED since using ActivityLog's built-in add functionality */}
     </AppLayout>
   )
 } 

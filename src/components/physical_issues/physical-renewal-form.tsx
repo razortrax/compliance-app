@@ -243,7 +243,7 @@ export function PhysicalRenewalForm({ physicalIssue, onSubmit, onCancel, isSubmi
                 type="date"
                 value={formData.expirationDate}
                 onChange={(e) => handleInputChange('expirationDate', e.target.value)}
-                readOnly={canCalculateExpiration}
+                readOnly={!!canCalculateExpiration}
                 className={canCalculateExpiration ? 'bg-green-50' : 'bg-amber-50'}
                 placeholder={!formData.result ? 'Will be calculated after selecting result' : ''}
               />

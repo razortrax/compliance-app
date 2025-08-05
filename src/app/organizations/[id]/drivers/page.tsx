@@ -104,7 +104,7 @@ export default function DriversPage() {
   const fetchPersons = async () => {
           try {
         setIsLoading(true)
-        const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=DRIVER`)
+        const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=driver`)
         if (response.ok) {
           const data = await response.json()
           setPersons(data)
@@ -241,14 +241,7 @@ export default function DriversPage() {
     <AppLayout
       name={masterName}
       topNav={topNav}
-      showOrgSelector={true}
-      showDriverEquipmentSelector={true}
       className="p-6"
-      organizations={organizations}
-      currentOrgId={organizationId}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
-      onOrganizationSelect={handleOrganizationSelect}
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Organization Name */}

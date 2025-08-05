@@ -113,11 +113,11 @@ export async function GET(
           party: {
             id: accident.issue.party.id,
             equipment: accident.issue.party.equipment ? {
-              vehicleType: accident.issue.party.equipment.vehicleType,
+              vehicleTypeId: accident.issue.party.equipment.vehicleTypeId,
               make: accident.issue.party.equipment.make,
               model: accident.issue.party.equipment.model,
               year: accident.issue.party.equipment.year,
-              vinNumber: accident.issue.party.equipment.vinNumber,
+              vin: accident.issue.party.equipment.vin,
               plateNumber: accident.issue.party.equipment.plateNumber,
             } : null
           }
@@ -156,11 +156,11 @@ export async function GET(
       },
       equipment: {
         id: equipment.id,
-        vehicleType: equipment.vehicleType,
+        vehicleTypeId: equipment.vehicleTypeId,
         make: equipment.make,
         model: equipment.model,
         year: equipment.year,
-        vinNumber: equipment.vinNumber,
+        vin: equipment.vin,
         plateNumber: equipment.plateNumber,
         party: {
           id: equipment.party.id

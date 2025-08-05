@@ -13,7 +13,6 @@ import { AddAddonModal } from '@/components/licenses/add-addon-modal'
 import { Plus, Users, Edit, Trash2, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { buildStandardDriverNavigation } from '@/lib/utils'
-import type { Organization } from '@/components/layouts/app-layout'
 
 interface DrugAlcoholIssue {
   id: string
@@ -106,7 +105,7 @@ export default function DrugAlcoholIssuesPage() {
   const [showEditForm, setShowEditForm] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [driver, setDriver] = useState<Driver | null>(null)
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [organizations, setOrganizations] = useState<any[]>([]) // Changed from Organization[] to any[]
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [showAddonModal, setShowAddonModal] = useState(false)
@@ -200,7 +199,7 @@ export default function DrugAlcoholIssuesPage() {
     fetchAttachments()
   }
 
-  const handleOrganizationSelect = (organization: Organization) => {
+  const handleOrganizationSelect = (organization: any) => {
     // Handle organization selection if needed
   }
 
@@ -209,8 +208,6 @@ export default function DrugAlcoholIssuesPage() {
       <AppLayout 
         name="Loading..." 
         topNav={[]} 
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId || undefined}
         masterOrgId={masterOrg?.id}
@@ -227,8 +224,6 @@ export default function DrugAlcoholIssuesPage() {
       <AppLayout 
         name="Driver Not Found" 
         topNav={[]} 
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId || undefined}
         masterOrgId={masterOrg?.id}
@@ -254,29 +249,21 @@ export default function DrugAlcoholIssuesPage() {
   }
   
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' },
-    masterOrg,
-    organization,
-    undefined,
+    driverId || '',
+    masterOrg?.id || '',
     'drivers'
   )
 
   return (
     <>
       <AppLayout
-        name={displayName}
+        name={driver ? `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || "Loading..." : "Loading..."}
         topNav={topNav}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId || undefined}
         masterOrgId={masterOrg?.id}
         currentOrgId={organization?.id}
         className="p-6"
-        organizations={organizations}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
-        onOrganizationSelect={handleOrganizationSelect}
       >
         <div className="max-w-7xl mx-auto h-full">
           {/* Driver and Drug & Alcohol Header */}

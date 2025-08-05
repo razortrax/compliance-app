@@ -307,10 +307,8 @@ export default function MasterDriverRoadsideInspectionsPage() {
 
   // Build standard navigation - Gold Standard
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' },
-    data.masterOrg,
-    data.organization,
-    undefined,
+    driverId || '',
+    masterOrgId || '',
     'drivers'
   )
 
@@ -332,10 +330,6 @@ export default function MasterDriverRoadsideInspectionsPage() {
     <AppLayout 
       name={data.masterOrg.name}
       topNav={topNav}
-      organizations={organizations}
-      onOrganizationSelect={handleOrganizationSelect}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
       className="p-6"
     >
       <div className="max-w-7xl mx-auto h-full">

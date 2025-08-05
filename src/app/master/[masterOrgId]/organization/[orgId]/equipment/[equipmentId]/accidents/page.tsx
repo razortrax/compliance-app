@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { AppLayout, Organization } from '@/components/layouts/app-layout'
+import { AppLayout } from '@/components/layouts/app-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -261,10 +261,10 @@ export default function EquipmentAccidentsPage({
   }
 
   return (
-    <AppLayout
+    <AppLayout 
       name={data.masterOrg.name}
       sidebarMenu="equipment"
-      navigation={buildStandardNavigation(masterOrgId, orgId, equipmentId)}
+      topNav={buildStandardNavigation(masterOrgId, orgId, equipmentId)}
       className="p-6"
     >
       <div className="space-y-6">
@@ -363,28 +363,10 @@ export default function EquipmentAccidentsPage({
                     icon={AlertTriangle}
                     title="No accidents"
                     description="This equipment has no recorded accidents"
-                    action={
-                      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add First Accident
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Create Accident Report</DialogTitle>
-                          </DialogHeader>
-                          <EnhancedAccidentForm
-                            onSubmit={handleAddAccident}
-                            onCancel={() => setIsAddDialogOpen(false)}
-                            preSelectedEquipmentIds={[equipmentId]}
-                            organizationId={orgId}
-                            masterOrgId={masterOrgId}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    }
+                    action={{
+                      label: "Add First Accident",
+                      onClick: () => setIsAddDialogOpen(true)
+                    }}
                   />
                 )}
               </div>
@@ -591,9 +573,9 @@ export default function EquipmentAccidentsPage({
                   <div>
                     <h4 className="font-medium mb-3">Activity Log</h4>
                     <ActivityLog 
-                      entityType="accident"
-                      entityId={selectedAccident.id}
-                      limit={5}
+                      issueId={selectedAccident.id}
+                      title="Accident Activity"
+                      showAddButton={true}
                     />
                   </div>
                 </CardContent>

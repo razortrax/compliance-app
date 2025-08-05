@@ -28,6 +28,16 @@ export async function GET(
       }
     })
 
+    console.log('🔍 Master access check:', {
+      userId,
+      masterOrgId,
+      masterAccess: masterAccess ? {
+        roleId: masterAccess.id,
+        partyId: masterAccess.partyId,
+        organizationId: masterAccess.organizationId
+      } : null
+    })
+
     if (!masterAccess) {
       return NextResponse.json({ error: 'Access denied to this master organization' }, { status: 403 })
     }
@@ -44,16 +54,27 @@ export async function GET(
       return NextResponse.json({ error: 'Master organization not found' }, { status: 404 })
     }
 
+    console.log('🏢 Master organization:', {
+      id: masterOrg.id,
+      name: masterOrg.name,
+      partyId: masterOrg.partyId
+    })
+
     // 3. Get all organizations managed by this master (including itself)
     const managedOrgRoles = await db.role.findMany({
       where: {
         roleType: 'master',
-        partyId: masterAccess.partyId,
+        partyId: masterOrg.partyId, // Use master org's party, not user's role party
         isActive: true
       },
       select: {
         organizationId: true
       }
+    })
+
+    console.log('🔗 Managed org roles found:', {
+      count: managedOrgRoles.length,
+      roles: managedOrgRoles.map(r => r.organizationId)
     })
 
     const managedOrgIds = managedOrgRoles

@@ -28,6 +28,15 @@ export function SmartRedirect() {
         return
       }
 
+      // Check for manual navigation bypass flag in sessionStorage
+      const manualNavigation = sessionStorage.getItem('manual_navigation_bypass')
+      if (manualNavigation) {
+        console.log('🚨 Manual navigation bypass detected - SmartRedirect disabled')
+        sessionStorage.removeItem('manual_navigation_bypass')
+        setHasRedirected(true)
+        return
+      }
+
       try {
         // If this is a new user signup with role parameter, handle differently
         if (userRole) {
@@ -56,14 +65,25 @@ export function SmartRedirect() {
             setHasRedirected(true)
             return
           }
+        } else {
+          console.log('🔍 SmartRedirect - Profile API failed, skipping auto-redirect')
+          // Don't redirect if profile API fails - let user navigate manually
+          setHasRedirected(true)
+          return
         }
         
         // Smart redirect based on existing user role
         switch (role.roleType) {
           case 'master':
             console.log('🔄 Redirecting master user to master dashboard')
-            router.push(`/master/${profileData?.masterOrganization?.id || 'unknown'}`)
-            setHasRedirected(true)
+            // Only redirect if we have valid profile data
+            if (profileData?.masterOrganization?.id) {
+              router.push(`/master/${profileData.masterOrganization.id}`)
+              setHasRedirected(true)
+            } else {
+              console.log('🔍 Master user missing organization data - staying on current page')
+              setHasRedirected(true)
+            }
             break
             
           case 'organization':

@@ -8,11 +8,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { cn } from '@/lib/utils'
-import { CalendarIcon, Loader2, X } from 'lucide-react'
-import { format, addYears } from 'date-fns'
+import { Loader2, X } from 'lucide-react'
+import { addYears } from 'date-fns'
 
 interface Registration {
   id: string
@@ -127,33 +124,43 @@ export function RegistrationForm({
   // Form state
   const [plateNumber, setPlateNumber] = useState(registration?.plateNumber || renewingRegistration?.plateNumber || '')
   const [state, setState] = useState(registration?.state || renewingRegistration?.state || '')
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    registration?.startDate ? new Date(registration.startDate) : 
-    renewingRegistration ? new Date(renewingRegistration.expirationDate) : // New start = old expiration for renewals
-    undefined
+  const [startDate, setStartDate] = useState(
+    registration?.startDate ? new Date(registration.startDate).toISOString().split('T')[0] : 
+    renewingRegistration ? new Date(renewingRegistration.expirationDate).toISOString().split('T')[0] : // Start = old expiration for continuity
+    ''
   )
-  const [expirationDate, setExpirationDate] = useState<Date | undefined>(
-    registration?.expirationDate ? new Date(registration.expirationDate) : undefined
+  const [expirationDate, setExpirationDate] = useState(
+    registration?.expirationDate ? new Date(registration.expirationDate).toISOString().split('T')[0] : 
+    renewingRegistration ? addYears(new Date(renewingRegistration.expirationDate), 1).toISOString().split('T')[0] : // Pre-calculate for renewals
+    ''
   )
-  const [renewalDate, setRenewalDate] = useState<Date | undefined>(
-    registration?.renewalDate ? new Date(registration.renewalDate) : 
-    renewingRegistration ? new Date() : // Set today as renewal date for renewals
-    undefined
+  const [renewalDate, setRenewalDate] = useState(
+    registration?.renewalDate ? new Date(registration.renewalDate).toISOString().split('T')[0] : 
+    renewingRegistration ? new Date().toISOString().split('T')[0] : // Set today as renewal date for the OLD registration
+    ''
   )
   const [status, setStatus] = useState<'Active' | 'Expired'>(registration?.status || 'Active')
   const [notes, setNotes] = useState(registration?.notes || '')
-  
-  // Calendar state
-  const [startDateOpen, setStartDateOpen] = useState(false)
-  const [expirationDateOpen, setExpirationDateOpen] = useState(false)
-  const [renewalDateOpen, setRenewalDateOpen] = useState(false)
 
-  // Auto-calculate expiration date (1 year after start date)
+  // Auto-calculate expiration date ONLY when user manually changes start date (not on initial load)
   useEffect(() => {
-    if (startDate && !registration) {
-      setExpirationDate(addYears(startDate, 1))
+    if (startDate && !registration && !renewingRegistration) {
+      // Only auto-calculate for NEW registrations, not renewals
+      const start = new Date(startDate)
+      const expiration = addYears(start, 1)
+      setExpirationDate(expiration.toISOString().split('T')[0])
     }
-  }, [startDate, registration])
+  }, [startDate, registration, renewingRegistration])
+
+  // Handle expiration date updates for renewals when start date changes
+  useEffect(() => {
+    if (startDate && renewingRegistration) {
+      const start = new Date(startDate)
+      const expiration = addYears(start, 1)
+      const newExpireDateString = expiration.toISOString().split('T')[0]
+      setExpirationDate(newExpireDateString)
+    }
+  }, [startDate, renewingRegistration])
 
   // Load equipment if equipmentId provided
   useEffect(() => {
@@ -192,9 +199,9 @@ export function RegistrationForm({
       const registrationData = {
         plateNumber: plateNumber.trim(),
         state,
-        startDate: startDate.toISOString(),
-        expirationDate: expirationDate.toISOString(),
-        renewalDate: renewalDate?.toISOString() || null,
+        startDate: new Date(startDate).toISOString(),
+        expirationDate: new Date(expirationDate).toISOString(),
+        renewalDate: renewalDate ? new Date(renewalDate).toISOString() : null,
         status,
         notes: notes.trim() || null,
         partyId,
@@ -223,7 +230,7 @@ export function RegistrationForm({
             body: JSON.stringify({
               ...renewingRegistration,
               status: 'Expired',
-              renewalDate: renewalDate?.toISOString() || new Date().toISOString()
+              renewalDate: renewalDate ? new Date(renewalDate).toISOString() : new Date().toISOString()
             })
           })
         }
@@ -249,7 +256,7 @@ export function RegistrationForm({
   }
 
   const getFormDescription = () => {
-    if (renewingRegistration) return 'Create a renewed registration for continued compliance'
+    if (renewingRegistration) return 'Create a new registration starting when the current one expires (seamless continuity)'
     if (registration) return 'Update registration information'
     return 'Register equipment with state authorities'
   }
@@ -276,7 +283,12 @@ export function RegistrationForm({
                 onChange={(e) => setPlateNumber(e.target.value.toUpperCase())}
                 placeholder="ABC123"
                 required
+                disabled={!!renewingRegistration}
+                className={renewingRegistration ? "bg-gray-50" : ""}
               />
+              {renewingRegistration && (
+                <p className="text-xs text-gray-500">Plate number carried over from existing registration</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="state">State *</Label>
@@ -295,91 +307,42 @@ export function RegistrationForm({
             </div>
           </div>
 
-          {/* Date Fields */}
+          {/* Date Fields - HTML5 Gold Standard */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Start Date *</Label>
-              <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "MMM dd, yyyy") : "Pick date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => {
-                      setStartDate(date)
-                      setStartDateOpen(false)
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="startDate">Start Date *</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Expiration Date *</Label>
-              <Popover open={expirationDateOpen} onOpenChange={setExpirationDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !expirationDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {expirationDate ? format(expirationDate, "MMM dd, yyyy") : "Pick date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={expirationDate}
-                    onSelect={(date) => {
-                      setExpirationDate(date)
-                      setExpirationDateOpen(false)
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="expirationDate">Expiration Date *</Label>
+              <Input
+                id="expirationDate"
+                type="date"
+                value={expirationDate}
+                onChange={(e) => setExpirationDate(e.target.value)}
+                required
+                className="w-full"
+              />
             </div>
 
             {renewingRegistration && (
               <div className="space-y-2">
-                <Label>Renewal Date</Label>
-                <Popover open={renewalDateOpen} onOpenChange={setRenewalDateOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !renewalDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {renewalDate ? format(renewalDate, "MMM dd, yyyy") : "Pick date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={renewalDate}
-                      onSelect={(date) => {
-                        setRenewalDate(date)
-                        setRenewalDateOpen(false)
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Label htmlFor="renewalDate">Renewal Date</Label>
+                <Input
+                  id="renewalDate"
+                  type="date"
+                  value={renewalDate}
+                  onChange={(e) => setRenewalDate(e.target.value)}
+                  className="w-full"
+                />
               </div>
             )}
           </div>
@@ -422,11 +385,11 @@ export function RegistrationForm({
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {registration ? 'Updating...' : 'Creating...'}
+              {renewingRegistration ? 'Renewing...' : registration ? 'Updating...' : 'Creating...'}
             </>
           ) : (
             <>
-              {registration ? 'Update Registration' : 'Create Registration'}
+              {renewingRegistration ? 'Renew Registration' : registration ? 'Update Registration' : 'Create Registration'}
             </>
           )}
         </Button>

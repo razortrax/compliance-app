@@ -25,7 +25,12 @@ import {
   Settings,
   GraduationCap,
   Stethoscope,
-  Plus
+  Plus,
+  BookOpen,
+  CreditCard,
+  Shield,
+  ClipboardCheck,
+  FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import { useUser } from '@clerk/nextjs'
@@ -410,6 +415,13 @@ export function AppSidebar({
         Accidents
       </Link>
       <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/staff` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Users className="mr-3 h-4 w-4" />
+        Staff
+      </Link>
+      <Link 
         href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/audit` : "#"} 
         className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
       >
@@ -422,6 +434,13 @@ export function AppSidebar({
       >
         <Settings className="mr-3 h-4 w-4" />
         Preferences
+      </Link>
+      <Link 
+        href={currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/staff` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Users className="mr-3 h-4 w-4" />
+        Staff
       </Link>
     </nav>
   )
@@ -511,8 +530,11 @@ export function AppSidebar({
         <Clipboard className="mr-3 h-4 w-4" />
         Registrations
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
-        <ShieldCheck className="mr-3 h-4 w-4" />
+      <Link 
+        href={equipmentId && currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/equipment/${equipmentId}/annual-inspections` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Shield className="mr-3 h-4 w-4" />
         Annual Inspections
       </Link>
       <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">

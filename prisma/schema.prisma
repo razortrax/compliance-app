@@ -14,19 +14,19 @@ datasource db {
 
 // Base incident model for both accidents and roadside inspections
 model incident {
-  id          String      @id @default(cuid())
-  issueId     String      @unique
+  id           String       @id @default(cuid())
+  issueId      String       @unique
   incidentType IncidentType // ACCIDENT | ROADSIDE_INSPECTION
 
   // Common timing information
   incidentDate DateTime // Date of incident/inspection
-  incidentTime String?  // Time of incident/inspection
+  incidentTime String? // Time of incident/inspection
 
   // Common officer/inspector information  
-  officerName    String  // Inspector name or responding officer
-  agencyName     String? // Agency name
-  officerBadge   String? // Badge number (RSIN) or officer ID
-  reportNumber   String? // Report/inspection number
+  officerName  String // Inspector name or responding officer
+  agencyName   String? // Agency name
+  officerBadge String? // Badge number (RSIN) or officer ID
+  reportNumber String? // Report/inspection number
 
   // Common location information
   locationAddress String? // Location address
@@ -51,10 +51,10 @@ model incident {
 
 // Unified equipment involvement (replaces both models)
 model incident_equipment_involvement {
-  id          String  @id @default(cuid())
-  incidentId  String  // FK to incident
-  unitNumber  Int     // 1, 2, or 3
-  
+  id         String @id @default(cuid())
+  incidentId String // FK to incident
+  unitNumber Int // 1, 2, or 3
+
   // Equipment identification
   equipmentId String? // Optional link to equipment table
   unitType    String? // TT, TLR, etc. (RSIN) or vehicle type (Accident)
@@ -64,7 +64,7 @@ model incident_equipment_involvement {
   plateNumber String?
   plateState  String? // RSIN specific
   vin         String?
-  
+
   // RSIN-specific fields (in JSON for accidents)
   cvsaSticker String? // RSIN only
   oosSticker  String? // RSIN only
@@ -79,21 +79,21 @@ model incident_equipment_involvement {
 // Unified violation system (replaces both models)
 model incident_violation {
   id                String             @id @default(cuid())
-  incidentId        String             // FK to incident
-  violationCode     String             // 392.2A(1) or citation code
-  section           String?            // Full section reference
-  unitNumber        Int?               // Which equipment unit (1,2,3) or null for driver
+  incidentId        String // FK to incident
+  violationCode     String // 392.2A(1) or citation code
+  section           String? // Full section reference
+  unitNumber        Int? // Which equipment unit (1,2,3) or null for driver
   outOfService      Boolean            @default(false)
-  outOfServiceDate  DateTime?          // When placed out of service
-  backInServiceDate DateTime?          // When returned to service
+  outOfServiceDate  DateTime? // When placed out of service
+  backInServiceDate DateTime? // When returned to service
   citationNumber    String?
   severity          ViolationSeverity?
-  description       String             // Description of violation
-  inspectorComments String?            // Officer/inspector comments
+  description       String // Description of violation
+  inspectorComments String? // Officer/inspector comments
 
   // Assignment fields (existing)
   violationType   ViolationType? // Driver, Equipment, Company
-  assignedPartyId String?        // FK to responsible party
+  assignedPartyId String? // FK to responsible party
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -106,7 +106,7 @@ model incident_violation {
 
 // New enum for incident types
 enum IncidentType {
-  ACCIDENT            // Motor vehicle accidents
+  ACCIDENT // Motor vehicle accidents
   ROADSIDE_INSPECTION // DOT roadside inspections  
 }
 
@@ -175,26 +175,26 @@ model data_sharing_consent {
 }
 
 model equipment {
-  id                 String         @id
-  partyId            String         @unique
-  
+  id      String @id
+  partyId String @unique
+
   // Basic equipment information
   make               String?
   model              String?
   year               Int?
-  vin                String?        @unique // Changed from vinNumber to match CSV
+  vin                String?   @unique // Changed from vinNumber to match CSV
   plateNumber        String?
   registrationExpiry DateTime?
-  
+
   // Status and classification
-  statusId           String?
-  status             EquipmentStatus? @relation(fields: [statusId], references: [id])
-  
+  statusId String?
+  status   EquipmentStatus? @relation(fields: [statusId], references: [id])
+
   // Weight specifications
-  eqpWeightGross        Int?
-  eqpWeightGrossRating  Int?
-  eqpWeightGrossTagged  Int?
-  
+  eqpWeightGross       Int?
+  eqpWeightGrossRating Int?
+  eqpWeightGrossTagged Int?
+
   // Fuel and engine information
   fuelTypeId         String?
   fuelType           EquipmentFuelType? @relation(fields: [fuelTypeId], references: [id])
@@ -203,65 +203,67 @@ model equipment {
   driveType          String?
   dateOfManufacture  DateTime?
   countCylinders     Int?
-  
+
   // Physical characteristics
-  countAxles         Int?
-  colorId            String?
-  color              EquipmentColor? @relation(fields: [colorId], references: [id])
-  tireSize           String?
-  
+  countAxles Int?
+  colorId    String?
+  color      EquipmentColor? @relation(fields: [colorId], references: [id])
+  tireSize   String?
+
   // Usage tracking
-  startMileage       Int?
-  startDate          DateTime?
-  retireMileage      Int?
-  retireDate         DateTime?
-  
+  startMileage  Int?
+  startDate     DateTime?
+  retireMileage Int?
+  retireDate    DateTime?
+
   // Vehicle classification
-  vehicleTypeId      String?
-  vehicleType        EquipmentVehicleType? @relation(fields: [vehicleTypeId], references: [id])
-  
+  vehicleTypeId String?
+  vehicleType   EquipmentVehicleType? @relation(fields: [vehicleTypeId], references: [id])
+
   // Ownership information  
-  ownershipTypeId    String?
-  ownershipType      EquipmentOwnershipType? @relation(fields: [ownershipTypeId], references: [id])
-  
+  ownershipTypeId String?
+  ownershipType   EquipmentOwnershipType? @relation(fields: [ownershipTypeId], references: [id])
+
   // Category
-  categoryId         String?
-  category           EquipmentCategory? @relation(fields: [categoryId], references: [id])
-  
+  categoryId String?
+  category   EquipmentCategory? @relation(fields: [categoryId], references: [id])
+
   // Location assignment
-  locationId         String?        // Equipment can be assigned to specific location
-  location           location?      @relation(fields: [locationId], references: [id])
-  
+  locationId String? // Equipment can be assigned to specific location
+  location   location? @relation(fields: [locationId], references: [id])
+
   // Relationships
-  party              party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  activity_logs      activity_log[] // Enhanced activity tracking for equipment
-  
+  party         party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  activity_logs activity_log[] // Enhanced activity tracking for equipment
+
   // Incident involvement relationships (unified)
   incident_involvement incident_equipment_involvement[]
 }
 
 model issue {
-  id                        String                     @id
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime
-  issueType                 String
-  status                    String                     @default("open")
-  priority                  String                     @default("medium")
-  partyId                   String
-  title                     String
-  description               String?
-  dueDate                   DateTime?
-  resolvedAt                DateTime?
-  incident                  incident?
-  mvr_issue                 mvr_issue?
-  physical_issue            physical_issue?
-  drugalcohol_issue         drugalcohol_issue?
-  party                     party                      @relation(fields: [partyId], references: [id])
-  license_issue             license_issue?
-  registration_issue        registration_issue?
-  training_issue            training_issue?
-  attachments               attachment[]               // Issue can have multiple attachments
-  activity_logs             activity_log[]             // Enhanced activity tracking for issues
+  id                      String                   @id
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime
+  issueType               String
+  status                  String                   @default("open")
+  priority                String                   @default("medium")
+  partyId                 String
+  title                   String
+  description             String?
+  dueDate                 DateTime?
+  resolvedAt              DateTime?
+  // Incident relationships (unified system)
+  incident                incident?
+  party                   party                    @relation(fields: [partyId], references: [id])
+  attachments             attachment[] // Issue can have multiple attachments
+  activity_logs           activity_log[] // Enhanced activity tracking for issues
+  mvr_issue               mvr_issue?
+  physical_issue          physical_issue?
+  drugalcohol_issue       drugalcohol_issue?
+  license_issue           license_issue?
+  registration_issue      registration_issue?
+  annual_inspection_issue annual_inspection_issue?
+  training_issue          training_issue?
 }
 
 enum MvrType {
@@ -361,9 +363,9 @@ enum DrugAlcoholAgency {
 }
 
 enum TrainingCategory {
-  MANDATORY_DOT     // DOT required training (e.g., HazMat with 2-year expiration)
-  MANDATORY_ORG     // Organization-defined mandatory training (custom expiration)
-  VOLUNTARY         // Voluntary training logs (optional expiration)
+  MANDATORY_DOT // DOT required training (e.g., HazMat with 2-year expiration)
+  MANDATORY_ORG // Organization-defined mandatory training (custom expiration)
+  VOLUNTARY // Voluntary training logs (optional expiration)
 }
 
 model mvr_issue {
@@ -391,20 +393,20 @@ model mvr_issue {
 }
 
 model physical_issue {
-  id                 String          @id @default(cuid())
-  issueId            String          @unique
-  type               PhysicalType?
-  medicalExaminer    String? // VARCHAR(255)
-  selfCertified      Boolean         @default(false)
-  nationalRegistry   Boolean         @default(false)
-  result             PhysicalResult? // Medical result that determines expiration period
-  status             PhysicalStatus  @default(Qualified)
-  startDate          DateTime? // When physical exam was performed
-  expirationDate     DateTime? // Auto-calculated from startDate + result (except when Disqualified)
-  outOfServiceDate   DateTime? // When driver was disqualified (if result = Disqualified)
-  backInServiceDate  DateTime? // When driver was re-qualified after disqualification
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  issueId           String          @unique
+  type              PhysicalType?
+  medicalExaminer   String? // VARCHAR(255)
+  selfCertified     Boolean         @default(false)
+  nationalRegistry  Boolean         @default(false)
+  result            PhysicalResult? // Medical result that determines expiration period
+  status            PhysicalStatus  @default(Qualified)
+  startDate         DateTime? // When physical exam was performed
+  expirationDate    DateTime? // Auto-calculated from startDate + result (except when Disqualified)
+  outOfServiceDate  DateTime? // When driver was disqualified (if result = Disqualified)
+  backInServiceDate DateTime? // When driver was re-qualified after disqualification
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   // Relations
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
@@ -452,17 +454,17 @@ model license_issue {
 }
 
 model registration_issue {
-  id           String              @id @default(cuid())
-  issueId      String              @unique
-  plateNumber  String              // License plate number
-  state        String              // State of registration (2 character)
-  startDate    DateTime            // Registration start date
-  expirationDate DateTime          // Registration expiration date (1 year after start)
-  renewalDate  DateTime?           // Date registration was renewed before expiration
-  status       RegistrationStatus  @default(Active) // Active, Expired
-  notes        String?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id             String             @id @default(cuid())
+  issueId        String             @unique
+  plateNumber    String // License plate number
+  state          String // State of registration (2 character)
+  startDate      DateTime // Registration start date
+  expirationDate DateTime // Registration expiration date (1 year after start)
+  renewalDate    DateTime? // Date registration was renewed before expiration
+  status         RegistrationStatus @default(Active) // Active, Expired
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   // Relations
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
@@ -473,25 +475,53 @@ enum RegistrationStatus {
   Expired
 }
 
+model annual_inspection_issue {
+  id             String                  @id @default(cuid())
+  issueId        String                  @unique
+  inspectorName  String                  // Inspector name (text input for now, will be selector later)
+  inspectionDate DateTime                // Date of inspection (start date)
+  expirationDate DateTime                // Expiration date (1 year after inspection)
+  result         AnnualInspectionResult  @default(Pass) // Temporarily use Pass as default
+  status         AnnualInspectionStatus  @default(Active) // Temporarily use Active as default
+  notes          String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  // Relations
+  issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+enum AnnualInspectionResult {
+  Pending
+  Pass
+  Fail
+}
+
+enum AnnualInspectionStatus {
+  Scheduled
+  Active
+  Inactive
+}
+
 model training_issue {
-  id                     String          @id @default(cuid())
-  issueId                String          @unique
-  trainingType           String          // HazMat Annual, Defensive Driving, etc.
+  id                     String           @id @default(cuid())
+  issueId                String           @unique
+  trainingType           String // HazMat Annual, Defensive Driving, etc.
   category               TrainingCategory @default(VOLUNTARY) // DOT mandatory, org mandatory, or voluntary
-  provider               String?         // Training company/organization
-  instructor             String?         // Instructor name
-  location               String?         // Training location
-  startDate              DateTime?       // When training period started
-  completionDate         DateTime        // When training was completed
-  expirationDate         DateTime?       // When training expires (null for voluntary with no expiration)
-  expirationPeriodMonths Int?            // Custom expiration period for org-defined training
-  certificateNumber      String?         // Certificate/completion number
-  hours                  Float?          // Training hours completed
-  isRequired             Boolean         @default(false) // Required vs voluntary (kept for backward compatibility)
-  competencies           Json?           // Skills/topics covered
+  provider               String? // Training company/organization
+  instructor             String? // Instructor name
+  location               String? // Training location
+  startDate              DateTime? // When training period started
+  completionDate         DateTime // When training was completed
+  expirationDate         DateTime? // When training expires (null for voluntary with no expiration)
+  expirationPeriodMonths Int? // Custom expiration period for org-defined training
+  certificateNumber      String? // Certificate/completion number
+  hours                  Float? // Training hours completed
+  isRequired             Boolean          @default(false) // Required vs voluntary (kept for backward compatibility)
+  competencies           Json? // Skills/topics covered
   notes                  String?
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
 
   // Relations
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
@@ -499,8 +529,8 @@ model training_issue {
 
 // ENHANCED ACTIVITY LOG SYSTEM - Multi-tag, Multi-entity support
 model activity_log {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Entity relationships (flexible - can link to any entity)
   issueId        String? // Links to any compliance issue
   organizationId String? // Links to organization  
@@ -508,57 +538,57 @@ model activity_log {
   equipmentId    String? // Links to equipment
   locationId     String? // Links to location
   cafId          String? // Links to CAF
-  
+
   // Activity content
   activityType String // 'note', 'communication', 'url', 'credential', 'attachment', 'task'
   title        String // Brief title/subject
   content      String // Main content (note text, URL, phone notes, etc.)
-  
+
   // File attachment data (for activityType = 'attachment')
-  fileName     String? // Original filename (if file attachment)
-  fileType     String? // MIME type
-  fileSize     Int?    // File size in bytes  
-  filePath     String? // Storage path/URL
-  
+  fileName String? // Original filename (if file attachment)
+  fileType String? // MIME type
+  fileSize Int? // File size in bytes  
+  filePath String? // Storage path/URL
+
   // Credential data (for activityType = 'credential') - encrypted
-  username     String? // Portal username
-  password     String? // Encrypted password
-  portalUrl    String? // Portal/site URL
-  
+  username  String? // Portal username
+  password  String? // Encrypted password
+  portalUrl String? // Portal/site URL
+
   // Task data (for activityType = 'task')
-  dueDate      DateTime? // Task due date
-  isCompleted  Boolean   @default(false)
-  priority     String?   // 'low', 'medium', 'high', 'urgent'
-  
+  dueDate     DateTime? // Task due date
+  isCompleted Boolean   @default(false)
+  priority    String? // 'low', 'medium', 'high', 'urgent'
+
   // Multi-tag system
-  tags         String[]  // Array of tags: ['communication', 'phone', 'urgent', 'follow-up']
-  
+  tags String[] // Array of tags: ['communication', 'phone', 'urgent', 'follow-up']
+
   // System fields
-  createdBy    String    // User ID who created
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
+  createdBy String // User ID who created
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relationships
-  issue        issue?        @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  organization organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  person       person?       @relation(fields: [personId], references: [id], onDelete: Cascade)
-  equipment    equipment?    @relation(fields: [equipmentId], references: [id], onDelete: Cascade) 
-  location     location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  issue        issue?                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  organization organization?           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  person       person?                 @relation(fields: [personId], references: [id], onDelete: Cascade)
+  equipment    equipment?              @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  location     location?               @relation(fields: [locationId], references: [id], onDelete: Cascade)
   caf          corrective_action_form? @relation("CAFActivityLogs", fields: [cafId], references: [id], onDelete: Cascade)
 }
 
 // Organization-specific tag management for future customization
 model organization_tag {
-  id             String       @id @default(cuid())
-  organizationId String       
-  tagName        String       // Custom tag name
-  tagColor       String?      // Hex color for UI
-  tagIcon        String?      // Icon identifier
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  
-  organization   organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+  id             String   @id @default(cuid())
+  organizationId String
+  tagName        String // Custom tag name
+  tagColor       String? // Hex color for UI
+  tagIcon        String? // Icon identifier
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@unique([organizationId, tagName]) // Prevent duplicate tags per org
 }
 
@@ -601,10 +631,10 @@ model location {
 
   // Relationships
   activity_logs activity_log[] // Enhanced activity tracking for locations
-  party        party?         @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  organization organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  equipment    equipment[]
-  role         role[] // Staff and drivers assigned to this location
+  party         party?         @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  organization  organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  equipment     equipment[]
+  role          role[] // Staff and drivers assigned to this location
 }
 
 model organization {
@@ -621,9 +651,9 @@ model organization {
   consultation            consultation[]
   location                location[]
   corrective_action_forms corrective_action_form[] // CAF system support
-  activity_logs           activity_log[]           // Enhanced activity tracking
-  organization_tags       organization_tag[]       // Custom tag management
-  
+  activity_logs           activity_log[] // Enhanced activity tracking
+  organization_tags       organization_tag[] // Custom tag management
+
   // Equipment enum management - organizations can customize their equipment options
   equipmentStatuses       EquipmentStatus[]
   equipmentFuelTypes      EquipmentFuelType[]
@@ -631,8 +661,8 @@ model organization {
   equipmentColors         EquipmentColor[]
   equipmentOwnershipTypes EquipmentOwnershipType[]
   equipmentCategories     EquipmentCategory[]
-  
-  party                   party                    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  party party @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
 model party {
@@ -789,9 +819,9 @@ model staff {
 }
 
 model corrective_action_form {
-  id                   String  @id @default(cuid())
-  cafNumber            String  @unique // Auto-generated CAF-YYYY-NNNN
-  incidentViolationId  String? // FK to unified incident violation
+  id                  String  @id @default(cuid())
+  cafNumber           String  @unique // Auto-generated CAF-YYYY-NNNN
+  incidentViolationId String? // FK to unified incident violation
 
   // Basic Information
   title             String // "Driver Performance - 392.2A(1)"
@@ -881,117 +911,117 @@ enum SignatureType {
 
 // Equipment-related lookup tables for dynamic enum management
 model EquipmentStatus {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   code        String // ACTIVE, INACTIVE, MAINTENANCE, RETIRED
   label       String
   description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // Organization that manages this option (null = system default)
   organizationId String?
   organization   organization? @relation(fields: [organizationId], references: [id])
-  
+
   // Usage tracking
   equipment equipment[]
-  
+
   @@unique([code, organizationId])
   @@map("equipment_status")
 }
 
 model EquipmentFuelType {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   code        String // Gasoline, Diesel, Propane, Electric
   label       String
   description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   organizationId String?
   organization   organization? @relation(fields: [organizationId], references: [id])
-  
+
   equipment equipment[]
-  
+
   @@unique([code, organizationId])
   @@map("equipment_fuel_type")
 }
 
 model EquipmentVehicleType {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   code        String // PDC-Day Cab, PSC-Sleeper Cab, etc.
   label       String
   description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   organizationId String?
   organization   organization? @relation(fields: [organizationId], references: [id])
-  
+
   equipment equipment[]
-  
+
   @@unique([code, organizationId])
   @@map("equipment_vehicle_type")
 }
 
 model EquipmentColor {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   code        String // White, Black, Red, etc.
   label       String
   description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   organizationId String?
   organization   organization? @relation(fields: [organizationId], references: [id])
-  
+
   equipment equipment[]
-  
+
   @@unique([code, organizationId])
   @@map("equipment_color")
 }
 
 model EquipmentOwnershipType {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   code        String // Owner Operator, Leased, Owned, Rent
   label       String
   description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   organizationId String?
   organization   organization? @relation(fields: [organizationId], references: [id])
-  
+
   equipment equipment[]
-  
+
   @@unique([code, organizationId])
   @@map("equipment_ownership_type")
 }
 
 model EquipmentCategory {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   code        String // Power, Trailer
   label       String
   description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   organizationId String?
   organization   organization? @relation(fields: [organizationId], references: [id])
-  
+
   equipment equipment[]
-  
+
   @@unique([code, organizationId])
   @@map("equipment_category")
 }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/db'
+import { db } from '@/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const fuelTypes = await prisma.equipmentFuelType.findMany({
+    const fuelTypes = await db.equipmentFuelType.findMany({
       where: {
         isActive: true,
         organizationId: null // System defaults

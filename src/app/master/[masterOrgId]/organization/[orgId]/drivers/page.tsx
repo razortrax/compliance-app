@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
+import { buildStandardNavigation, getUserRole } from '@/lib/utils'
 import { PersonForm } from '@/components/persons/person-form'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,7 +28,8 @@ import {
   Calendar,
   IdCard,
   CalendarIcon,
-  User
+  User,
+  AlertCircle
 } from 'lucide-react'
 
 interface Driver {
@@ -79,7 +80,6 @@ export default function DriversPage() {
   const router = useRouter()
   const masterOrgId = params.masterOrgId as string
   const organizationId = params.orgId as string
-  const { masterOrg } = useMasterOrg()
   
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [organization, setOrganization] = useState<Organization | null>(null)
@@ -88,6 +88,8 @@ export default function DriversPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [masterOrgName, setMasterOrgName] = useState<string>('Loading...')
   
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false)
@@ -103,62 +105,65 @@ export default function DriversPage() {
 
   // Fetch all data using the new URL-driven API - single optimized call! 🚀
   useEffect(() => {
-    const fetchDriversData = async () => {
+    const fetchAllData = async () => {
       console.log('🚀 Fetching drivers data using URL-driven API for org:', organizationId)
       
       try {
         setIsLoading(true)
         setError(null)
         
-        // Single API call with all data pre-filtered and optimized! 
-        const [driversResult, orgsResult] = await Promise.allSettled([
+        // Fetch user role and master org data first
+        const [roleResult, userRoleResult] = await Promise.allSettled([
           fetch(`/api/master/${masterOrgId}/organization/${organizationId}/drivers`),
-          fetch('/api/organizations') // Still need for org selector
+          getUserRole()
         ])
         
+        // Set user role
+        if (userRoleResult.status === 'fulfilled') {
+          setUserRole(userRoleResult.value)
+        }
+        
         // Handle drivers data (primary)
-        if (driversResult.status === 'fulfilled' && driversResult.value.ok) {
-          const data: DriversResponse = await driversResult.value.json()
+        if (roleResult.status === 'fulfilled' && roleResult.value.ok) {
+          const data: DriversResponse = await roleResult.value.json()
           
           setOrganization(data.organization)
           setDrivers(data.drivers)
           setSummary(data.summary)
           
+          // Get master org name from the API response
+          const masterOrgResponse = await fetch(`/api/organizations/${masterOrgId}`)
+          if (masterOrgResponse.ok) {
+            const masterOrgData = await masterOrgResponse.json()
+            setMasterOrgName(masterOrgData.name || 'Master')
+          } else {
+            setMasterOrgName('Master')
+          }
+          
           console.log('✅ URL-driven API success!')
           console.log(`📊 Loaded ${data.summary.totalDrivers} drivers with ${data.summary.complianceRate}% compliance`)
           console.log(`⚠️ ${data.summary.driversWithIssues} drivers have expiring issues`)
         } else {
-          const errorMsg = driversResult.status === 'fulfilled' 
-            ? `Drivers API returned ${driversResult.value.status}` 
+          const errorMsg = roleResult.status === 'fulfilled' 
+            ? `Access denied or organization not found (${roleResult.value.status})` 
             : 'Failed to fetch drivers data'
           setError(errorMsg)
           console.error('❌ URL-driven API failed:', errorMsg)
-        }
-        
-        // Handle organizations list (for selector)
-        if (orgsResult.status === 'fulfilled' && orgsResult.value.ok) {
-          const orgsData = await orgsResult.value.json()
-          setOrganizations(orgsData)
-        } else {
-          console.warn('❌ Organizations list failed (non-critical)')
-          setOrganizations([])
         }
         
       } catch (error) {
         console.error('🔥 Unexpected error in URL-driven fetch:', error)
         setError('Unexpected error occurred while loading data')
         setDrivers([])
-        setOrganizations([])
       } finally {
         setIsLoading(false)
-        console.log('🏁 URL-driven fetch complete')
       }
     }
 
-    if (organizationId && masterOrgId) {
-      fetchDriversData()
+    if (masterOrgId && organizationId) {
+      fetchAllData()
     }
-  }, [organizationId, masterOrgId])
+  }, [masterOrgId, organizationId])
 
   // Refetch drivers after updates using the new URL-driven API
   const fetchDrivers = async () => {
@@ -250,21 +255,39 @@ export default function DriversPage() {
     }
   }
 
-  if (!organization) {
+  if (error) {
     return (
       <AppLayout
-        name={masterOrg?.name || 'Master'}
-        topNav={[{ label: 'Master', href: `/master/${masterOrgId}`, isActive: false }]}
+        name={masterOrgName}
+        topNav={buildStandardNavigation(masterOrgId, organizationId, userRole || undefined)}
         className="p-6"
       >
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+          <h3 className="text-lg font-semibold mb-2">Failed to Load Drivers</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </AppLayout>
     )
   }
 
-  const masterName = masterOrg?.name || 'Master'
+  if (!organization) {
+    return (
+      <AppLayout
+        name={masterOrgName}
+        topNav={buildStandardNavigation(masterOrgId, organizationId, userRole || undefined)}
+        className="p-6"
+      >
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading drivers...</p>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  const masterName = masterOrgName || 'Master'
   const topNav = [
     { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
     { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
@@ -274,16 +297,12 @@ export default function DriversPage() {
 
   return (
     <AppLayout
-      name={masterName}
-      topNav={topNav}
-      showOrgSelector={true}
-      showDriverEquipmentSelector={true}
-      className="p-6"
-      organizations={organizations}
+      name={masterOrgName}
+      topNav={buildStandardNavigation(masterOrgId, organizationId, userRole || undefined)}
+      sidebarMenu="organization"
+      masterOrgId={masterOrgId}
       currentOrgId={organizationId}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
-      onOrganizationSelect={handleOrganizationSelect}
+      className="p-6"
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Organization Name */}

@@ -31,7 +31,7 @@ interface Training {
       id: string
     }
   }
-  category: string
+  category?: string  // Made optional to match usage from different pages
   expirationPeriodMonths?: number
 }
 
@@ -449,7 +449,7 @@ export function TrainingForm({ personId, onSubmit, onCancel, isSubmitting = fals
                 type="date"
                 value={formData.completionDate ? format(new Date(formData.completionDate), 'yyyy-MM-dd') : ''}
                 onChange={(e) => {
-                  const date = e.target.value ? new Date(e.target.value) : undefined
+                  const date = e.target.value ? new Date(e.target.value) : new Date()
                   setFormData({ ...formData, completionDate: date })
                 }}
                 required

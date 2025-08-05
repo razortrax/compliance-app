@@ -357,8 +357,6 @@ export default function DriverLicensesPage() {
         driverId={driverId}
         masterOrgId={masterOrg?.id}
         topNav={[]}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
       >
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin" />
@@ -374,8 +372,6 @@ export default function DriverLicensesPage() {
         driverId={driverId}
         masterOrgId={masterOrg?.id}
         topNav={[]}
-        organizations={organizations}
-        onOrganizationSelect={handleOrganizationSelect}
       >
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -394,29 +390,21 @@ export default function DriverLicensesPage() {
   
   // Build standardized top navigation
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    masterOrg,
-    organization,
-    undefined, // No location context in this view
-    'drivers'
+    masterOrg?.id || '',
+    organization?.id || '',
+    driverId,
+    role?.roleType
   )
   
   return (
     <>
-      <AppLayout
+      <AppLayout 
         name={masterName}
         topNav={topNav}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         driverId={driverId}
         masterOrgId={masterOrg?.id}
         currentOrgId={organization?.id}
-        className="p-6"
-        organizations={organizations}
-        isSheetOpen={isSheetOpen}
-        onSheetOpenChange={setIsSheetOpen}
-        onOrganizationSelect={handleOrganizationSelect}
       >
         <div className="max-w-7xl mx-auto h-full">
           {/* Driver and Licenses Header */}

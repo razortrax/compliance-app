@@ -188,7 +188,7 @@ export default function MasterEquipmentDetailPage() {
     <AppLayout
       name={data.masterOrg.name}
       sidebarMenu="equipment"
-      topNav={buildStandardNavigation(masterOrgId, orgId, userRole)}
+      topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
       className="p-6"
     >
       <div className="space-y-6">
@@ -219,7 +219,7 @@ export default function MasterEquipmentDetailPage() {
                 </DialogHeader>
                 <EquipmentForm
                   organizationId={orgId}
-                  equipment={data.equipment}
+                  equipment={data.equipment as any}
                   onSuccess={() => {
                     setShowEditForm(false)
                     fetchData()

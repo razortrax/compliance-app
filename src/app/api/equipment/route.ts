@@ -108,19 +108,39 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const { 
-      vehicleType, 
+      vehicleTypeId,  // Fixed: use vehicleTypeId instead of vehicleType
       make, 
       model, 
       year, 
-      vinNumber, 
+      vin, 
       organizationId,
-      locationId 
+      locationId,
+      // Add other fields from the form
+      statusId,
+      categoryId,
+      ownershipTypeId,
+      eqpWeightGross,
+      eqpWeightGrossRating,
+      eqpWeightGrossTagged,
+      fuelTypeId,
+      engineModel,
+      engineDisplacement,
+      driveType,
+      countCylinders,
+      dateOfManufacture,
+      countAxles,
+      colorId,
+      tireSize,
+      startMileage,
+      startDate,
+      retireMileage,
+      retireDate
     } = body
 
     // Validate required fields
-    if (!vehicleType || !organizationId) {
+    if (!categoryId || !organizationId) {  // Fixed: require categoryId instead of vehicleTypeId
       return NextResponse.json({ 
-        error: 'Missing required fields: vehicleType, organizationId' 
+        error: 'Missing required fields: categoryId, organizationId' 
       }, { status: 400 })
     }
 
@@ -201,9 +221,9 @@ export async function POST(req: NextRequest) {
       let equipment
       
       // 1. Check if equipment with this VIN already exists
-      if (vinNumber) {
+      if (vin) {
         equipment = await tx.equipment.findUnique({
-          where: { vinNumber },
+          where: { vin: vin },
           include: { party: true }
         })
       }
@@ -211,7 +231,7 @@ export async function POST(req: NextRequest) {
       if (equipment) {
         // Equipment exists - reuse the existing party and equipment
         party = equipment.party
-        console.log('🔄 Found existing equipment with VIN:', vinNumber, 'Party ID:', party.id)
+        console.log('🔄 Found existing equipment with VIN:', vin, 'Party ID:', party.id)
         
         // Check if there's already an active role for this organization
         const existingRole = await tx.role.findFirst({
@@ -254,16 +274,36 @@ export async function POST(req: NextRequest) {
           data: {
             id: createId(),
             partyId: party.id,
-            vehicleType,
+            vehicleTypeId,  // Fixed: use vehicleTypeId field name
             make: make || null,
             model: model || null,
             year: year ? parseInt(year) : null,
-            vinNumber: vinNumber || null,
-            locationId: locationId || null
+            vin: vin || null,
+            locationId: locationId || null,
+            // Add all other fields from the form
+            statusId: statusId || null,
+            categoryId: categoryId || null,
+            ownershipTypeId: ownershipTypeId || null,
+            eqpWeightGross: eqpWeightGross ? parseInt(eqpWeightGross) : null,
+            eqpWeightGrossRating: eqpWeightGrossRating ? parseInt(eqpWeightGrossRating) : null,
+            eqpWeightGrossTagged: eqpWeightGrossTagged ? parseInt(eqpWeightGrossTagged) : null,
+            fuelTypeId: fuelTypeId || null,
+            engineModel: engineModel || null,
+            engineDisplacement: engineDisplacement || null,
+            driveType: driveType || null,
+            countCylinders: countCylinders ? parseInt(countCylinders) : null,
+            dateOfManufacture: dateOfManufacture ? new Date(dateOfManufacture) : null,
+            countAxles: countAxles ? parseInt(countAxles) : null,
+            colorId: colorId || null,
+            tireSize: tireSize || null,
+            startMileage: startMileage ? parseInt(startMileage) : null,
+            startDate: startDate ? new Date(startDate) : null,
+            retireMileage: retireMileage ? parseInt(retireMileage) : null,
+            retireDate: retireDate ? new Date(retireDate) : null
           }
         })
         
-        console.log('✅ Created new equipment with VIN:', vinNumber)
+        console.log('✅ Created new equipment with VIN:', vin)
       }
 
       // 3. Create new role relationship
@@ -283,9 +323,9 @@ export async function POST(req: NextRequest) {
         equipmentId: equipment.id,
         partyId: party.id,
         vehicle: `${equipment.make} ${equipment.model} ${equipment.year}`,
-        type: vehicleType,
+        type: vehicleTypeId, // Use vehicleTypeId here
         org: organizationId,
-        existing: !!vinNumber && equipment.id !== party.id // Simple check if reused
+        existing: !!vin && equipment.id !== party.id // Simple check if reused
       })
 
       return equipment

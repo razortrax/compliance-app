@@ -40,15 +40,34 @@ export async function POST(request: Request) {
     // Check if user already has a profile
     const existingParty = await db.party.findFirst({
       where: { userId },
-      include: { person: true }
+      include: { 
+        person: true,
+        organization: true
+      }
     })
 
-    if (existingParty && existingParty.person) {
+    // Also check if user has a master organization via role
+    const existingRole = await db.role.findFirst({
+      where: { 
+        partyId: existingParty?.id,
+        roleType: 'master'
+      }
+    })
+
+    // Only block if user has BOTH person AND master organization
+    if (existingParty && existingParty.person && existingRole && existingRole.organizationId) {
       return NextResponse.json(
         { error: 'Profile already completed' },
         { status: 400 }
       )
     }
+
+    console.log('🔍 Profile completion check:', {
+      hasPerson: !!existingParty?.person,
+      hasRole: !!existingRole,
+      hasOrganization: !!existingRole?.organizationId,
+      allowCompletion: true
+    })
 
     const result = await db.$transaction(async (tx: any) => {
       // Create or use existing user party

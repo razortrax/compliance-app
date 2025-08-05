@@ -105,6 +105,7 @@ interface ActivityLogProps {
   showEntityLabel?: boolean
   compact?: boolean
   maxHeight?: string
+  showAddButton?: boolean
 }
 
 export function ActivityLog({
@@ -118,7 +119,8 @@ export function ActivityLog({
   allowedTypes = Object.keys(ACTIVITY_TYPES),
   showEntityLabel = false,
   compact = false,
-  maxHeight = "400px"
+  maxHeight = "400px",
+  showAddButton = true
 }: ActivityLogProps) {
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([])
@@ -388,225 +390,227 @@ export function ActivityLog({
             </Popover>
 
             {/* Add Activity Button */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add Activity</DialogTitle>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  {/* Activity Type Selection */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {allowedTypes.map(type => {
-                      const config = ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES]
-                      const Icon = config?.icon || FileText
-                      return (
-                        <Button
-                          key={type}
-                          variant={newActivity.activityType === type ? "default" : "outline"}
-                          className={cn(
-                            "h-auto flex-col gap-2 p-4",
-                            newActivity.activityType === type && config?.color
-                          )}
-                          onClick={() => setNewActivity(prev => ({ ...prev, activityType: type }))}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <div className="text-center">
-                            <div className="font-medium">{config?.label || type}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {config?.description}
+            {showAddButton && (
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Activity</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4">
+                    {/* Activity Type Selection */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {allowedTypes.map(type => {
+                        const config = ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES]
+                        const Icon = config?.icon || FileText
+                        return (
+                          <Button
+                            key={type}
+                            variant={newActivity.activityType === type ? "default" : "outline"}
+                            className={cn(
+                              "h-auto flex-col gap-2 p-4",
+                              newActivity.activityType === type && config?.color
+                            )}
+                            onClick={() => setNewActivity(prev => ({ ...prev, activityType: type }))}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <div className="text-center">
+                              <div className="font-medium">{config?.label || type}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {config?.description}
+                              </div>
                             </div>
-                          </div>
-                        </Button>
-                      )
-                    })}
-                  </div>
-
-                  {/* Title */}
-                  <div>
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      value={newActivity.title}
-                      onChange={(e) => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Brief title or subject"
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div>
-                    <Label htmlFor="content">
-                      {newActivity.activityType === 'url' ? 'URL' : 
-                       newActivity.activityType === 'credential' ? 'Portal URL' : 'Content'}
-                    </Label>
-                    <Textarea
-                      id="content"
-                      value={newActivity.content}
-                      onChange={(e) => setNewActivity(prev => ({ ...prev, content: e.target.value }))}
-                      placeholder={
-                        newActivity.activityType === 'note' ? "Your notes..." :
-                        newActivity.activityType === 'communication' ? "Details of the communication..." :
-                        newActivity.activityType === 'url' ? "https://example.com" :
-                        newActivity.activityType === 'task' ? "Task description..." :
-                        "Details..."
-                      }
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* Credential-specific fields */}
-                  {newActivity.activityType === 'credential' && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="username">Username</Label>
-                        <Input
-                          id="username"
-                          value={newActivity.username}
-                          onChange={(e) => setNewActivity(prev => ({ ...prev, username: e.target.value }))}
-                          placeholder="Portal username"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={newActivity.password}
-                          onChange={(e) => setNewActivity(prev => ({ ...prev, password: e.target.value }))}
-                          placeholder="Portal password"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Task-specific fields */}
-                  {newActivity.activityType === 'task' && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Due Date</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !newActivity.dueDate && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {newActivity.dueDate ? format(newActivity.dueDate, "PPP") : "Pick due date"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={newActivity.dueDate || undefined}
-                              onSelect={(date) => setNewActivity(prev => ({ ...prev, dueDate: date || null }))}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div>
-                        <Label htmlFor="priority">Priority</Label>
-                        <Select 
-                          value={newActivity.priority} 
-                          onValueChange={(value) => setNewActivity(prev => ({ ...prev, priority: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="urgent">Urgent</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tags */}
-                  <div>
-                    <Label>Tags</Label>
-                    <div className="space-y-2">
-                      {/* Selected tags */}
-                      <div className="flex flex-wrap gap-1">
-                        {newActivity.tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                            {tag}
-                            <X 
-                              className="h-3 w-3 cursor-pointer" 
-                              onClick={() => removeTag(tag)}
-                            />
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      {/* Add tag controls */}
-                      <div className="flex gap-2">
-                        {showTagInput ? (
-                          <div className="flex gap-1 flex-1">
-                            <Input
-                              value={tagInput}
-                              onChange={(e) => setTagInput(e.target.value)}
-                              placeholder="Enter tag name"
-                              onKeyPress={(e) => e.key === 'Enter' && addTag(tagInput)}
-                              className="flex-1"
-                            />
-                            <Button size="sm" onClick={() => addTag(tagInput)}>Add</Button>
-                            <Button size="sm" variant="outline" onClick={() => setShowTagInput(false)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setShowTagInput(true)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Custom Tag
                           </Button>
-                        )}
+                        )
+                      })}
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                      <Label htmlFor="title">Title</Label>
+                      <Input
+                        id="title"
+                        value={newActivity.title}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Brief title or subject"
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div>
+                      <Label htmlFor="content">
+                        {newActivity.activityType === 'url' ? 'URL' : 
+                         newActivity.activityType === 'credential' ? 'Portal URL' : 'Content'}
+                      </Label>
+                      <Textarea
+                        id="content"
+                        value={newActivity.content}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder={
+                          newActivity.activityType === 'note' ? "Your notes..." :
+                          newActivity.activityType === 'communication' ? "Details of the communication..." :
+                          newActivity.activityType === 'url' ? "https://example.com" :
+                          newActivity.activityType === 'task' ? "Task description..." :
+                          "Details..."
+                        }
+                        rows={3}
+                      />
+                    </div>
+
+                    {/* Credential-specific fields */}
+                    {newActivity.activityType === 'credential' && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="username">Username</Label>
+                          <Input
+                            id="username"
+                            value={newActivity.username}
+                            onChange={(e) => setNewActivity(prev => ({ ...prev, username: e.target.value }))}
+                            placeholder="Portal username"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="password">Password</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            value={newActivity.password}
+                            onChange={(e) => setNewActivity(prev => ({ ...prev, password: e.target.value }))}
+                            placeholder="Portal password"
+                          />
+                        </div>
                       </div>
-                      
-                      {/* Quick tag buttons */}
-                      <div className="flex flex-wrap gap-1">
-                        {DEFAULT_TAGS.slice(0, 8).map(tag => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                            onClick={() => addTag(tag)}
+                    )}
+
+                    {/* Task-specific fields */}
+                    {newActivity.activityType === 'task' && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Due Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !newActivity.dueDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {newActivity.dueDate ? format(newActivity.dueDate, "PPP") : "Pick due date"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={newActivity.dueDate || undefined}
+                                onSelect={(date) => setNewActivity(prev => ({ ...prev, dueDate: date || null }))}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div>
+                          <Label htmlFor="priority">Priority</Label>
+                          <Select 
+                            value={newActivity.priority} 
+                            onValueChange={(value) => setNewActivity(prev => ({ ...prev, priority: value }))}
                           >
-                            <Plus className="h-3 w-3 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="urgent">Urgent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    <div>
+                      <Label>Tags</Label>
+                      <div className="space-y-2">
+                        {/* Selected tags */}
+                        <div className="flex flex-wrap gap-1">
+                          {newActivity.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                              {tag}
+                              <X 
+                                className="h-3 w-3 cursor-pointer" 
+                                onClick={() => removeTag(tag)}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                        
+                        {/* Add tag controls */}
+                        <div className="flex gap-2">
+                          {showTagInput ? (
+                            <div className="flex gap-1 flex-1">
+                              <Input
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                placeholder="Enter tag name"
+                                onKeyPress={(e) => e.key === 'Enter' && addTag(tagInput)}
+                                className="flex-1"
+                              />
+                              <Button size="sm" onClick={() => addTag(tagInput)}>Add</Button>
+                              <Button size="sm" variant="outline" onClick={() => setShowTagInput(false)}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setShowTagInput(true)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Custom Tag
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Quick tag buttons */}
+                        <div className="flex flex-wrap gap-1">
+                          {DEFAULT_TAGS.slice(0, 8).map(tag => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                              onClick={() => addTag(tag)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Form Actions */}
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddActivity}>
-                      Add Activity
-                    </Button>
+                    {/* Form Actions */}
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAddActivity}>
+                        Add Activity
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
       </CardHeader>

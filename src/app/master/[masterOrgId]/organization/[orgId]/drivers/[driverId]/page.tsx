@@ -98,8 +98,6 @@ export default function DriverDetailPage() {
           { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
           { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
         ]}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         masterOrgId={masterOrgId}
         currentOrgId={organizationId}
@@ -126,8 +124,6 @@ export default function DriverDetailPage() {
           { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
           { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
         ]}
-        showOrgSelector={true}
-        showDriverEquipmentSelector={true}
         sidebarMenu="driver"
         masterOrgId={masterOrgId}
         currentOrgId={organizationId}
@@ -144,15 +140,13 @@ export default function DriverDetailPage() {
 
   return (
     <AppLayout 
-      name={masterOrg?.name || 'Master'}
+      name={`${person.firstName} ${person.lastName}`}
       topNav={[
         { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
         { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
         { label: 'Driver', href: `/master/${masterOrgId}/organization/${organizationId}/driver/${driverId}`, isActive: true },
         { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
       ]}
-      showOrgSelector={true}
-      showDriverEquipmentSelector={true}
       sidebarMenu="driver"
       masterOrgId={masterOrgId}
       currentOrgId={organizationId}

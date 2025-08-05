@@ -114,17 +114,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { name, dotNumber, einNumber, phone, notes } = body
+    const { name, dotNumber, phone, einNumber } = await request.json()
 
     if (!name) {
       return NextResponse.json(
-        { error: 'Company name is required' },
+        { error: 'Organization name is required' },
         { status: 400 }
       )
     }
 
-    // Find the current user's master company (organization they directly own)
+    // VALIDATE DOT NUMBER FIRST - before creating anything
+    if (dotNumber && dotNumber !== 'NO_DOT') {
+      const existingDotOrg = await db.organization.findFirst({
+        where: { dotNumber }
+      })
+      
+      if (existingDotOrg) {
+        return NextResponse.json(
+          { error: 'DOT number already exists' },
+          { status: 409 }
+        )
+      }
+    }
+
+    // Find user's master company
     const userMasterOrg = await db.organization.findFirst({
       where: {
         party: {
@@ -143,79 +156,70 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create organization - Note: do NOT connect to current user directly
-    // Organizations under a master should not have party.userId set
-    const partyId = createId()
-    const organization = await db.organization.create({
-      data: {
-        id: createId(),
-        name,
-        dotNumber: dotNumber || null,
-        phone: phone || null,
-        einNumber: einNumber || null,
-        party: {
-          create: {
-            id: partyId,
-            status: 'active', // Party itself is always active, role determines org status
-            // NOT setting userId here - managed organizations don't have direct ownership
-            updatedAt: new Date()
-          }
+    console.log('Creating child organization for master:', userMasterOrg.name, userMasterOrg.id)
+
+    // Use transaction to ensure atomicity
+    const result = await db.$transaction(async (tx) => {
+      // Create organization party (not connected to user)
+      const orgParty = await tx.party.create({
+        data: {
+          id: createId(),
+          status: 'active',
+          updatedAt: new Date()
+          // NO userId - this is a managed organization
         }
-      },
-      include: {
-        party: true
-      }
+      })
+
+      // Create organization
+      const organization = await tx.organization.create({
+        data: {
+          id: createId(),
+          partyId: orgParty.id,
+          name,
+          dotNumber: dotNumber === 'NO_DOT' ? null : dotNumber,
+          phone: phone || null,
+          einNumber: einNumber || null
+        },
+        include: {
+          party: true
+        }
+      })
+
+      console.log('Created organization:', {
+        id: organization.id,
+        name: organization.name,
+        partyId: organization.partyId
+      })
+
+      // Create MASTER ROLE linking master party to new organization
+      const masterRole = await tx.role.create({
+        data: {
+          id: createId(),
+          partyId: userMasterOrg.partyId, // Master company's party
+          roleType: 'master',
+          organizationId: organization.id, // New organization being managed
+          status: 'active',
+          startDate: new Date(),
+          isActive: true
+        }
+      })
+
+      console.log('Created master role:', {
+        id: masterRole.id,
+        roleType: masterRole.roleType,
+        masterPartyId: masterRole.partyId,
+        managedOrgId: masterRole.organizationId,
+        status: masterRole.status,
+        isActive: masterRole.isActive
+      })
+
+      return organization
     })
 
-    console.log('Created organization:', {
-      id: organization.id,
-      name: organization.name,
-      partyId: organization.partyId
-    })
+    return NextResponse.json(result, { status: 201 })
 
-    // Determine initial role status based on completion
-    // Only DOT number is required for activation
-    const hasActivationRequirements = !!dotNumber
-    const initialRoleStatus = hasActivationRequirements ? 'active' : 'pending'
-
-    // Create master-organization relationship in Role table
-    // This establishes that the user's master company manages this organization
-    const role = await db.role.create({
-      data: {
-        id: createId(),
-        roleType: 'master',
-        partyId: userMasterOrg.partyId, // User's master company is the master
-        organizationId: organization.id, // The new organization
-        status: initialRoleStatus,
-        isActive: true
-      }
-    })
-
-    console.log('Created master role:', {
-      id: role.id,
-      roleType: role.roleType,
-      masterPartyId: role.partyId,
-      managedOrgId: role.organizationId,
-      status: role.status,
-      isActive: role.isActive
-    })
-
-    // TODO: Store EIN and permit numbers (add to schema when needed)
-    // TODO: Create role assignment for creator
-    // TODO: Check plan limits for master manager
-
-    return NextResponse.json(organization, { status: 201 })
   } catch (error) {
     console.error('Error creating organization:', error)
-    
-    // Handle unique constraint violations
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json(
-        { error: 'DOT number already exists' },
-        { status: 409 }
-      )
-    }
-
     return NextResponse.json(
       { error: 'Failed to create organization' },
       { status: 500 }

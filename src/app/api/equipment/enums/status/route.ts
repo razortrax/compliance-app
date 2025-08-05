@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/db'
+import { db } from '@/db'
 
 export async function GET(request: NextRequest) {
   try {
     // Get system defaults and org-specific options
     // For now, just return system defaults (organizationId: null)
-    const statuses = await prisma.equipmentStatus.findMany({
+    const statuses = await db.equipmentStatus.findMany({
       where: {
         isActive: true,
         organizationId: null // System defaults

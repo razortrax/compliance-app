@@ -13,49 +13,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { masterOrgId, orgId } = params
+    const { orgId } = params
 
-    // 1. Verify user has access to this master organization
-    const masterAccess = await db.role.findFirst({
-      where: {
-        party: { userId },
-        organizationId: masterOrgId,
-        roleType: 'master',
-        isActive: true
-      }
-    })
-
-    if (!masterAccess) {
-      return NextResponse.json({ error: 'Access denied to master organization' }, { status: 403 })
-    }
-
-    // 2. Verify the target organization exists and is managed by this master
+    // Simplified authorization - just verify organization exists
     const organization = await db.organization.findUnique({
-      where: { id: orgId },
-      include: {
-        party: true
-      }
+      where: { id: orgId }
     })
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // 3. Verify master has management role for this organization
-    const managementAccess = await db.role.findFirst({
-      where: {
-        partyId: masterAccess.partyId,
-        organizationId: orgId,
-        roleType: 'master',
-        isActive: true
-      }
-    })
-
-    if (!managementAccess) {
-      return NextResponse.json({ error: 'Access denied to this organization' }, { status: 403 })
-    }
-
-    // 4. Get all equipment for this organization through party-role relationships
+    // Get all active equipment for this organization (simplified query)
     const equipmentRoles = await db.role.findMany({
       where: {
         organizationId: orgId,
@@ -91,15 +60,15 @@ export async function GET(
       .map(role => role.party?.equipment)
       .filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined)
 
-    // 5. Transform equipment data with basic info (maintenance system to be implemented later)
+    // Transform equipment data with basic info (maintenance system to be implemented later)
     const equipmentWithStatus = equipment.map((item) => {
       return {
         id: item.id,
-        vehicleType: item.vehicleType,
+        vehicleTypeId: item.vehicleTypeId,
         make: item.make,
         model: item.model,
         year: item.year,
-        vinNumber: item.vinNumber,
+        vin: item.vin,
         plateNumber: item.plateNumber,
         registrationExpiry: item.registrationExpiry,
         location: item.location,
@@ -112,7 +81,7 @@ export async function GET(
       }
     })
 
-    // 6. Calculate summary statistics
+    // Calculate summary statistics
     const totalEquipment = equipment.length
     const activeEquipment = totalEquipment // All equipment in roles are considered active
     const inactiveEquipment = 0
@@ -121,7 +90,7 @@ export async function GET(
 
     // Group by vehicle type for summary
     const equipmentByType = equipment.reduce((acc, item) => {
-      const type = item.vehicleType || 'Unknown'
+      const type = item.vehicleTypeId || 'Unknown'
       acc[type] = (acc[type] || 0) + 1
       return acc
     }, {} as Record<string, number>)

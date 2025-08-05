@@ -66,7 +66,7 @@ export async function PUT(
       make, 
       model, 
       year, 
-      vinNumber, 
+      vin, 
       locationId, 
       organizationId 
     } = await req.json()
@@ -108,7 +108,7 @@ export async function PUT(
           make: make || null,
           model: model || null,
           year: year ? parseInt(year.toString()) : null,
-          vinNumber: vinNumber || null,
+          vin: vin || null,
           locationId: locationId === 'none' ? null : locationId,
         }
       })

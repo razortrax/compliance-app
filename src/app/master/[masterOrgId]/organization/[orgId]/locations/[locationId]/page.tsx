@@ -154,7 +154,7 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
           person.party?.role?.some((role: any) => 
             role.organizationId === params.id && 
             role.locationId === params.locationId &&
-            role.roleType === 'DRIVER'
+            role.roleType === 'driver'
           )
         )
         setDrivers(locationDrivers)
@@ -422,14 +422,8 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
     <AppLayout
       name={userRole?.roleType === 'location' ? location?.name : (masterOrg?.name || 'Master')}
       topNav={buildTopNav()}
-      showOrgSelector={userRole?.roleType !== 'location'}
       sidebarMenu="organization"
       className="p-6"
-      organizations={organizations}
-      currentOrgId={params.id}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
-      onOrganizationSelect={handleOrganizationSelect}
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Name row per pagesContentOutline: Location name + Edit/Reports buttons */}

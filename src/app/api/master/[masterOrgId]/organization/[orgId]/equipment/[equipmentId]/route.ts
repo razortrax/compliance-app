@@ -64,11 +64,11 @@ export async function GET(
       },
       equipment: {
         id: equipment.id,
-        vehicleType: equipment.vehicleType,
+        vehicleTypeId: equipment.vehicleTypeId,
         make: equipment.make,
         model: equipment.model,
         year: equipment.year,
-        vinNumber: equipment.vinNumber,
+        vin: equipment.vin,
         plateNumber: equipment.plateNumber,
         registrationExpiry: equipment.registrationExpiry?.toISOString(),
         party: {

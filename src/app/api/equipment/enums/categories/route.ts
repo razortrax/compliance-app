@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/db'
+import { db } from '@/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const categories = await prisma.equipmentCategory.findMany({
+    const categories = await db.equipmentCategory.findMany({
       where: {
         isActive: true,
         organizationId: null // System defaults

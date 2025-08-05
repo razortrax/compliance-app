@@ -72,6 +72,7 @@ export function OrganizationForm({
     initialData?.dotNumber === 'NO_DOT' ? 'no-dot' : 'dot'
   )
   const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -85,25 +86,32 @@ export function OrganizationForm({
   })
 
   const handleSubmit = async (data: FormData) => {
-    setIsLoading(true)
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('🚫 Form already submitting, ignoring duplicate submission')
+      return
+    }
+
+    setIsSubmitting(true)
+    
     try {
+      console.log('📝 Submitting organization form:', data)
       await onSubmit(data)
-      form.reset()
-      onOpenChange(false)
       toast({
         title: "Success",
-        description: `Organization ${isEditing ? 'updated' : 'created'} successfully.`,
+        description: "Organization saved successfully",
       })
+      form.reset()
+      onOpenChange(false)
     } catch (error) {
-      console.error("Failed to save organization:", error)
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+      console.error('Failed to save organization:', error)
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to save organization",
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 

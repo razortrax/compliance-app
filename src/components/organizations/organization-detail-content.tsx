@@ -23,7 +23,10 @@ import {
   FileText,
   Building,
   AlertCircle,
-  Package
+  Package,
+  Mail,
+  CheckCircle,
+  XCircle
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,15 +39,22 @@ import { StaffForm } from "@/components/staff/staff-form"
 import { SectionHeader } from "@/components/ui/section-header"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import type { Organization } from '@/components/layouts/app-layout'
+import { ActivityLog } from "@/components/ui/activity-log"
 
-interface ExtendedOrganization extends Organization {
+interface ExtendedOrganization {
+  id: string
+  name: string
+  dotNumber?: string | null
   einNumber?: string | null
   phone?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
   zipCode?: string | null
+  party?: {
+    id: string
+    status: string
+  }
 }
 
 interface Location {
@@ -103,6 +113,7 @@ export function OrganizationDetailContent({
   // Staff management state
   const [showStaffForm, setShowStaffForm] = useState(false)
   const [editingStaff, setEditingStaff] = useState<any>(null)
+  const [selectedStaff, setSelectedStaff] = useState<any>(null)
 
   const fetchOrganization = async () => {
     try {
@@ -567,64 +578,203 @@ export function OrganizationDetailContent({
 
           {/* Staff Tab */}
           <TabsContent value="staff" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Staff</CardTitle>
-                    <CardDescription>
-                      Manage organization staff and administrative roles
-                    </CardDescription>
+            <div className="h-[600px] flex border rounded-lg bg-white overflow-hidden">
+              {/* Left Sidebar - Staff List */}
+              <div className="w-80 border-r border-gray-200 overflow-y-auto">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Staff Members</h3>
+                    <Button onClick={() => setShowStaffForm(true)} size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Staff
+                    </Button>
                   </div>
-                  <Button onClick={() => setShowStaffForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Staff Member
-                  </Button>
+                  <p className="text-sm text-gray-600">
+                    {staff.length} staff member{staff.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {staff.length > 0 ? (
-                  <div className="space-y-4">
-                    {staff.map((member) => (
-                      <div
+
+                <div className="p-4 space-y-2">
+                  {staff.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500 text-sm">No staff members yet</p>
+                      <Button onClick={() => setShowStaffForm(true)} className="mt-4" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Staff Member
+                      </Button>
+                    </div>
+                  ) : (
+                    staff.map((member) => (
+                      <Card
                         key={member.id}
-                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        className={`cursor-pointer transition-colors hover:bg-gray-50 ${
+                          selectedStaff?.id === member.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                        }`}
+                        onClick={() => setSelectedStaff(member)}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="p-2 bg-green-100 rounded-lg">
-                              <Users className="h-5 w-5 text-green-600" />
-                            </div>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="font-semibold">
-                                {member.person?.firstName} {member.person?.lastName}
-                              </h3>
-                              <p className="text-sm text-gray-600">{member.position}</p>
-                              <p className="text-sm text-gray-500">{member.department}</p>
+                              <h4 className="font-medium text-gray-900">
+                                {member.party?.person?.firstName} {member.party?.person?.lastName}
+                              </h4>
+                              {member.position && (
+                                <p className="text-sm text-gray-600">{member.position}</p>
+                              )}
+                              {member.department && (
+                                <p className="text-xs text-gray-500">{member.department}</p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {member.canSignCAFs && (
+                                <Badge variant="default" className="text-xs">CAF Signer</Badge>
+                              )}
+                              {member.canApproveCAFs && (
+                                <Badge variant="secondary" className="text-xs">CAF Approver</Badge>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {member.canApproveCAFs && (
-                              <Badge variant="secondary" className="text-xs">CAF Approver</Badge>
-                            )}
-                            {member.canSignCAFs && (
-                              <Badge variant="secondary" className="text-xs">CAF Signer</Badge>
-                            )}
-                            <StatusBadge status={member.isActive ? 'active' : 'inactive'} />
-                          </div>
-                        </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Right Content - Staff Details */}
+              <div className="flex-1 overflow-y-auto">
+                {selectedStaff ? (
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <div className="text-sm text-gray-500 mb-1">{organization?.name}</div>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                          {selectedStaff.party?.person?.firstName} {selectedStaff.party?.person?.lastName}
+                        </h1>
                       </div>
-                    ))}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowStaffForm(true)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Staff Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Basic Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Employee ID</label>
+                            <p className="text-gray-900">{selectedStaff.employeeId || 'Not assigned'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Position</label>
+                            <p className="text-gray-900">{selectedStaff.position || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Department</label>
+                            <p className="text-gray-900">{selectedStaff.department || 'Not specified'}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Contact Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {selectedStaff.party?.person?.email && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Email</label>
+                              <div className="flex items-center mt-1">
+                                <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                                <p className="text-gray-900">{selectedStaff.party.person.email}</p>
+                              </div>
+                            </div>
+                          )}
+                          {selectedStaff.party?.person?.phone && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Phone</label>
+                              <div className="flex items-center mt-1">
+                                <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                                <p className="text-gray-900">{selectedStaff.party.person.phone}</p>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      <Card className="md:col-span-2">
+                        <CardHeader>
+                          <CardTitle className="text-lg">CAF Permissions</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center">
+                              {selectedStaff.canSignCAFs ? (
+                                <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-gray-300 mr-3" />
+                              )}
+                              <div>
+                                <p className="font-medium text-gray-900">Can Sign CAFs</p>
+                                <p className="text-sm text-gray-500">
+                                  {selectedStaff.canSignCAFs ? 'Authorized to sign corrective action forms' : 'Not authorized to sign CAFs'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center">
+                              {selectedStaff.canApproveCAFs ? (
+                                <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-gray-300 mr-3" />
+                              )}
+                              <div>
+                                <p className="font-medium text-gray-900">Can Approve CAFs</p>
+                                <p className="text-sm text-gray-500">
+                                  {selectedStaff.canApproveCAFs ? 'Authorized to approve corrective action forms' : 'Not authorized to approve CAFs'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Gold Standard Add Ons Section */}
+                      <Card className="md:col-span-2">
+                        <CardHeader>
+                          <CardTitle className="text-lg">Add Ons</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ActivityLog 
+                            personId={selectedStaff.party?.person?.id}
+                            title="Staff Add Ons"
+                            showAddButton={true}
+                          />
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
                 ) : (
-                  <EmptyState
-                    icon={Users}
-                    title="No staff members found"
-                    description="Add staff members to manage administrative roles and CAF workflows"
-                  />
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Users className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500">Select a staff member to view details</p>
+                    </div>
+                  </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Others Tab */}

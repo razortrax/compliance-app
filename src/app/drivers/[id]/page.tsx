@@ -199,30 +199,23 @@ export default function DriverDetailPage() {
   
   // Build standardized top navigation
   const topNav = buildStandardDriverNavigation(
-    { id: '', role: '' }, // User object - simplified for now
-    masterOrg,
-    organization,
-    undefined, // No location context in this view
-    'drivers'
+    masterOrg?.id || '',
+    organization?.id || '',
+    driverId,
+    role?.roleType // Assuming roleType is the user's role
   )
 
   const licenseStatus = getExpirationStatus(driver.licenseExpirationDate)
   const medicalStatus = getExpirationStatus(driver.medicalCertExpirationDate)
 
   return (
-    <AppLayout
+    <AppLayout 
       name={masterName}
       topNav={topNav}
-      showOrgSelector={true}
-      showDriverEquipmentSelector={true}
       sidebarMenu="driver"
       driverId={driverId}
-      className="p-6"
-      organizations={organizations}
+      masterOrgId={masterOrg?.id}
       currentOrgId={organization?.id}
-      isSheetOpen={isSheetOpen}
-      onSheetOpenChange={setIsSheetOpen}
-      onOrganizationSelect={handleOrganizationSelect}
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Organization and Driver Name Row */}

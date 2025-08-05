@@ -52,10 +52,11 @@ async function checkAllData() {
     
     console.log(`Found ${allEquipment.length} total equipment:`)
     allEquipment.forEach((eq, index) => {
-      console.log(`  ${index + 1}. ${eq.vehicleType} - ${eq.make} ${eq.model} (Status: ${eq.party?.status || 'Unknown'})`)
+      console.log(`  ${index + 1}. Vehicle Type: ${eq.vehicleTypeId || 'None'} - ${eq.make} ${eq.model} (Status: ${eq.party?.status || 'Unknown'})`)
       console.log(`     ID: ${eq.id}`)
       console.log(`     Party ID: ${eq.partyId}`)
       console.log(`     User ID: ${eq.party?.userId || 'None'}`)
+      console.log(`     Location ID: ${eq.locationId || 'None'}`)
     })
     
     // Check all roles
@@ -76,7 +77,7 @@ async function checkAllData() {
     allRoles.forEach((role, index) => {
       const entity = role.party?.person?.firstName + ' ' + role.party?.person?.lastName || 
                    role.party?.organization?.name || 
-                   role.party?.equipment?.vehicleType || 
+                   role.party?.equipment?.vehicleTypeId || 
                    'Unknown Entity'
       console.log(`  ${index + 1}. ${role.roleType} - ${entity} (Active: ${role.isActive})`)
       console.log(`     Role ID: ${role.id}`)
