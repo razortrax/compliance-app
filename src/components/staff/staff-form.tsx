@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface StaffFormProps {
   organizationId: string
+  locationId?: string // Optional location assignment
   staff?: any // Existing staff for editing
   onSuccess: () => void
   onCancel: () => void
@@ -21,6 +22,7 @@ interface FormData {
   position: string
   department: string
   supervisorId: string
+  hireDate: string
   canApproveCAFs: boolean
   canSignCAFs: boolean
 }
@@ -38,6 +40,7 @@ interface NewPersonData {
 
 export const StaffForm: React.FC<StaffFormProps> = ({
   organizationId,
+  locationId,
   staff,
   onSuccess,
   onCancel,
@@ -48,6 +51,7 @@ export const StaffForm: React.FC<StaffFormProps> = ({
     position: staff?.position || '',
     department: staff?.department || '',
     supervisorId: staff?.supervisorId || 'none',
+    hireDate: staff?.role?.startDate ? new Date(staff.role.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     canApproveCAFs: staff?.canApproveCAFs || false,
     canSignCAFs: staff?.canSignCAFs || false,
   })
@@ -168,8 +172,10 @@ export const StaffForm: React.FC<StaffFormProps> = ({
         position: formData.position || undefined,
         department: formData.department || undefined,
         supervisorId: formData.supervisorId === 'none' ? undefined : formData.supervisorId,
+        hireDate: formData.hireDate || undefined,
         canApproveCAFs: formData.canApproveCAFs,
         canSignCAFs: formData.canSignCAFs,
+        locationId, // Include locationId in the payload
       }
 
       const response = await fetch(url, {

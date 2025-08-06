@@ -537,7 +537,10 @@ export function AppSidebar({
         <Shield className="mr-3 h-4 w-4" />
         Annual Inspections
       </Link>
-      <Link href="#" className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100">
+      <Link 
+        href={equipmentId && currentOrgId && masterOrgId ? `/master/${masterOrgId}/organization/${currentOrgId}/equipment/${equipmentId}/maintenance-issues` : "#"} 
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
         <Settings className="mr-3 h-4 w-4" />
         Maintenance
       </Link>

@@ -264,6 +264,7 @@ model issue {
   registration_issue      registration_issue?
   annual_inspection_issue annual_inspection_issue?
   training_issue          training_issue?
+  maintenance_issue       maintenance_issue? // New comprehensive maintenance management
 }
 
 enum MvrType {
@@ -527,6 +528,187 @@ model training_issue {
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
+// COMPREHENSIVE MAINTENANCE MANAGEMENT SYSTEM
+// Handles routine maintenance, A&B schedules, corrective actions, and ELD integration ready
+
+model maintenance_issue {
+  id                String                  @id @default(cuid())
+  issueId           String                  @unique
+  
+  // Maintenance Classification & Source
+  maintenanceType   MaintenanceType         // A_SCHEDULE, B_SCHEDULE, CORRECTIVE, REPAIR, PREVENTIVE
+  sourceType        MaintenanceSourceType   // ANNUAL_INSPECTION, ROADSIDE_INSPECTION, ROUTINE, ACCIDENT, OTHER
+  sourceId          String?                 // ID of triggering inspection/accident if applicable
+  
+  // Scheduling & Intervals (A&B Schedule Integration)
+  dueDate           DateTime                // When maintenance is due
+  completedDate     DateTime?               // When maintenance was completed
+  scheduledDate     DateTime?               // When maintenance is scheduled
+  intervalDays      Int?                    // Days between maintenance (from A&B schedule)
+  intervalMiles     Int?                    // Miles between maintenance (from A&B schedule)
+  
+  // A&B Schedule Reference
+  abScheduleItemId  String?                 // Links to specific A&B schedule item
+  abScheduleCode    String?                 // Code from A&B schedule (e.g., "A1", "B3")
+  
+  // Current Metrics (ELD Integration Ready)
+  currentMileage    Int?                    // Current odometer reading
+  mileageAtDue      Int?                    // Mileage when maintenance is due
+  lastServiceDate   DateTime?               // Date of last service for this type
+  lastServiceMiles  Int?                    // Mileage at last service
+  
+  // Inspector/Technician Information
+  technicianName    String?                 // Service technician name
+  technicianCert    String?                 // Technician certification number
+  facilityName      String?                 // Service facility name
+  facilityAddress   String?                 // Service facility address
+  
+  // Maintenance Details & Results
+  workDescription   String                  // Description of work performed/needed
+  partsUsed         Json?                   // Array of parts used in service
+  laborHours        Float?                  // Labor hours for maintenance
+  
+  // Status & Results
+  status            MaintenanceStatus       @default(SCHEDULED) // SCHEDULED, IN_PROGRESS, COMPLETED, OVERDUE, CANCELLED
+  result            MaintenanceResult?      // COMPLETED, PARTIAL, FAILED, DEFERRED
+  priority          MaintenancePriority     @default(ROUTINE) // CRITICAL, HIGH, ROUTINE, PREVENTIVE
+  
+  // Compliance & Documentation
+  dotCompliant      Boolean                 @default(true) // Whether maintenance meets DOT requirements
+  warrantyWork      Boolean                 @default(false) // Whether covered under warranty
+  costEstimate      Float?                  // Estimated cost
+  actualCost        Float?                  // Actual cost
+  
+  // Defects & Corrective Actions
+  defectsFound      Json?                   // Array of defects discovered
+  correctiveActions Json?                   // Array of corrective actions taken
+  followUpRequired  Boolean                 @default(false) // Whether follow-up maintenance needed
+  followUpDate      DateTime?               // When follow-up is due
+  
+  // Additional Information
+  notes             String?                 // Additional notes
+  reminderSent      Boolean                 @default(false) // Whether reminder was sent
+  reminderDate      DateTime?               // When reminder was sent
+  
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  
+  // Relations
+  issue             issue                   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  abScheduleItem    equipment_ab_schedule?  @relation(fields: [abScheduleItemId], references: [id])
+}
+
+// A&B MAINTENANCE SCHEDULE TEMPLATES
+// Defines standard maintenance intervals for Power Units and Trailers
+// Organizations can customize these in preferences
+
+model equipment_ab_schedule {
+  id                String                  @id @default(cuid())
+  organizationId    String?                 // NULL for default templates, org-specific for customized
+  
+  // Equipment Classification
+  equipmentCategory String                  // "POWER" or "TRAILER" 
+  vehicleTypeId     String?                 // Specific vehicle type (optional)
+  
+  // Schedule Classification
+  scheduleType      String                  // "A" or "B"
+  itemCode          String                  // "A1", "A2", "B1", etc.
+  itemDescription   String                  // Description of maintenance task
+  
+  // Interval Settings (Dual: Time AND Mileage)
+  intervalDays      Int?                    // Days between service (e.g., 90, 180)
+  intervalMiles     Int?                    // Miles between service (e.g., 25000, 50000)
+  intervalType      MaintenanceInterval     // TIME_BASED, MILEAGE_BASED, DUAL_TRIGGER
+  
+  // Maintenance Details
+  category          String                  // "ENGINE", "TRANSMISSION", "BRAKES", "TIRES", etc.
+  component         String                  // Specific component (e.g., "Oil Filter", "Brake Pads")
+  taskType          String                  // "INSPECT", "REPLACE", "SERVICE", "LUBRICATE"
+  estimatedHours    Float?                  // Estimated labor hours
+  estimatedCost     Float?                  // Estimated cost
+  
+  // Compliance & Priority
+  dotRequired       Boolean                 @default(false) // DOT mandated maintenance
+  priority          MaintenancePriority     @default(ROUTINE)
+  safetyRelated     Boolean                 @default(false) // Safety-critical component
+  
+  // Ordering & Status
+  sortOrder         Int                     @default(0) // For display ordering
+  isActive          Boolean                 @default(true)
+  isDefault         Boolean                 @default(false) // System default vs custom
+  
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  
+  // Relations
+  organization      organization?           @relation(fields: [organizationId], references: [id])
+  maintenanceIssues maintenance_issue[]     // Maintenance issues generated from this schedule
+  
+  @@index([organizationId, equipmentCategory, scheduleType])
+  @@index([equipmentCategory, isDefault, isActive])
+}
+
+// MAINTENANCE ENUMS
+
+enum MaintenanceType {
+  A_SCHEDULE        // A Schedule maintenance (frequent, basic)
+  B_SCHEDULE        // B Schedule maintenance (less frequent, comprehensive)
+  CORRECTIVE        // Corrective maintenance from inspections
+  REPAIR            // Breakdown/failure repair
+  PREVENTIVE        // Additional preventive maintenance
+  WARRANTY          // Warranty work
+  RECALL            // Manufacturer recall
+  UPGRADE           // Equipment upgrades/modifications
+}
+
+enum MaintenanceSourceType {
+  ANNUAL_INSPECTION    // Triggered by annual inspection defects
+  ROADSIDE_INSPECTION  // Triggered by roadside inspection violations
+  ROUTINE             // Regular A&B schedule maintenance
+  ACCIDENT            // Post-accident repairs
+  BREAKDOWN           // Equipment failure
+  DRIVER_REPORT       // Driver-reported issues (DVIR)
+  PREVENTIVE          // Proactive maintenance
+  WARRANTY            // Warranty-related work
+  RECALL              // Manufacturer recall
+  OTHER               // Other sources
+}
+
+enum MaintenanceStatus {
+  SCHEDULED           // Maintenance is scheduled
+  OVERDUE             // Maintenance is past due
+  IN_PROGRESS         // Currently being performed
+  COMPLETED           // Successfully completed
+  PARTIAL             // Partially completed (needs follow-up)
+  DEFERRED            // Deferred to later date
+  CANCELLED           // Cancelled/not needed
+  ON_HOLD             // Temporarily on hold
+}
+
+enum MaintenanceResult {
+  COMPLETED           // All work completed successfully
+  PARTIAL             // Some work completed, more needed
+  FAILED              // Maintenance failed or couldn't be completed
+  DEFERRED            // Deferred to later date
+  NO_WORK_NEEDED      // Inspection showed no work needed
+  REFERRED            // Referred to specialist/other facility
+}
+
+enum MaintenancePriority {
+  CRITICAL            // Critical/safety issues - immediate attention
+  HIGH                // High priority - schedule ASAP
+  ROUTINE             // Standard routine maintenance
+  PREVENTIVE          // Preventive/proactive maintenance
+  OPTIONAL            // Optional improvements/upgrades
+}
+
+enum MaintenanceInterval {
+  TIME_BASED          // Based on calendar time only
+  MILEAGE_BASED       // Based on mileage/usage only
+  DUAL_TRIGGER        // Whichever comes first (time OR mileage)
+  DUAL_REQUIRED       // Both conditions must be met
+}
+
 // ENHANCED ACTIVITY LOG SYSTEM - Multi-tag, Multi-entity support
 model activity_log {
   id String @id @default(cuid())
@@ -661,6 +843,9 @@ model organization {
   equipmentColors         EquipmentColor[]
   equipmentOwnershipTypes EquipmentOwnershipType[]
   equipmentCategories     EquipmentCategory[]
+  
+  // A&B Maintenance Schedule management - organizations can customize maintenance intervals
+  abScheduleItems         equipment_ab_schedule[] // Custom A&B maintenance schedules
 
   party party @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }

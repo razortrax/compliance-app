@@ -29,6 +29,32 @@ cat DEVELOPMENT_GUIDE.md
 
 ## 🛠 Recent Major Improvements
 
+### RINS (Roadside Inspections) System Fixes (January 2025)
+**Status**: ✅ Complete and Production Ready
+
+**Key Improvements:**
+- **Violation Type Mapping**: Fixed incorrect violation type assignments using intelligent code-based mapping
+- **Navigation Consistency**: Master users now see correct "Master" button in top navigation  
+- **UI/UX Cleanup**: Removed confusing X button from detail pages
+- **Database Migration**: Updated all existing violations with correct types
+
+**Technical Implementation:**
+- **Smart Violation Classification**: 
+  - 391.x codes → Driver Qualification
+  - 392.x codes → Driver Performance  
+  - 393.x/396.x codes → Equipment
+  - 390.x codes → Company Operations
+- **API Enhancement**: `/api/violations/search` now includes intelligent type mapping with severity detection
+- **Database Cleanup**: Migration script corrected 2 existing violations with wrong types
+- **Navigation Fix**: Changed hardcoded 'driver' role to 'master' in master organization pages
+
+**FMCSA Integration:**
+- Seeded 2,021+ violation codes from official FMCSA data
+- Real-time violation search with proper categorization
+- Enhanced violation cards showing inspector comments and type badges
+
+**Next Phase**: Ready for CAF (Corrective Action Form) workflow implementation
+
 ### Equipment Management System (January 2025)
 **Status**: ✅ Complete and Production Ready
 

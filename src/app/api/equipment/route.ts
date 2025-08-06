@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
 
-// GET /api/equipment - List all equipment for current user's organizations
+// GET /api/equipment - List equipment for specific organization or all user's organizations
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await auth()
@@ -11,51 +11,74 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get ALL organizations that the user has access to
-    const allOrgIds: string[] = []
+    // Check if a specific organizationId is requested
+    const { searchParams } = new URL(req.url)
+    const requestedOrgId = searchParams.get('organizationId')
 
-    // 1. Organizations the user directly owns/created
-    const ownedOrgs = await db.organization.findMany({
-      where: { party: { userId } },
-      select: { id: true }
-    })
-    allOrgIds.push(...ownedOrgs.map(org => org.id))
+    let orgIds: string[] = []
 
-    // 2. Organizations the user manages through consultant roles
-    const consultantOrgs = await db.organization.findMany({
-      where: {
-        party: {
-          role: {
-            some: {
-              party: { userId },
-              roleType: 'CONSULTANT_OF',
-              isActive: true
-            }
-          }
+    if (requestedOrgId) {
+      // If specific organizationId is requested, verify user has access and use only that org
+      const hasAccess = await db.role.findFirst({
+        where: {
+          party: { userId },
+          organizationId: requestedOrgId,
+          isActive: true
         }
-      },
-      select: { id: true }
-    })
-    allOrgIds.push(...consultantOrgs.map(org => org.id))
+      })
 
-    // 3. Get ALL organizations in the system (since master users can manage any org)
-    // Find user's master organization first
-    const userMasterOrg = await db.organization.findFirst({
-      where: { party: { userId } }
-    })
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Access denied to this organization' }, { status: 403 })
+      }
 
-    if (userMasterOrg) {
-      // If user has a master org, they can access ALL organizations
-      const allOrgs = await db.organization.findMany({
+      orgIds = [requestedOrgId]
+    } else {
+      // No specific org requested - get ALL organizations that the user has access to
+      const allOrgIds: string[] = []
+
+      // 1. Organizations the user directly owns/created
+      const ownedOrgs = await db.organization.findMany({
+        where: { party: { userId } },
         select: { id: true }
       })
-      allOrgIds.push(...allOrgs.map(org => org.id))
-    }
+      allOrgIds.push(...ownedOrgs.map(org => org.id))
 
-    // Remove duplicates
-    const orgIds = Array.from(new Set(allOrgIds))
+      // 2. Organizations the user manages through consultant roles
+      const consultantOrgs = await db.organization.findMany({
+        where: {
+          party: {
+            role: {
+              some: {
+                party: { userId },
+                roleType: 'CONSULTANT_OF',
+                isActive: true
+              }
+            }
+          }
+        },
+        select: { id: true }
+      })
+      allOrgIds.push(...consultantOrgs.map(org => org.id))
+
+      // 3. Get ALL organizations in the system (since master users can manage any org)
+      // Find user's master organization first
+      const userMasterOrg = await db.organization.findFirst({
+        where: { party: { userId } }
+      })
+
+      if (userMasterOrg) {
+        // If user has a master org, they can access ALL organizations
+        const allOrgs = await db.organization.findMany({
+          select: { id: true }
+        })
+        allOrgIds.push(...allOrgs.map(org => org.id))
+      }
+
+      // Remove duplicates
+      orgIds = Array.from(new Set(allOrgIds))
+    }
     
-    // Get all equipment assigned to these organizations
+    // Get equipment assigned to the determined organizations
     const equipment = await db.equipment.findMany({
       where: {
         party: {

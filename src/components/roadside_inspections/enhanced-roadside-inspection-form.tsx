@@ -210,19 +210,22 @@ export default function EnhancedRoadsideInspectionForm({
     const searchViolations = async () => {
       if (violationSearch.length >= 2) {
         try {
+          console.log('🔍 Searching violations for:', violationSearch)
           const response = await fetch(`/api/violations/search?q=${encodeURIComponent(violationSearch)}`)
           if (response.ok) {
             const violations = await response.json()
+            console.log('✅ Found violations:', violations)
             setAvailableViolations(violations)
           } else {
-            console.error('Failed to search violations')
+            console.error('❌ Failed to search violations, status:', response.status)
             setAvailableViolations([])
           }
         } catch (error) {
-          console.error('Error searching violations:', error)
+          console.error('❌ Error searching violations:', error)
           setAvailableViolations([])
         }
       } else {
+        console.log('🚫 Search too short, clearing violations')
         setAvailableViolations([])
       }
     }
@@ -709,6 +712,7 @@ export default function EnhancedRoadsideInspectionForm({
               
               {availableViolations.length > 0 && (
                 <div className="space-y-2">
+                  <div className="text-sm text-gray-500">Found {availableViolations.length} violations:</div>
                   {availableViolations.map((violation) => (
                     <div
                       key={violation.code}
@@ -725,6 +729,10 @@ export default function EnhancedRoadsideInspectionForm({
                     </div>
                   ))}
                 </div>
+              )}
+
+              {violationSearch.length >= 2 && availableViolations.length === 0 && (
+                <div className="text-sm text-gray-500">No violations found for "{violationSearch}"</div>
               )}
 
               {/* Selected Violations */}
@@ -760,6 +768,57 @@ export default function EnhancedRoadsideInspectionForm({
                               rows={2}
                             />
                           </div>
+
+                          {/* Smart Equipment Selector */}
+                          {(() => {
+                            const isEquipmentRelated = violation.violationType === 'Equipment'
+                            const equipmentCount = formData.selectedEquipmentIds.length
+                            const shouldShowSelector = isEquipmentRelated && equipmentCount > 1
+                            
+                            // Auto-assign equipment if only one exists and it's equipment-related
+                            if (isEquipmentRelated && equipmentCount === 1 && !violation.unitNumber) {
+                              updateViolation(violation.id, 'unitNumber', formData.selectedEquipmentIds[0])
+                            }
+
+                            return shouldShowSelector ? (
+                              <div>
+                                <Label htmlFor={`equipment-${violation.id}`}>
+                                  Link to Equipment <span className="text-red-500">*</span>
+                                </Label>
+                                <Select
+                                  value={violation.unitNumber?.toString() || ''}
+                                  onValueChange={(value) => updateViolation(violation.id, 'unitNumber', parseInt(value))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select equipment unit" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {formData.selectedEquipmentIds.map((equipmentId) => {
+                                      const equipment = availableEquipment.find(e => e.id === equipmentId);
+                                      return (
+                                        <SelectItem key={equipmentId} value={equipmentId}>
+                                          Unit {equipment?.unitNumber || 'N/A'} - {equipment?.vehicleType || 'Unknown'}
+                                          {(equipment?.make || equipment?.model) && 
+                                            ` (${[equipment.make, equipment.model].filter(Boolean).join(' ')})`
+                                          }
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Equipment violation must be linked to a specific unit
+                                </p>
+                              </div>
+                            ) : isEquipmentRelated && equipmentCount === 1 ? (
+                              <div>
+                                <Label>Linked Equipment</Label>
+                                <div className="text-sm text-green-700 bg-green-50 p-2 rounded">
+                                  ✓ Auto-linked to Unit {formData.selectedEquipmentIds[0] ? availableEquipment.find(e => e.id === formData.selectedEquipmentIds[0])?.unitNumber : 'N/A'} - {formData.selectedEquipmentIds[0] ? availableEquipment.find(e => e.id === formData.selectedEquipmentIds[0])?.vehicleType : 'Unknown'}
+                                </div>
+                              </div>
+                            ) : null
+                          })()}
                           
                           <div className="flex items-center space-x-2">
                             <Checkbox

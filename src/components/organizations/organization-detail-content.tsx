@@ -115,6 +115,10 @@ export function OrganizationDetailContent({
   const [editingStaff, setEditingStaff] = useState<any>(null)
   const [selectedStaff, setSelectedStaff] = useState<any>(null)
 
+  // Location management state
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
+  const [selectedLocationTab, setSelectedLocationTab] = useState('details')
+
   const fetchOrganization = async () => {
     try {
       setIsLoading(true)
@@ -142,14 +146,8 @@ export function OrganizationDetailContent({
 
   const fetchKPIs = async (orgId: string) => {
     try {
-      // You would implement actual KPI fetching here
-      setKpis({
-        driversCount: drivers.length,
-        equipmentCount: equipment.length,
-        expiringIssues: 0,
-        roadsideInspections: 0,
-        accidents: 0
-      })
+      // KPIs will be updated by fetchDrivers and fetchEquipment
+      // This function is kept for potential future direct API calls
     } catch (error) {
       console.error('Error fetching KPIs:', error)
     }
@@ -184,7 +182,7 @@ export function OrganizationDetailContent({
 
   const fetchEquipment = async () => {
     try {
-      const response = await fetch('/api/equipment')
+      const response = await fetch(`/api/equipment?organizationId=${organizationId}`)
       if (response.ok) {
         const data = await response.json()
         setEquipment(data)
@@ -196,7 +194,7 @@ export function OrganizationDetailContent({
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch('/api/persons')
+      const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=driver`)
       if (response.ok) {
         const data = await response.json()
         setDrivers(data)
@@ -205,6 +203,17 @@ export function OrganizationDetailContent({
       console.error('Error fetching drivers:', error)
     }
   }
+
+  // Update KPIs whenever drivers or equipment arrays change
+  useEffect(() => {
+    setKpis({
+      driversCount: drivers.length,
+      equipmentCount: equipment.length,
+      expiringIssues: 0,
+      roadsideInspections: 0,
+      accidents: 0
+    })
+  }, [drivers.length, equipment.length])
 
   useEffect(() => {
     fetchOrganization()
@@ -359,9 +368,15 @@ export function OrganizationDetailContent({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
-            <TabsTrigger value="others">Others</TabsTrigger>
+            <TabsTrigger value="locations">
+              Locations {locations.length > 0 && <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">{locations.length}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="staff">
+              Staff {staff.length > 0 && <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">{staff.length}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="others">
+              Others <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">0</span>
+            </TabsTrigger>
             <TabsTrigger value="stuff">Stuff</TabsTrigger>
           </TabsList>
 
@@ -570,6 +585,10 @@ export function OrganizationDetailContent({
                     icon={MapPin}
                     title="No locations found"
                     description="Add your first location to get started"
+                    action={{
+                      label: "Add Location",
+                      onClick: () => setShowLocationForm(true)
+                    }}
                   />
                 )}
               </CardContent>

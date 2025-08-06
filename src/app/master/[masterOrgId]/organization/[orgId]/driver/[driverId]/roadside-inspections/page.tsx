@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
-import { buildStandardDriverNavigation } from '@/lib/utils'
+import { buildStandardNavigation } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { ActivityLog } from '@/components/ui/activity-log'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
-  FileText, Plus, AlertCircle, CheckCircle, Clock, Shield, Truck, AlertTriangle
+  FileText, Plus, AlertCircle, CheckCircle, Clock, Shield, Truck, AlertTriangle, Edit, Users, Building2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import EnhancedRoadsideInspectionForm from '@/components/roadside_inspections/enhanced-roadside-inspection-form'
@@ -306,10 +306,10 @@ export default function MasterDriverRoadsideInspectionsPage() {
   }
 
   // Build standard navigation - Gold Standard
-  const topNav = buildStandardDriverNavigation(
-    driverId || '',
+  const topNav = buildStandardNavigation(
     masterOrgId || '',
-    'drivers'
+    orgId || '',
+    'master'
   )
 
   // Filter inspections: prioritize recent inspections
@@ -468,11 +468,14 @@ export default function MasterDriverRoadsideInspectionsPage() {
                       <div className="flex items-center gap-2">
                         {getInspectionStatus(selectedInspection).badge}
                         <Button 
-                          variant="ghost" 
+                          variant="outline" 
                           size="sm"
-                          onClick={() => setSelectedInspection(null)}
+                          onClick={() => {
+                            setIsEditDialogOpen(true)
+                          }}
                         >
-                          ✕
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
                         </Button>
                       </div>
                     </div>
@@ -489,30 +492,103 @@ export default function MasterDriverRoadsideInspectionsPage() {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Inspector:</span>
-                          <p className="text-gray-600 mt-1">{selectedInspection.officerName}</p>
+                      {/* Comprehensive Inspection Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Inspector Information */}
+                        <div className="space-y-3">
+                          <h5 className="font-medium text-gray-700 border-b pb-1">Inspector Information</h5>
+                          
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Inspector Name</span>
+                            <p className="text-sm text-gray-900 mt-1">{selectedInspection.officerName}</p>
+                          </div>
+                          
+                          {selectedInspection.agencyName && (
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Agency</span>
+                              <p className="text-sm text-gray-900 mt-1">{selectedInspection.agencyName}</p>
+                            </div>
+                          )}
+                          
+                          {selectedInspection.officerBadge && (
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Badge Number</span>
+                              <p className="text-sm text-gray-900 mt-1">{selectedInspection.officerBadge}</p>
+                            </div>
+                          )}
                         </div>
-                        
-                        <div>
-                          <span className="font-medium text-gray-700">Location:</span>
-                          <p className="text-gray-600 mt-1">
-                            {[
-                              selectedInspection.locationAddress,
-                              selectedInspection.locationCity,
-                              selectedInspection.locationState
-                            ].filter(Boolean).join(', ') || 'Not specified'}
-                          </p>
+
+                        {/* Report Information */}
+                        <div className="space-y-3">
+                          <h5 className="font-medium text-gray-700 border-b pb-1">Report Information</h5>
+                          
+                          {selectedInspection.reportNumber ? (
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Report Number</span>
+                              <p className="text-sm text-gray-900 mt-1">{selectedInspection.reportNumber}</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Report Number</span>
+                              <p className="text-sm text-gray-500 mt-1">Not provided</p>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Inspection Date & Time</span>
+                            <p className="text-sm text-gray-900 mt-1">
+                              {format(new Date(selectedInspection.incidentDate), 'MMM d, yyyy')}
+                              {selectedInspection.incidentTime && ` at ${selectedInspection.incidentTime}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Location Information */}
+                        <div className="space-y-3">
+                          <h5 className="font-medium text-gray-700 border-b pb-1">Inspection Location</h5>
+                          
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Address</span>
+                            <p className="text-sm text-gray-900 mt-1">
+                              {selectedInspection.locationAddress || 'Not specified'}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">City, State, ZIP</span>
+                            <p className="text-sm text-gray-900 mt-1">
+                              {[
+                                selectedInspection.locationCity,
+                                selectedInspection.locationState,
+                                selectedInspection.locationZip
+                              ].filter(Boolean).join(', ') || 'Not specified'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Inspection Summary Stats */}
+                        <div className="space-y-3">
+                          <h5 className="font-medium text-gray-700 border-b pb-1">Inspection Summary</h5>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="text-center p-2 bg-blue-50 rounded">
+                              <div className="text-lg font-bold text-blue-600">{selectedInspection.equipment.length}</div>
+                              <div className="text-xs text-blue-600">Equipment</div>
+                            </div>
+                            <div className="text-center p-2 bg-red-50 rounded">
+                              <div className="text-lg font-bold text-red-600">{selectedInspection.violations.length}</div>
+                              <div className="text-xs text-red-600">Violations</div>
+                            </div>
+                          </div>
+                          
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="text-lg font-bold text-gray-600">
+                              {selectedInspection.violations.filter(v => v.outOfService).length}
+                            </div>
+                            <div className="text-xs text-gray-600">Out of Service</div>
+                          </div>
                         </div>
                       </div>
-
-                      {selectedInspection.reportNumber && (
-                        <div>
-                          <span className="font-medium text-gray-700">Report Number:</span>
-                          <p className="text-gray-600">{selectedInspection.reportNumber}</p>
-                        </div>
-                      )}
                     </div>
 
                     {/* Equipment Involved */}
@@ -541,25 +617,85 @@ export default function MasterDriverRoadsideInspectionsPage() {
                     {/* Violations */}
                     {selectedInspection.violations.length > 0 && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-3">Violations Found</h4>
-                        <div className="space-y-2">
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Violations Found ({selectedInspection.violations.length})
+                        </h4>
+                        <div className="space-y-3">
                           {selectedInspection.violations.map((violation) => (
-                            <div key={violation.id} className="bg-gray-50 p-3 rounded border">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="font-medium">{violation.violationCode}</div>
-                                <div className="flex gap-1">
+                            <div key={violation.id} className="bg-white border rounded-lg p-4 shadow-sm">
+                              {/* Violation Header */}
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-gray-900">{violation.violationCode}</span>
+                                    {violation.unitNumber && (
+                                      <span className="text-sm text-gray-500">• Unit {violation.unitNumber}</span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-700 leading-relaxed">{violation.description}</p>
+                                </div>
+                                
+                                <div className="flex flex-col gap-1 ml-4">
                                   {violation.outOfService && (
-                                    <Badge variant="destructive">OOS</Badge>
+                                    <Badge variant="destructive" className="text-xs">OUT OF SERVICE</Badge>
                                   )}
                                   {violation.severity && (
-                                    <Badge variant="secondary">{violation.severity}</Badge>
+                                    <Badge variant="secondary" className="text-xs">{violation.severity}</Badge>
                                   )}
                                 </div>
                               </div>
-                              <div className="text-sm text-gray-600 mb-1">{violation.description}</div>
+
+                              {/* Violation Type Tags */}
+                              <div className="flex items-center gap-2 mb-3">
+                                {violation.violationType === 'Driver_Qualification' && (
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                    <Users className="h-3 w-3 mr-1" />
+                                    Driver Qualification
+                                  </Badge>
+                                )}
+                                {violation.violationType === 'Driver_Performance' && (
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                    <Users className="h-3 w-3 mr-1" />
+                                    Driver Performance
+                                  </Badge>
+                                )}
+                                {violation.violationType === 'Equipment' && (
+                                  <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                                    <Truck className="h-3 w-3 mr-1" />
+                                    Equipment
+                                  </Badge>
+                                )}
+                                {violation.violationType === 'Company' && (
+                                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                    <Building2 className="h-3 w-3 mr-1" />
+                                    Company
+                                  </Badge>
+                                )}
+                                {violation.violationType === 'Other' && (
+                                  <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                                    Other
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {/* Inspector Comments */}
                               {violation.inspectorComments && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  Inspector: {violation.inspectorComments}
+                                <div className="border-t pt-3 mt-3">
+                                  <div className="flex items-start gap-2">
+                                    <Shield className="h-4 w-4 text-gray-400 mt-0.5" />
+                                    <div className="flex-1">
+                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Inspector Comments</span>
+                                      <p className="text-sm text-gray-700 mt-1 leading-relaxed">{violation.inspectorComments}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Citation Number if available */}
+                              {violation.citationNumber && (
+                                <div className="border-t pt-3 mt-3">
+                                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Citation Number</span>
+                                  <p className="text-sm text-gray-700 mt-1">{violation.citationNumber}</p>
                                 </div>
                               )}
                             </div>
@@ -594,6 +730,31 @@ export default function MasterDriverRoadsideInspectionsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Edit Inspection Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Roadside Inspection</DialogTitle>
+          </DialogHeader>
+          <div className="px-1">
+            {selectedInspection && (
+              <EnhancedRoadsideInspectionForm
+                masterOrgId={masterOrgId}
+                organizationId={orgId}
+                driverId={driverId}
+                editingInspection={selectedInspection}
+                onSuccess={() => {
+                  setIsEditDialogOpen(false)
+                  // Refresh the data to show updated inspection
+                  fetchData()
+                }}
+                onCancel={() => setIsEditDialogOpen(false)}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   )
 } 

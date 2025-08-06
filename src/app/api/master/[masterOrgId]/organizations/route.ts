@@ -116,8 +116,14 @@ export async function GET(
           }
         })
 
-        // Get equipment count (placeholder - implement when equipment system is ready)
-        const equipmentCount = 0
+        // Get equipment count for this org
+        const equipmentCount = await db.role.count({
+          where: {
+            organizationId: org.id,
+            roleType: 'equipment',
+            isActive: true
+          }
+        })
 
         // Get expiring issues count (placeholder - implement when issue aggregation is ready)
         const expiringIssues = 0

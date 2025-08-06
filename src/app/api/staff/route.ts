@@ -4,11 +4,15 @@ import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
 
 interface StaffData {
-  partyId: string
+  partyId?: string
+  organizationId: string
+  locationId?: string
+  newPerson?: any
   employeeId?: string
   position?: string
   department?: string
   supervisorId?: string
+  hireDate?: Date
   canApproveCAFs?: boolean
   canSignCAFs?: boolean
 }
@@ -22,24 +26,29 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const organizationId = searchParams.get('organizationId')
+    const locationId = searchParams.get('locationId')
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 })
     }
 
-    // Get all staff for the organization
-    const staff = await db.staff.findMany({
-      where: {
-        party: {
-          role: {
-            some: {
-              organizationId: organizationId,
-              isActive: true
-            }
+    // Build where clause for staff filtering
+    const whereClause = {
+      party: {
+        role: {
+          some: {
+            organizationId: organizationId,
+            ...(locationId && { locationId }), // Add locationId filter if provided
+            isActive: true
           }
-        },
-        isActive: true
+        }
       },
+      isActive: true
+    }
+
+    // Get all staff for the organization (and optionally location)
+    const staff = await db.staff.findMany({
+      where: whereClause,
       include: {
         party: {
           include: {
@@ -93,13 +102,48 @@ export async function POST(request: NextRequest) {
 
     const data: StaffData = await request.json()
 
-    if (!data.partyId) {
-      return NextResponse.json({ error: 'Party ID is required' }, { status: 400 })
+    if (!data.organizationId) {
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 })
     }
 
-    // Verify the party exists and user has access
+    let partyId = data.partyId
+
+    // If creating a new person, create person and party first
+    if (!partyId && data.newPerson) {
+      const newPersonData = data.newPerson
+      
+      // Create person and party
+      const person = await db.person.create({
+        data: {
+          id: createId(),
+          firstName: newPersonData.firstName,
+          lastName: newPersonData.lastName,
+          email: newPersonData.email,
+          phone: newPersonData.phone,
+          address: newPersonData.address,
+          city: newPersonData.city,
+          state: newPersonData.state,
+          zipCode: newPersonData.zipCode,
+        }
+      })
+
+      const party = await db.party.create({
+        data: {
+          id: createId(),
+          personId: person.id,
+        }
+      })
+
+      partyId = party.id
+    }
+
+    if (!partyId) {
+      return NextResponse.json({ error: 'Party ID or new person data is required' }, { status: 400 })
+    }
+
+    // Verify the party exists
     const party = await db.party.findUnique({
-      where: { id: data.partyId },
+      where: { id: partyId },
       include: {
         person: true,
         role: {
@@ -114,30 +158,55 @@ export async function POST(request: NextRequest) {
 
     // Check if staff record already exists
     const existingStaff = await db.staff.findUnique({
-      where: { partyId: data.partyId }
+      where: { partyId }
     })
 
     if (existingStaff) {
       return NextResponse.json({ error: 'Staff record already exists for this party' }, { status: 400 })
     }
 
-    // Create staff record
-    const staff = await db.staff.create({
-      data: {
-        id: createId(),
-        partyId: data.partyId,
-        employeeId: data.employeeId,
-        position: data.position,
-        department: data.department,
-        supervisorId: data.supervisorId,
-        canApproveCAFs: data.canApproveCAFs || false,
-        canSignCAFs: data.canSignCAFs || false,
-      },
+    // Use a transaction to create both staff record and role
+    const result = await db.$transaction(async (tx) => {
+      // Create staff record
+      const staff = await tx.staff.create({
+        data: {
+          id: createId(),
+          partyId,
+          employeeId: data.employeeId,
+          position: data.position,
+          department: data.department,
+          supervisorId: data.supervisorId,
+          canApproveCAFs: data.canApproveCAFs || false,
+          canSignCAFs: data.canSignCAFs || false,
+        }
+      })
+
+      // Create role linking staff to organization (and optionally location)
+      await tx.role.create({
+        data: {
+          id: createId(),
+          partyId,
+          organizationId: data.organizationId,
+          locationId: data.locationId, // Can be null for organization-level staff
+          roleType: 'staff',
+          startDate: data.hireDate || new Date(),
+          isActive: true,
+        }
+      })
+
+      return staff
+    })
+
+    // Fetch the complete staff record with includes
+    const staff = await db.staff.findUnique({
+      where: { id: result.id },
       include: {
         party: {
           include: {
             person: true,
-            role: true
+            role: {
+              where: { isActive: true }
+            }
           }
         },
         supervisor: {

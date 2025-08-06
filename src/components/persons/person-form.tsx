@@ -31,6 +31,7 @@ interface Person {
       organizationId: string
       locationId?: string | null
       location?: { id: string; name: string } | null
+      startDate?: string | null
     }>
   }
 }
@@ -60,7 +61,8 @@ export function PersonForm({ organizationId, person, onSuccess, onCancel, onDeac
     firstName: person?.firstName || '',
     lastName: person?.lastName || '',
     roleType: 'driver', // Fixed: lowercase to match API expectations
-    locationId: person?.party?.role?.[0]?.locationId || 'none'
+    locationId: person?.party?.role?.[0]?.locationId || 'none',
+    hireDate: person?.party?.role?.[0]?.startDate ? new Date(person.party.role[0].startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
   })
 
   // Load locations for this organization
