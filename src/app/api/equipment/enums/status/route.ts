@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
+import { captureAPIError } from '@/lib/sentry-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,6 +26,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(statuses)
   } catch (error) {
     console.error('Error fetching equipment status options:', error)
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/equipment/enums/status',
+      method: 'GET',
+    })
     return NextResponse.json({ error: 'Failed to fetch status options' }, { status: 500 })
   }
 } 
