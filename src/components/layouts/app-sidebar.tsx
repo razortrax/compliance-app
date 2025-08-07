@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
   SheetContent,
@@ -27,10 +25,7 @@ import {
   GraduationCap,
   Stethoscope,
   Plus,
-  BookOpen,
-  CreditCard,
   Shield,
-  ClipboardCheck,
   FileText
 } from 'lucide-react'
 import Link from 'next/link'
