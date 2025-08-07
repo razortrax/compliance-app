@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
-import { useUser } from '@clerk/nextjs'
 import { useParams, usePathname } from 'next/navigation'
 import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
@@ -84,7 +83,6 @@ export function AppLayout({
   currentOrgId,
   className = ""
 }: AppLayoutProps) {
-  const { user } = useUser()
   
   // Get context automatically from URL (as fallback)
   const urlContext = useUrlContext()
