@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
+import { setUserContext } from '@/lib/sentry-utils'
 
 interface TopNavItem {
   label: string
@@ -34,6 +35,10 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
     if (user) {
       fetchUserRole()
       fetchUserName()
+      try {
+        const email = user?.emailAddresses?.[0]?.emailAddress
+        setUserContext({ id: user.id, email })
+      } catch {}
     }
   }, [user])
 
