@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Building, Users, MapPin, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 interface TopNavItem {
   label: string
@@ -41,6 +42,9 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
       if (response.ok) {
         const data = await response.json()
         setUserRole(data.role)
+        if (data?.role?.roleType) {
+          Sentry.setTag('role', data.role.roleType)
+        }
       }
     } catch (error) {
       console.error('Error fetching user role:', error)

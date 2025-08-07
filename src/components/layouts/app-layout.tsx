@@ -1,6 +1,7 @@
 "use client"
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { useUser } from '@clerk/nextjs'
 import { useParams, usePathname } from 'next/navigation'
 import { AppHeader } from './app-header'
@@ -16,6 +17,7 @@ function useUrlContext() {
   const orgId = params.orgId as string | undefined  
   const driverId = params.driverId as string | undefined
   const equipmentId = params.equipmentId as string | undefined
+  const locationId = params.locationId as string | undefined
   
   // Determine context from URL structure
   const hasDriver = !!driverId
@@ -24,7 +26,7 @@ function useUrlContext() {
   const hasMaster = !!masterOrgId
   
   // Auto-detect sidebar menu type from URL
-  let sidebarMenu: 'organization' | 'driver' | 'equipment' | undefined
+  let sidebarMenu: 'organization' | 'driver' | 'equipment' | 'location' | undefined
   if (hasDriver) {
     sidebarMenu = 'driver'
   } else if (hasEquipment) {
@@ -33,6 +35,8 @@ function useUrlContext() {
     // Check if we're on equipment-related pages
     if (pathname.includes('/equipment')) {
       sidebarMenu = 'equipment'
+    } else if (pathname.includes('/locations')) {
+      sidebarMenu = 'location'
     } else {
       sidebarMenu = 'organization'
     }
@@ -44,6 +48,7 @@ function useUrlContext() {
     orgId: orgId || '',
     driverId,
     equipmentId,
+    locationId,
     // Auto-detected UI state
     sidebarMenu,
     // Context flags
@@ -61,7 +66,7 @@ interface AppLayoutProps {
     href: string
     isActive: boolean
   }>
-  sidebarMenu?: 'organization' | 'driver' | 'equipment' | 'master'
+  sidebarMenu?: 'organization' | 'driver' | 'equipment' | 'location' | 'master'
   className?: string
   children: React.ReactNode
 }
@@ -74,6 +79,7 @@ export function AppLayout({
   sidebarMenu,
   driverId,
   equipmentId,
+  locationId,
   masterOrgId,
   currentOrgId,
   className = ""
@@ -87,11 +93,22 @@ export function AppLayout({
   const finalSidebarMenu = sidebarMenu ?? urlContext.sidebarMenu
   const finalDriverId = driverId ?? urlContext.driverId
   const finalEquipmentId = equipmentId ?? urlContext.equipmentId
+  const finalLocationId = locationId ?? urlContext.locationId
   const finalMasterOrgId = masterOrgId ?? urlContext.masterOrgId
   const finalCurrentOrgId = currentOrgId ?? urlContext.orgId
   
   // Show sidebar if we have organization context or are on organization/driver/equipment pages
   const showSidebar = finalMasterOrgId || finalCurrentOrgId || finalSidebarMenu
+
+  // Set Sentry tags for URL-derived context (dev-friendly and safe)
+  useEffect(() => {
+    Sentry.setTag('ctx.masterOrgId', finalMasterOrgId || '')
+    Sentry.setTag('ctx.orgId', finalCurrentOrgId || '')
+    if (finalSidebarMenu) Sentry.setTag('ctx.sidebarMenu', finalSidebarMenu)
+    if (finalDriverId) Sentry.setTag('ctx.driverId', finalDriverId)
+    if (finalEquipmentId) Sentry.setTag('ctx.equipmentId', finalEquipmentId)
+    if (finalLocationId) Sentry.setTag('ctx.locationId', finalLocationId)
+  }, [finalMasterOrgId, finalCurrentOrgId, finalSidebarMenu, finalDriverId, finalEquipmentId, finalLocationId])
   
   return (
     <div className="min-h-screen bg-gray-50">
