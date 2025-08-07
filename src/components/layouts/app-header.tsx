@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Building, Users, MapPin, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 
@@ -114,10 +115,13 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
         {/* Left side: Logo + Name + TopNav */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center">
-            <img 
-              src="/fleetrax-logo.png" 
-              alt="Fleetrax" 
+            <Image
+              src="/fleetrax-logo.png"
+              alt="Fleetrax"
+              width={120}
+              height={32}
               className="h-8 w-auto"
+              priority
             />
           </Link>
           {name && (
