@@ -327,7 +327,7 @@ export default function EquipmentPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`}
+                        onClick={() => router.push(`/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -93,6 +94,7 @@ export default function DriverAccidentsPage({
   params: { masterOrgId: string; orgId: string; driverId: string } 
 }) {
   const { masterOrgId, orgId, driverId } = params
+  const router = useRouter()
   
   const [data, setData] = useState<AccidentPageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -200,8 +202,8 @@ export default function DriverAccidentsPage({
   }
 
   const handleOrganizationSelect = (org: any) => { // Changed to any as Organization type is removed
-    // Navigate to the same driver in the new organization
-    window.location.href = `/master/${masterOrgId}/organization/${org.id}/driver/${driverId}/accidents`
+    // Navigate to the same driver in the new organization if exists; otherwise to org root
+    router.push(`/master/${masterOrgId}/organization/${org.id}/driver/${driverId}/accidents`)
   }
 
   // Get accident status for display

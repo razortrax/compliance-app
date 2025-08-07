@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -109,6 +109,7 @@ function getExpirationStatus(physical: PhysicalIssue): { label: string; color: s
 
 export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
   const { masterOrgId, orgId, driverId } = params
+  const router = useRouter()
   
   const [data, setData] = useState<ContextData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -179,7 +180,9 @@ export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
     console.log('Organization selected:', org.id)
     setIsSheetOpen(false)
     // Navigate to the selected organization
-    window.location.href = `/master/${masterOrgId}/organization/${org.id}`
+    // This page is under driver-specific context; pushing to the org-level root is consistent here
+    // because driverId may not exist in the other org
+    router.push(`/master/${masterOrgId}/organization/${org.id}`)
   }
 
   // Gold Standard: Handle form submissions

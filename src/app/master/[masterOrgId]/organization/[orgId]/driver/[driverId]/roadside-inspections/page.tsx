@@ -271,7 +271,7 @@ export default function MasterDriverRoadsideInspectionsPage() {
   const handleOrganizationSelect = (org: Organization) => {
     console.log('Organization selected:', org.id)
     setIsSheetOpen(false)
-    window.location.href = `/master/${masterOrgId}/organization/${org.id}`
+    router.push(`/master/${masterOrgId}/organization/${org.id}`)
   }
 
   if (loading) {
@@ -363,10 +363,10 @@ export default function MasterDriverRoadsideInspectionsPage() {
                       {createdCAFs.map(caf => caf.cafNumber).join(', ')}
                     </p>
                   </div>
-                  <Button 
+                      <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => window.location.href = `/master/${masterOrgId}/cafs`}
+                        onClick={() => router.push(`/master/${masterOrgId}/cafs`)}
                     className="text-green-700 border-green-300 hover:bg-green-100"
                   >
                     View CAF Dashboard

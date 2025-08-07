@@ -59,7 +59,7 @@ interface Equipment {
 }
 
 interface AppSidebarProps {
-  menuType?: 'organization' | 'driver' | 'equipment'
+  menuType?: 'organization' | 'driver' | 'equipment' | 'master' | 'location'
   driverId?: string
   equipmentId?: string
   masterOrgId?: string

@@ -4,24 +4,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LayoutDashboard, ArrowRight, Building } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from 'next/navigation'
 
 export function DashboardQuickAccess() {
+  const router = useRouter()
   const handleDashboardClick = async () => {
     try {
       const response = await fetch('/api/user/profile')
       if (response.ok) {
         const { masterOrganization } = await response.json()
         if (masterOrganization?.id) {
-          window.location.href = `/master/${masterOrganization.id}`
+          router.push(`/master/${masterOrganization.id}`)
         } else {
-          window.location.href = '/complete-profile'
+          router.push('/complete-profile')
         }
       } else {
-        window.location.href = '/complete-profile'
+        router.push('/complete-profile')
       }
     } catch (error) {
       console.error('Error navigating to dashboard:', error)
-      window.location.href = '/complete-profile'
+      router.push('/complete-profile')
     }
   }
 

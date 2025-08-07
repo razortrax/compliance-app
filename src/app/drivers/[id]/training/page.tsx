@@ -73,6 +73,7 @@ interface Training {
 export default function DriverTrainingPage() {
   const params = useParams()
   const { masterOrg, loading } = useMasterOrg()
+  const router = useRouter()
   
   const driverId = params.id as string
   
@@ -174,7 +175,7 @@ export default function DriverTrainingPage() {
 
   const handleOrganizationSelect = (selectedOrg: any) => { // Changed to any as Organization type was removed
     setIsSheetOpen(false)
-    window.location.href = `/organizations/${selectedOrg.id}/drivers`
+    router.push(`/organizations/${selectedOrg.id}/drivers`)
   }
 
   const handleRenewTraining = (training: Training) => {
@@ -235,6 +236,7 @@ export default function DriverTrainingPage() {
   if (isLoading) {
     return (
       <AppLayout 
+        name={masterOrg?.name || 'Loading...'}
         sidebarMenu="driver" 
         driverId={driverId}
         masterOrgId={masterOrg?.id}
@@ -250,6 +252,7 @@ export default function DriverTrainingPage() {
   if (!driver) {
     return (
       <AppLayout 
+        name={masterOrg?.name || 'Master'}
         sidebarMenu="driver" 
         driverId={driverId}
         masterOrgId={masterOrg?.id}
@@ -289,6 +292,7 @@ export default function DriverTrainingPage() {
   return (
     <>
       <AppLayout 
+        name={displayName}
         sidebarMenu="driver"
         driverId={driverId}
         masterOrgId={masterOrg?.id}

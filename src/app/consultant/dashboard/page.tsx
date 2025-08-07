@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Shield, Users, Clock, DollarSign, CheckCircle, AlertCircle, Building } from 'lucide-react'
@@ -35,6 +36,7 @@ interface Consultation {
 }
 
 export default function ConsultantDashboard() {
+  const router = useRouter()
   const { isSignedIn } = useAuth()
   const [consultant, setConsultant] = useState<Consultant | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,7 +111,7 @@ export default function ConsultantDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => window.location.href = '/consultant/register'}>
+            <Button className="w-full" onClick={() => router.push('/consultant/register')}>
               Complete Registration
             </Button>
           </CardContent>

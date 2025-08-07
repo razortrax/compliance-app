@@ -117,7 +117,7 @@ export default function DriverDetailPage() {
   const handleOrganizationSelect = (selectedOrg: Organization) => {
     setIsSheetOpen(false)
     // Navigate to the selected organization's drivers page
-    window.location.href = `/organizations/${selectedOrg.id}/drivers`
+    router.push(`/organizations/${selectedOrg.id}/drivers`)
   }
 
   const getRoleLabel = (roleType: string) => {
