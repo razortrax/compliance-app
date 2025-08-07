@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
+import { captureAPIError } from '@/lib/sentry-utils'
 
 export async function GET(
   request: NextRequest,
@@ -171,6 +172,11 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching equipment accidents:', error)
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/accidents',
+      method: 'GET',
+      extra: { masterOrgId, orgId, equipmentId }
+    })
     return NextResponse.json(
       { error: 'Failed to fetch accidents' },
       { status: 500 }
@@ -306,6 +312,11 @@ export async function POST(
 
   } catch (error) {
     console.error('Error creating equipment accident:', error)
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/accidents',
+      method: 'POST',
+      extra: { masterOrgId, orgId, equipmentId }
+    })
     return NextResponse.json(
       { error: 'Failed to create accident' },
       { status: 500 }

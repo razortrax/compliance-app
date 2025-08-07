@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
+import { captureAPIError } from '@/lib/sentry-utils'
 
 export async function GET(
   request: NextRequest,
@@ -199,6 +200,11 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching equipment roadside inspections:', error)
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/roadside-inspections',
+      method: 'GET',
+      extra: { masterOrgId, orgId, equipmentId }
+    })
     return NextResponse.json(
       { error: 'Failed to fetch roadside inspections' },
       { status: 500 }
@@ -330,6 +336,11 @@ export async function POST(
 
   } catch (error) {
     console.error('Error creating equipment roadside inspection:', error)
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/roadside-inspections',
+      method: 'POST',
+      extra: { masterOrgId, orgId, equipmentId }
+    })
     return NextResponse.json(
       { error: 'Failed to create roadside inspection' },
       { status: 500 }

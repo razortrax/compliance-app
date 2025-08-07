@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
+import { captureAPIError } from '@/lib/sentry-utils'
 
 export async function GET(
   request: NextRequest,
@@ -175,6 +176,11 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching driver accident data:', error)
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/accidents',
+      method: 'GET',
+      extra: { masterOrgId, orgId, driverId }
+    })
     return NextResponse.json(
       { error: 'Failed to fetch driver accident data' },
       { status: 500 }
