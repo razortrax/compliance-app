@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
+import { captureAPIError } from '@/lib/sentry-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,6 +100,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(organizations)
   } catch (error) {
     console.error('Failed to fetch organizations:', error)
+    // Sentry: capture API error with context
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/organizations',
+      method: 'GET',
+      extra: {
+        hint: 'GET organizations failed',
+      },
+    })
     return NextResponse.json(
       { error: 'Failed to fetch organizations' },
       { status: 500 }
@@ -220,6 +229,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating organization:', error)
+    // Sentry: capture API error with context
+    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
+      endpoint: '/api/organizations',
+      method: 'POST',
+      extra: {
+        hint: 'POST organizations failed',
+      },
+    })
     return NextResponse.json(
       { error: 'Failed to create organization' },
       { status: 500 }
