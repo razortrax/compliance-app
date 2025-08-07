@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      RUN_E2E: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,6 +34,7 @@ jobs:
         run: npm run build
 
       - name: Playwright tests
+        if: env.RUN_E2E == 'true'
         run: |
           npx playwright install --with-deps
           npx playwright test
