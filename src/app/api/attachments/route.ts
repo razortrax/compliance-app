@@ -1,133 +1,224 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
-// import { uploadToSpaces, generateFileKey } from '@/lib/storage'
+import { createId } from '@paralleldrive/cuid2'
+import { writeFile, mkdir } from 'fs/promises'
+import path from 'path'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ALLOWED_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'video/mp4',
-  'video/quicktime',
-  'video/x-msvideo',
-  'video/x-ms-wmv'
-]
-
-export async function POST(request: NextRequest) {
+// GET /api/attachments - List attachments for a CAF or entity
+export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = auth()
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const contentType = request.headers.get('content-type')
-    
-    // Handle JSON requests for notes
-    if (contentType?.includes('application/json')) {
-      const body = await request.json()
-      const { issueId, attachmentType, title, description, noteContent } = body
+    const { searchParams } = new URL(req.url)
+    const cafId = searchParams.get('cafId')
+    const entityId = searchParams.get('entityId')
+    const entityType = searchParams.get('entityType')
 
-      if (!issueId || !attachmentType || !noteContent) {
-        return Response.json({ 
-          error: 'Missing required fields: issueId, attachmentType, noteContent' 
-        }, { status: 400 })
-      }
+    if (!cafId && !entityId) {
+      return NextResponse.json({ error: 'cafId or entityId required' }, { status: 400 })
+    }
 
-      // Check access to issue (simplified for notes)
-      const issue = await db.issue.findUnique({
-        where: { id: issueId },
-        include: { party: true }
+    let whereClause: any = {}
+
+    if (cafId) {
+      whereClause.cafId = cafId
+      
+      // Verify user has access to this CAF
+      const caf = await db.corrective_action_form.findUnique({
+        where: { id: cafId },
+        select: { organizationId: true }
       })
 
-      if (!issue) {
-        return Response.json({ error: 'Issue not found' }, { status: 404 })
+      if (!caf) {
+        return NextResponse.json({ error: 'CAF not found' }, { status: 404 })
       }
 
-      // Create note attachment
-      const attachment = await db.attachment.create({
-        data: {
-          issueId,
-          fileName: `${title || 'Note'}.txt`,
-          fileType: 'text/plain',
-          fileSize: Buffer.byteLength(noteContent, 'utf8'),
-          filePath: '', // No file path for notes
-          attachmentType,
-          description: description || null,
-          noteContent,
-          uploadedBy: userId
+      // Check access permissions
+      const masterRole = await db.role.findFirst({
+        where: {
+          party: { userId },
+          roleType: 'master',
+          isActive: true
         }
       })
 
-      return Response.json({ attachment }, { status: 201 })
+      if (!masterRole) {
+        const userRole = await db.role.findFirst({
+          where: {
+            party: { userId },
+            organizationId: caf.organizationId,
+            isActive: true
+          }
+        })
+
+        if (!userRole) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        }
+      }
+    } else {
+      whereClause.entityId = entityId
+      whereClause.entityType = entityType
     }
 
-    // Handle multipart form data for file uploads
-    // TODO: Re-enable once DigitalOcean Spaces is configured
-    return Response.json({ 
-      error: 'File uploads are temporarily disabled while DigitalOcean Spaces is being configured' 
-    }, { status: 503 })
+    const attachments = await db.attachment.findMany({
+      where: whereClause,
+      include: {
+        uploadedBy: {
+          include: {
+            party: {
+              include: {
+                person: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { uploadedAt: 'desc' }
+    })
+
+    return NextResponse.json(attachments)
 
   } catch (error) {
-    console.error('Error uploading attachment:', error)
-    return Response.json({ 
+    console.error('Error fetching attachments:', error)
+    return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 })
   }
 }
 
-export async function GET(request: NextRequest) {
+// POST /api/attachments - Upload new attachment
+export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = auth()
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const issueId = searchParams.get('issueId')
+    // Parse multipart form data
+    const formData = await req.formData()
+    const file = formData.get('file') as File
+    const cafId = formData.get('cafId') as string
+    const entityId = formData.get('entityId') as string
+    const entityType = formData.get('entityType') as string
+    const attachmentType = formData.get('attachmentType') as string || 'DOCUMENTATION'
+    const description = formData.get('description') as string
+    const noteContent = formData.get('noteContent') as string
 
-    if (!issueId) {
-      return Response.json({ 
-        error: 'Missing issueId parameter' 
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    if (!cafId && !entityId) {
+      return NextResponse.json({ error: 'cafId or entityId required' }, { status: 400 })
+    }
+
+    // Validate file
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      return NextResponse.json({ error: 'File size exceeds 10MB limit' }, { status: 400 })
+    }
+
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ]
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        error: 'Unsupported file type. Please upload PDF, images, Word documents, or text files.' 
       }, { status: 400 })
     }
 
-    // Check access to issue (same logic as POST)
-    const issue = await db.issue.findUnique({
-      where: { id: issueId },
+    // Get user's staff record for uploaded by
+    const userStaff = await db.staff.findFirst({
+      where: { party: { userId } }
+    })
+
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(process.cwd(), 'uploads')
+    try {
+      await mkdir(uploadsDir, { recursive: true })
+    } catch (error) {
+      // Directory might already exist
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(file.name)
+    const baseFileName = path.basename(file.name, fileExtension)
+    const uniqueFileName = `${baseFileName}_${createId()}${fileExtension}`
+    const filePath = path.join(uploadsDir, uniqueFileName)
+
+    // Save file to disk
+    const buffer = await file.arrayBuffer()
+    await writeFile(filePath, Buffer.from(buffer))
+
+    // Create attachment record
+    const attachment = await db.attachment.create({
+      data: {
+        id: createId(),
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        filePath: filePath,
+        attachmentType,
+        description: description || null,
+        noteContent: noteContent || null,
+        cafId: cafId || null,
+        entityId: entityId || null,
+        entityType: entityType || null,
+        uploadedById: userStaff?.id || null,
+        uploadedAt: new Date()
+      },
       include: {
-        party: true
+        uploadedBy: {
+          include: {
+            party: {
+              include: {
+                person: true
+              }
+            }
+          }
+        }
       }
     })
 
-    if (!issue) {
-      return Response.json({ error: 'Issue not found' }, { status: 404 })
+    // Log the upload activity
+    if (cafId) {
+      await db.activity_log.create({
+        data: {
+          id: createId(),
+          action: 'ATTACHMENT_UPLOADED',
+          entityType: 'corrective_action_form',
+          entityId: cafId,
+          details: {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            attachmentType,
+            uploadedBy: userStaff ? `${userStaff.party?.person?.firstName} ${userStaff.party?.person?.lastName}` : 'Unknown User'
+          },
+          userId,
+          cafId
+        }
+      })
     }
 
-    // Simplified access check for GET - user should have read access to the issue
-    const attachments = await db.attachment.findMany({
-      where: { issueId },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    // Add URLs to attachments (for file uploads when Spaces is configured)
-    const attachmentsWithUrls = attachments.map(attachment => ({
-      ...attachment,
-      url: attachment.filePath ? 
-        `${process.env.DO_SPACES_CDN_ENDPOINT || process.env.DO_SPACES_ENDPOINT}/${process.env.DO_SPACES_BUCKET}/${attachment.filePath}` :
-        null // No URL for notes
-    }))
-
-    return Response.json(attachmentsWithUrls)
+    return NextResponse.json(attachment)
 
   } catch (error) {
-    console.error('Error fetching attachments:', error)
-    return Response.json({ 
-      error: 'Internal server error' 
+    console.error('Error uploading attachment:', error)
+    return NextResponse.json({ 
+      error: 'Upload failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 } 

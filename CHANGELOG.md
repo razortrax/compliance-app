@@ -2,7 +2,33 @@
 
 All notable changes to ComplianceApp will be documented in this file.
 
-## [Unreleased] - January 2025
+## [Unreleased] - February 2025
+
+### 🎯 RSIN System Standardization & CAF Workflow - COMPLETE
+
+#### Major Features Added
+- **Universal RSIN Access**: Standardized RSIN functionality across all three entry points:
+  - Organization-level RSINs with full driver/equipment selection
+  - Driver-specific RSINs with intelligent driver pre-selection
+  - Equipment-specific RSINs with intelligent equipment pre-selection
+- **Complete CAF Workflow**: Full Corrective Action Form system implementation
+  - Smart violation grouping by type (Driver/Equipment/Company)
+  - Digital signature capture and management
+  - PDF generation (fillable and completed forms)
+  - Document attachment system
+  - Role-based approval workflow
+  - Maintenance work order integration for equipment violations
+- **Context-Based Auto-Population**: Intelligent pre-selection based on navigation context
+- **CAF Management Dashboard**: Centralized CAF oversight for master users
+- **RSIN Management User Guide**: Comprehensive step-by-step instructions with promotional tone
+
+#### Enhanced
+- **PDF Generation**: Fillable CAF PDFs with digital signature support
+- **Document Management**: File upload/download system for CAF attachments
+- **Status Tracking**: Complete workflow states (ASSIGNED → IN_PROGRESS → COMPLETED → SIGNED → APPROVED)
+- **Permission System**: Role-based CAF signing and approval capabilities
+
+## [Previous] - January 2025
 
 ### 🎯 RINS (Roadside Inspections) System Enhancements
 

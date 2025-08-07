@@ -32,6 +32,23 @@ cat DEVELOPMENT_GUIDE.md
 ### RINS (Roadside Inspections) System Fixes (January 2025)
 **Status**: ✅ Complete and Production Ready
 
+**Major Standardization Achievement (February 2025):**
+- **Universal Access**: RSIN functionality now available from all three contexts:
+  - Organization-level: `Master → Organization → Roadside Inspections`
+  - Driver-specific: `Master → Organization → Drivers → [Driver] → Roadside Inspections`
+  - Equipment-specific: `Master → Organization → Equipment → [Equipment] → Roadside Inspections`
+- **Context-Based Auto-Population**: Intelligent pre-selection based on entry point
+- **Complete CAF Workflow**: Full Corrective Action Form generation, assignment, and approval process
+- **Unified Experience**: Identical functionality across all three entry points
+
+**CAF (Corrective Action Form) Workflow Implementation:**
+- **Smart Violation Grouping**: Groups violations by type (Driver/Equipment/Company) into separate CAFs
+- **Digital Signatures**: Web-based signature capture with PDF export capabilities
+- **Document Management**: File upload/download system for supporting documentation
+- **Maintenance Integration**: Direct work order creation for equipment-related violations
+- **Role-Based Permissions**: Master users and staff with appropriate permissions can approve CAFs
+- **Status Tracking**: Complete workflow from ASSIGNED → IN_PROGRESS → COMPLETED → SIGNED → APPROVED
+
 **Key Improvements:**
 - **Violation Type Mapping**: Fixed incorrect violation type assignments using intelligent code-based mapping
 - **Navigation Consistency**: Master users now see correct "Master" button in top navigation  

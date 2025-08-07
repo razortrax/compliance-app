@@ -561,8 +561,31 @@ export function AppSidebar({
     </nav>
   )
 
+  // Master Menu Component
+  const MasterMenu = () => (
+    <div className="space-y-1">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Master</h3>
+      <Link
+        href={masterOrgId ? `/master/${masterOrgId}` : "#"}
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <Building2 className="mr-3 h-4 w-4" />
+        Dashboard
+      </Link>
+      <Link
+        href={masterOrgId ? `/master/${masterOrgId}/cafs` : "#"}
+        className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+      >
+        <FileText className="mr-3 h-4 w-4" />
+        CAFs
+      </Link>
+    </div>
+  )
+
   const renderContextMenu = () => {
     switch (menuType) {
+      case 'master':
+        return <MasterMenu />
       case 'organization':
         return <OrganizationMenu />
       case 'driver':

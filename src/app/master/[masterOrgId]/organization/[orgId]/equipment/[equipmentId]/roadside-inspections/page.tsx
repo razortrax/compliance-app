@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import EnhancedRoadsideInspectionForm from '@/components/roadside_inspections/enhanced-roadside-inspection-form'
+import ViolationGroupsWithCAFGeneration from '@/components/cafs/violation-groups-with-caf-generation'
+import CAFDetailModal from '@/components/cafs/caf-detail-modal'
 
 interface RoadsideInspection {
   id: string
@@ -124,6 +126,10 @@ export default function EquipmentRoadsideInspectionsPage() {
   const [selectedRoadsideInspection, setSelectedRoadsideInspection] = useState<RoadsideInspection | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
+  
+  // CAF Generation State
+  const [createdCAFsInSession, setCreatedCAFsInSession] = useState<string[]>([])
+  const [selectedCAFId, setSelectedCAFId] = useState<string | null>(null)
 
   // Smart expiration status function - Equipment Gold Standard (RSIN-specific)
   const getRoadsideInspectionStatus = (roadsideInspection: RoadsideInspection) => {
@@ -524,6 +530,21 @@ export default function EquipmentRoadsideInspectionsPage() {
                     </div>
                   )}
 
+                  {/* CAF Generation and Management */}
+                  {selectedRoadsideInspection.violations && selectedRoadsideInspection.violations.length > 0 && (
+                    <div>
+                      <ViolationGroupsWithCAFGeneration
+                        incidentId={selectedRoadsideInspection.id}
+                        violations={selectedRoadsideInspection.violations}
+                        onCAFCreated={(cafIds) => {
+                          setCreatedCAFsInSession(prev => [...prev, ...cafIds])
+                        }}
+                        onCAFSelected={(cafId) => setSelectedCAFId(cafId)}
+                        createdCAFsInSession={createdCAFsInSession}
+                      />
+                    </div>
+                  )}
+
                   {/* Activity Log */}
                   <div>
                     <h4 className="font-medium mb-3">Activity Log</h4>
@@ -559,6 +580,12 @@ export default function EquipmentRoadsideInspectionsPage() {
           />
         </DialogContent>
       </Dialog>
+      
+      {/* CAF Detail Modal */}
+      <CAFDetailModal
+        cafId={selectedCAFId}
+        onClose={() => setSelectedCAFId(null)}
+      />
     </AppLayout>
   )
 } 

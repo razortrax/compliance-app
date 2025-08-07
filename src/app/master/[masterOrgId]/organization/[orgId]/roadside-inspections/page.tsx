@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ActivityLog } from '@/components/ui/activity-log'
+import EnhancedRoadsideInspectionForm from '@/components/roadside_inspections/enhanced-roadside-inspection-form'
+import ViolationGroupsWithCAFGeneration from '@/components/cafs/violation-groups-with-caf-generation'
+import CAFDetailModal from '@/components/cafs/caf-detail-modal'
 import { format } from 'date-fns'
 import { 
   ShieldCheck, 
@@ -80,6 +83,10 @@ export default function RoadsideInspectionsPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // CAF Generation State
+  const [createdCAFsInSession, setCreatedCAFsInSession] = useState<string[]>([])
+  const [selectedCAFId, setSelectedCAFId] = useState<string | null>(null)
 
   // ⚠️ CRITICAL: Data Fetching (exact pattern from Training)
   useEffect(() => {
@@ -424,6 +431,21 @@ export default function RoadsideInspectionsPage() {
                         </div>
                       )}
 
+                      {/* CAF Generation and Management */}
+                      {selectedIncident.violations && selectedIncident.violations.length > 0 && (
+                        <div>
+                          <ViolationGroupsWithCAFGeneration
+                            incidentId={selectedIncident.id}
+                            violations={selectedIncident.violations}
+                            onCAFCreated={(cafIds) => {
+                              setCreatedCAFsInSession(prev => [...prev, ...cafIds])
+                            }}
+                            onCAFSelected={(cafId) => setSelectedCAFId(cafId)}
+                            createdCAFsInSession={createdCAFsInSession}
+                          />
+                        </div>
+                      )}
+
                       {/* Activity Log */}
                       <div>
                         <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -447,6 +469,12 @@ export default function RoadsideInspectionsPage() {
           </div>
         </div>
       </div>
+      
+      {/* CAF Detail Modal */}
+      <CAFDetailModal
+        cafId={selectedCAFId}
+        onClose={() => setSelectedCAFId(null)}
+      />
     </AppLayout>
   )
 } 

@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import EnhancedRoadsideInspectionForm from '@/components/roadside_inspections/enhanced-roadside-inspection-form'
+import ViolationGroupsWithCAFGeneration from '@/components/cafs/violation-groups-with-caf-generation'
+import CAFDetailModal from '@/components/cafs/caf-detail-modal'
 
 interface RoadsideInspection {
   id: string
@@ -120,6 +122,9 @@ export default function MasterDriverRoadsideInspectionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createdCAFs, setCreatedCAFs] = useState<any[]>([]) // Track created CAFs for this session
+  const [selectedCAF, setSelectedCAF] = useState<any>(null)
+  const [isCAFModalOpen, setIsCAFModalOpen] = useState(false)
 
   // URL-driven data loading - Gold Standard pattern! 🚀
   useEffect(() => {
@@ -345,6 +350,30 @@ export default function MasterDriverRoadsideInspectionsPage() {
               <span>•</span>
               <span>Violations: {data.roadsideInspections.reduce((acc, i) => acc + i.violations.length, 0)}</span>
             </div>
+            
+            {/* Show recently created CAFs */}
+            {createdCAFs.length > 0 && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      ✅ {createdCAFs.length} CAF{createdCAFs.length !== 1 ? 's' : ''} created this session
+                    </p>
+                    <p className="text-xs text-green-600">
+                      {createdCAFs.map(caf => caf.cafNumber).join(', ')}
+                    </p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => window.location.href = `/master/${masterOrgId}/cafs`}
+                    className="text-green-700 border-green-300 hover:bg-green-100"
+                  >
+                    View CAF Dashboard
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -614,93 +643,35 @@ export default function MasterDriverRoadsideInspectionsPage() {
                       </div>
                     )}
 
-                    {/* Violations */}
+                    {/* Enhanced Violations with CAF Generation */}
                     {selectedInspection.violations.length > 0 && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-3">
-                          Violations Found ({selectedInspection.violations.length})
-                        </h4>
-                        <div className="space-y-3">
-                          {selectedInspection.violations.map((violation) => (
-                            <div key={violation.id} className="bg-white border rounded-lg p-4 shadow-sm">
-                              {/* Violation Header */}
-                              <div className="flex justify-between items-start mb-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-gray-900">{violation.violationCode}</span>
-                                    {violation.unitNumber && (
-                                      <span className="text-sm text-gray-500">• Unit {violation.unitNumber}</span>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-gray-700 leading-relaxed">{violation.description}</p>
-                                </div>
-                                
-                                <div className="flex flex-col gap-1 ml-4">
-                                  {violation.outOfService && (
-                                    <Badge variant="destructive" className="text-xs">OUT OF SERVICE</Badge>
-                                  )}
-                                  {violation.severity && (
-                                    <Badge variant="secondary" className="text-xs">{violation.severity}</Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Violation Type Tags */}
-                              <div className="flex items-center gap-2 mb-3">
-                                {violation.violationType === 'Driver_Qualification' && (
-                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                    <Users className="h-3 w-3 mr-1" />
-                                    Driver Qualification
-                                  </Badge>
-                                )}
-                                {violation.violationType === 'Driver_Performance' && (
-                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                    <Users className="h-3 w-3 mr-1" />
-                                    Driver Performance
-                                  </Badge>
-                                )}
-                                {violation.violationType === 'Equipment' && (
-                                  <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                                    <Truck className="h-3 w-3 mr-1" />
-                                    Equipment
-                                  </Badge>
-                                )}
-                                {violation.violationType === 'Company' && (
-                                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                                    <Building2 className="h-3 w-3 mr-1" />
-                                    Company
-                                  </Badge>
-                                )}
-                                {violation.violationType === 'Other' && (
-                                  <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
-                                    Other
-                                  </Badge>
-                                )}
-                              </div>
-
-                              {/* Inspector Comments */}
-                              {violation.inspectorComments && (
-                                <div className="border-t pt-3 mt-3">
-                                  <div className="flex items-start gap-2">
-                                    <Shield className="h-4 w-4 text-gray-400 mt-0.5" />
-                                    <div className="flex-1">
-                                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Inspector Comments</span>
-                                      <p className="text-sm text-gray-700 mt-1 leading-relaxed">{violation.inspectorComments}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Citation Number if available */}
-                              {violation.citationNumber && (
-                                <div className="border-t pt-3 mt-3">
-                                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Citation Number</span>
-                                  <p className="text-sm text-gray-700 mt-1">{violation.citationNumber}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                        <ViolationGroupsWithCAFGeneration
+                          incident={selectedInspection}
+                          violations={selectedInspection.violations}
+                          organizationId={data.organization.id}
+                          onCAFCreated={(caf) => {
+                            console.log('CAF created:', caf)
+                            // Add to created CAFs list
+                            setCreatedCAFs(prev => [...prev, caf])
+                            // Show CAF in modal instead of navigating away
+                            setSelectedCAF(caf)
+                            setIsCAFModalOpen(true)
+                          }}
+                          onCAFClick={async (existingCAF) => {
+                            try {
+                              // Fetch full CAF details
+                              const response = await fetch(`/api/corrective-action-forms/${existingCAF.id}`)
+                              if (response.ok) {
+                                const fullCAF = await response.json()
+                                setSelectedCAF(fullCAF)
+                                setIsCAFModalOpen(true)
+                              }
+                            } catch (error) {
+                              console.error('Error fetching CAF details:', error)
+                            }
+                          }}
+                        />
                       </div>
                     )}
 
@@ -755,6 +726,22 @@ export default function MasterDriverRoadsideInspectionsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* CAF Detail Modal */}
+      <CAFDetailModal
+        caf={selectedCAF}
+        isOpen={isCAFModalOpen}
+        onClose={() => {
+          setIsCAFModalOpen(false)
+          setSelectedCAF(null)
+        }}
+        onCAFUpdated={(updatedCAF) => {
+          // Update the CAF in the created CAFs list
+          setCreatedCAFs(prev => prev.map(caf => 
+            caf.id === updatedCAF.id ? updatedCAF : caf
+          ))
+        }}
+      />
     </AppLayout>
   )
 } 

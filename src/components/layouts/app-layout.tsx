@@ -55,22 +55,15 @@ function useUrlContext() {
 }
 
 interface AppLayoutProps {
-  children: ReactNode
-  // Header configuration  
-  name?: string
+  name: string
   topNav?: Array<{
     label: string
     href: string
-    isActive?: boolean
+    isActive: boolean
   }>
-  // Legacy props (backwards compatibility)
-  sidebarMenu?: 'organization' | 'driver' | 'equipment'
-  driverId?: string
-  equipmentId?: string
-  masterOrgId?: string
-  currentOrgId?: string
-  // Content configuration
+  sidebarMenu?: 'organization' | 'driver' | 'equipment' | 'master'
   className?: string
+  children: React.ReactNode
 }
 
 export function AppLayout({

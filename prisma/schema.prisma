@@ -47,6 +47,7 @@ model incident {
 
   // Relations
   issue issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  corrective_action_forms corrective_action_form[] // CAFs generated from this incident
 }
 
 // Unified equipment involvement (replaces both models)
@@ -596,6 +597,10 @@ model maintenance_issue {
   // Relations
   issue             issue                   @relation(fields: [issueId], references: [id], onDelete: Cascade)
   abScheduleItem    equipment_ab_schedule?  @relation(fields: [abScheduleItemId], references: [id])
+  corrective_action_form corrective_action_form? @relation(fields: [cafId], references: [id]) // Link back to originating CAF
+  
+  // CAF Integration (maintenance issues can be created from CAFs)
+  cafId             String?                 // Links to CAF that triggered this maintenance work
 }
 
 // A&B MAINTENANCE SCHEDULE TEMPLATES
@@ -1000,13 +1005,35 @@ model staff {
   subordinates  staff[]                  @relation("StaffSupervisor")
   assigned_cafs corrective_action_form[] @relation("AssignedStaff")
   created_cafs  corrective_action_form[] @relation("CreatedByStaff")
+  approved_cafs corrective_action_form[] @relation("ApprovedByStaff") // CAFs this staff has approved
   signatures    caf_signature[]
+  
+  // Supervisor Assignment Relationships (for automatic CAF assignment)
+  supervised_drivers    Json? // Array of driver party IDs this staff supervises
+  maintained_equipment  Json? // Array of equipment party IDs this staff maintains
+  
+  // CAF Assignment Preferences
+  autoAssignDriverCAFs    Boolean @default(false) // Auto-assign driver violation CAFs to this staff
+  autoAssignEquipmentCAFs Boolean @default(false) // Auto-assign equipment violation CAFs to this staff  
+  autoAssignCompanyCAFs   Boolean @default(false) // Auto-assign company violation CAFs to this staff
 }
 
 model corrective_action_form {
   id                  String  @id @default(cuid())
   cafNumber           String  @unique // Auto-generated CAF-YYYY-NNNN
-  incidentViolationId String? // FK to unified incident violation
+  incidentViolationId String? // FK to unified incident violation (deprecated - use incidentId + violationType)
+  
+  // Enhanced Incident Linking (supports multiple violations per CAF)
+  incidentId          String? // FK to incident (RINS)
+  violationType       ViolationType? // DRIVER, EQUIPMENT, COMPANY - groups violations
+  violationCodes      Json? // Array of violation codes included in this CAF
+  violationSummary    String? // Human-readable summary of violations
+
+  // Versioning and Lifecycle Management  
+  version             Int     @default(1) // Version number for CAF revisions
+  parentCafId         String? // Links to original CAF if this is a revision
+  cancelReason        String? // Why this CAF was cancelled/superseded
+  isActive            Boolean @default(true) // Only latest version should be active
 
   // Basic Information
   title             String // "Driver Performance - 392.2A(1)"
@@ -1018,7 +1045,7 @@ model corrective_action_form {
 
   // Assignment
   assignedStaffId String // FK to responsible staff member
-  assignedBy      String // FK to staff who assigned
+  assignedBy      String? // FK to staff who assigned (optional for Master users)
   organizationId  String // FK to organization
   dueDate         DateTime? // When CAF must be completed
 
@@ -1032,14 +1059,28 @@ model corrective_action_form {
   approvedAt       DateTime? // When approved
   approvedBy       String? // FK to approving staff
 
+  // Maintenance Integration (for Equipment CAFs)
+  maintenanceIssueId String? // Link to resulting maintenance work order
+  requiresMaintenance Boolean @default(false) // Whether this CAF requires actual maintenance work
+
+  // PDF and Document Management
+  pdfGenerated     Boolean   @default(false) // Whether PDF has been generated
+  pdfUrl           String? // URL to generated PDF
+  returnedPdfUrl   String? // URL to returned/completed PDF from staff
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   incident_violation incident_violation? @relation(fields: [incidentViolationId], references: [id])
+  incident           incident?           @relation(fields: [incidentId], references: [id]) // New relation to incident
+  parent_caf         corrective_action_form? @relation("CAFVersions", fields: [parentCafId], references: [id])
+  child_cafs         corrective_action_form[] @relation("CAFVersions") // Revision history
   assigned_staff     staff               @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
-  created_by_staff   staff               @relation("CreatedByStaff", fields: [assignedBy], references: [id])
+  created_by_staff   staff?              @relation("CreatedByStaff", fields: [assignedBy], references: [id])
+  approved_by_staff  staff?              @relation("ApprovedByStaff", fields: [approvedBy], references: [id])
   organization       organization        @relation(fields: [organizationId], references: [id])
+  maintenance_issues maintenance_issue[] // One CAF can create multiple maintenance issues
   signatures         caf_signature[]
   attachments        attachment[]        @relation("CAFAttachments")
   activity_logs      activity_log[]      @relation("CAFActivityLogs") // Enhanced activity tracking for CAFs
