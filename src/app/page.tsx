@@ -7,6 +7,7 @@ import { DashboardQuickAccess } from "@/components/dashboard/dashboard-quick-acc
 import Header from "@/components/layout/header"
 import { Building, Users, Shield, Truck, CheckCircle, ArrowRight, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function LandingPage() {
   return (
@@ -27,10 +28,13 @@ export default function LandingPage() {
           </Badge>
           <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
             DOT Compliance Made Simple with{' '}
-            <img 
-              src="/fleetrax-logo.png" 
-              alt="Fleetrax" 
+            <Image
+              src="/fleetrax-logo.png"
+              alt="Fleetrax"
+              width={180}
+              height={48}
               className="inline-block h-12 sm:h-16 w-auto align-baseline"
+              priority
             />
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
