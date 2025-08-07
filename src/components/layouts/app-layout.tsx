@@ -25,7 +25,7 @@ function useUrlContext() {
   const hasMaster = !!masterOrgId
   
   // Auto-detect sidebar menu type from URL
-  let sidebarMenu: 'organization' | 'driver' | 'equipment' | 'location' | undefined
+  let sidebarMenu: 'organization' | 'driver' | 'equipment' | 'location' | 'master' | undefined
   if (hasDriver) {
     sidebarMenu = 'driver'
   } else if (hasEquipment) {
@@ -68,6 +68,12 @@ interface AppLayoutProps {
   sidebarMenu?: 'organization' | 'driver' | 'equipment' | 'location' | 'master'
   className?: string
   children: React.ReactNode
+  // Legacy, optional props (still supported for explicit context passing)
+  driverId?: string
+  equipmentId?: string
+  locationId?: string
+  masterOrgId?: string
+  currentOrgId?: string
 }
 
 export function AppLayout({

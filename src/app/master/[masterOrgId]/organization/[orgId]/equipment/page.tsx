@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
 import { EquipmentForm } from '@/components/equipment/equipment-form'
 import { Button } from "@/components/ui/button"
@@ -64,6 +64,7 @@ export default function EquipmentPage() {
   const params = useParams()
   const masterOrgId = params.masterOrgId as string
   const organizationId = params.orgId as string
+  const router = useRouter()
   
   const [data, setData] = useState<EquipmentPageData | null>(null)
   const [masterOrg, setMasterOrg] = useState<Organization | null>(null)
@@ -327,7 +328,7 @@ export default function EquipmentPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`}
+                        onClick={() => router.push(`/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View

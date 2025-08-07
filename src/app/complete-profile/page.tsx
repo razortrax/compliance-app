@@ -248,9 +248,9 @@ function CompleteProfileForm() {
               onClick={() => {
                 console.log('🚨 Emergency bypass - user stuck in loop')
                 // Set flag to disable SmartRedirect for this navigation
-                sessionStorage.setItem('manual_navigation_bypass', 'true')
-                // Emergency bypass for users stuck in complete-profile loop
-                router.push('/master/y39self3k6mzqel7816n30yd')
+                 sessionStorage.setItem('manual_navigation_bypass', 'true')
+                 // Emergency bypass for users stuck in complete-profile loop
+                 router.push('/master/y39self3k6mzqel7816n30yd')
               }}
             >
               🚨 Emergency Bypass (if stuck in loop)
@@ -262,10 +262,10 @@ function CompleteProfileForm() {
               className="w-full mt-2" 
               onClick={() => {
                 console.log('🚨 NUCLEAR OPTION - Force redirect to dashboard')
-                // Set flag to disable SmartRedirect
-                sessionStorage.setItem('manual_navigation_bypass', 'true')
-                // Force redirect to dashboard page
-                window.location.href = '/master/y39self3k6mzqel7816n30yd'
+                 // Set flag to disable SmartRedirect
+                 sessionStorage.setItem('manual_navigation_bypass', 'true')
+                 // Force redirect to dashboard page
+                 router.push('/master/y39self3k6mzqel7816n30yd')
               }}
             >
               🚨 NUCLEAR OPTION - Force Dashboard

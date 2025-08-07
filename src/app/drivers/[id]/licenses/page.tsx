@@ -250,7 +250,7 @@ export default function DriverLicensesPage() {
 
   const handleOrganizationSelect = (selectedOrg: Organization) => {
     setIsSheetOpen(false)
-    window.location.href = `/organizations/${selectedOrg.id}/drivers`
+    router.push(`/organizations/${selectedOrg.id}/drivers`)
   }
 
   const handleRenewLicense = (license: License) => {
@@ -353,6 +353,7 @@ export default function DriverLicensesPage() {
   if (isLoading) {
     return (
       <AppLayout 
+        name={masterOrg?.name || 'Loading...'}
         sidebarMenu="driver" 
         driverId={driverId}
         masterOrgId={masterOrg?.id}
@@ -368,6 +369,7 @@ export default function DriverLicensesPage() {
   if (!driver) {
     return (
       <AppLayout 
+        name={masterOrg?.name || 'Master'}
         sidebarMenu="driver" 
         driverId={driverId}
         masterOrgId={masterOrg?.id}

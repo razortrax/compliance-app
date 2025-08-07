@@ -266,7 +266,7 @@ export default function DriversPage() {
           <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
           <h3 className="text-lg font-semibold mb-2">Failed to Load Drivers</h3>
           <p className="text-gray-600 mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
+          <Button onClick={() => router.refresh()}>Try Again</Button>
         </div>
       </AppLayout>
     )
@@ -493,7 +493,7 @@ export default function DriversPage() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.location.href = `/master/${masterOrgId}/organization/${organizationId}/driver/${driver.id}`}
+                          onClick={() => router.push(`/master/${masterOrgId}/organization/${organizationId}/driver/${driver.id}`)}
                         >
                           <User className="h-4 w-4 mr-1" />
                           View
