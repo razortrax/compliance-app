@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -77,6 +78,7 @@ export function AppSidebar({
   masterOrgId,
   currentOrgId
 }: AppSidebarProps) {
+  const router = useRouter()
   const { user } = useUser()
   const [orgSheetOpen, setOrgSheetOpen] = useState(false)
   const [driverSheetOpen, setDriverSheetOpen] = useState(false)
@@ -172,27 +174,27 @@ export function AppSidebar({
   // Navigation handlers
   const handleOrganizationSelect = (org: Organization) => {
     setOrgSheetOpen(false)
-    window.location.href = `/master/${masterOrgId}/organization/${org.id}`
+    router.push(`/master/${masterOrgId}/organization/${org.id}`)
   }
 
   const handleDriverClick = (driver: Driver) => {
     setDriverSheetOpen(false)
-    window.location.href = `/master/${masterOrgId}/organization/${currentOrgId}/driver/${driver.id}`
+    router.push(`/master/${masterOrgId}/organization/${currentOrgId}/driver/${driver.id}`)
   }
 
   const handleEquipmentClick = (item: Equipment) => {
     setEquipmentSheetOpen(false)
-    window.location.href = `/master/${masterOrgId}/organization/${currentOrgId}/equipment/${item.id}`
+    router.push(`/master/${masterOrgId}/organization/${currentOrgId}/equipment/${item.id}`)
   }
 
   const handleAddDriver = () => {
     setDriverSheetOpen(false)
-    window.location.href = `/master/${masterOrgId}/organization/${currentOrgId}/drivers`
+    router.push(`/master/${masterOrgId}/organization/${currentOrgId}/drivers`)
   }
 
   const handleAddEquipment = () => {
     setEquipmentSheetOpen(false)
-    window.location.href = `/master/${masterOrgId}/organization/${currentOrgId}/equipment`
+    router.push(`/master/${masterOrgId}/organization/${currentOrgId}/equipment`)
   }
 
   // Organizations Sheet Component
