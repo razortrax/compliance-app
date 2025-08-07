@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
 import { buildStandardNavigation } from '@/lib/utils'
@@ -125,6 +125,40 @@ export default function MasterDriverRoadsideInspectionsPage() {
   const [createdCAFs, setCreatedCAFs] = useState<any[]>([]) // Track created CAFs for this session
   const [selectedCAF, setSelectedCAF] = useState<any>(null)
   const [isCAFModalOpen, setIsCAFModalOpen] = useState(false)
+
+  const refetchInspections = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const [inspectionRes, orgsRes] = await Promise.all([
+        fetch(`/api/master/${masterOrgId}/organization/${orgId}/driver/${driverId}/roadside-inspections`),
+        fetch('/api/organizations')
+      ])
+
+      if (inspectionRes.ok) {
+        const pageData: PageData = await inspectionRes.json()
+        setData(pageData)
+        if (pageData.roadsideInspections.length > 0) {
+          setSelectedInspection(pageData.roadsideInspections[0])
+        } else {
+          setSelectedInspection(null)
+        }
+      } else {
+        const errorText = await inspectionRes.text()
+        throw new Error(`Failed to fetch roadside inspection data: ${errorText}`)
+      }
+
+      if (orgsRes.ok) {
+        const orgs = await orgsRes.json()
+        setOrganizations(orgs)
+      }
+    } catch (err) {
+      console.error('❌ Roadside inspection data fetch error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load roadside inspection data')
+    } finally {
+      setLoading(false)
+    }
+  }, [masterOrgId, orgId, driverId])
 
   // URL-driven data loading - Gold Standard pattern! 🚀
   useEffect(() => {
@@ -300,7 +334,7 @@ export default function MasterDriverRoadsideInspectionsPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
           <p className="text-gray-600">{error}</p>
           <Button 
-            onClick={() => window.location.reload()} 
+            onClick={() => router.refresh()} 
             className="mt-4"
           >
             Try Again
@@ -713,12 +747,11 @@ export default function MasterDriverRoadsideInspectionsPage() {
               <EnhancedRoadsideInspectionForm
                 masterOrgId={masterOrgId}
                 organizationId={orgId}
-                driverId={driverId}
-                editingInspection={selectedInspection}
-                onSuccess={() => {
+                preSelectedDriverId={data.driver.id}
+                initialData={selectedInspection as any}
+                onSubmit={async () => {
                   setIsEditDialogOpen(false)
-                  // Refresh the data to show updated inspection
-                  fetchData()
+                  await refetchInspections()
                 }}
                 onCancel={() => setIsEditDialogOpen(false)}
               />
@@ -729,17 +762,10 @@ export default function MasterDriverRoadsideInspectionsPage() {
 
       {/* CAF Detail Modal */}
       <CAFDetailModal
-        caf={selectedCAF}
-        isOpen={isCAFModalOpen}
+        cafId={selectedCAF?.id}
         onClose={() => {
           setIsCAFModalOpen(false)
           setSelectedCAF(null)
-        }}
-        onCAFUpdated={(updatedCAF) => {
-          // Update the CAF in the created CAFs list
-          setCreatedCAFs(prev => prev.map(caf => 
-            caf.id === updatedCAF.id ? updatedCAF : caf
-          ))
         }}
       />
     </AppLayout>
