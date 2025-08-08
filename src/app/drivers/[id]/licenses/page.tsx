@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import NextImage from "next/image";
 import { AppLayout } from "@/components/layouts/app-layout";
 import { useMasterOrg } from "@/hooks/use-master-org";
 import { buildStandardDriverNavigation } from "@/lib/utils";
@@ -84,7 +85,6 @@ interface Organization {
 
 export default function DriverLicensesPage() {
   const params = useParams();
-  const router = useRouter();
   const driverId = params.id as string;
   const { masterOrg } = useMasterOrg();
 
@@ -488,7 +488,7 @@ export default function DriverLicensesPage() {
                             } else {
                               endorsements = [];
                             }
-                          } catch (e) {
+                          } catch {
                             endorsements = [];
                           }
 
@@ -848,10 +848,13 @@ export default function DriverLicensesPage() {
 
                                 return frontPhoto ? (
                                   <div className="relative">
-                                    <img
+                                    <NextImage
                                       src={frontPhoto.url}
                                       alt="License Front"
+                                      width={1200}
+                                      height={800}
                                       className="w-full rounded-lg border aspect-[3/2] object-cover"
+                                      unoptimized
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
                                       {frontPhoto.fileName}
@@ -883,10 +886,13 @@ export default function DriverLicensesPage() {
 
                                 return backPhoto ? (
                                   <div className="relative">
-                                    <img
+                                    <NextImage
                                       src={backPhoto.url}
                                       alt="License Back"
+                                      width={1200}
+                                      height={800}
                                       className="w-full rounded-lg border aspect-[3/2] object-cover"
+                                      unoptimized
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
                                       {backPhoto.fileName}
@@ -943,12 +949,13 @@ export default function DriverLicensesPage() {
                                       </div>
                                     ) : addon.fileType?.startsWith("image/") ? (
                                       <div className="w-10 h-10 rounded border overflow-hidden">
-                                        <img
+                                        <NextImage
                                           src={addon.url}
                                           alt={addon.fileName || "Attachment image"}
+                                          width={40}
+                                          height={40}
                                           className="w-full h-full object-cover"
-                                          loading="lazy"
-                                          decoding="async"
+                                          unoptimized
                                         />
                                       </div>
                                     ) : addon.fileType?.startsWith("video/") ? (
