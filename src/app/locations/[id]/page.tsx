@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import { EntityDetailPage } from '@/components/entity/entity-detail-page'
+import { EntityDetailPage } from "@/components/entity/entity-detail-page";
 
 interface LocationPageProps {
   params: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 export default function LocationPage({ params }: LocationPageProps) {
-  return <EntityDetailPage entityType="location" entityId={params.id} />
-} 
+  return <EntityDetailPage entityType="location" entityId={params.id} />;
+}

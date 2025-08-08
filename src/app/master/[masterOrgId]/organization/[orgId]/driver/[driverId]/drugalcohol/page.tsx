@@ -1,280 +1,284 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { buildStandardDriverNavigation } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import DrugAlcoholIssueForm from '@/components/drugalcohol_issues/drugalcohol-issue-form'
-import { ActivityLog } from '@/components/ui/activity-log'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { buildStandardDriverNavigation } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import DrugAlcoholIssueForm from "@/components/drugalcohol_issues/drugalcohol-issue-form";
+import { ActivityLog } from "@/components/ui/activity-log";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
-  Edit, Plus, FileText, AlertCircle, CheckCircle, Clock, Shield, TestTubes
-} from 'lucide-react'
-import { format } from 'date-fns'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Edit,
+  Plus,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Shield,
+  TestTubes,
+} from "lucide-react";
+import { format } from "date-fns";
 
 interface DrugAlcoholTest {
-  id: string
-  result: string
-  substance?: string | null
-  lab?: string | null
-  accreditedBy?: string | null
-  reason: string
-  agency: string
-  specimenNumber?: string | null
-  isDrug: boolean
-  isAlcohol: boolean
-  clinic?: any
-  notes?: string | null
-  createdAt: string
+  id: string;
+  result: string;
+  substance?: string | null;
+  lab?: string | null;
+  accreditedBy?: string | null;
+  reason: string;
+  agency: string;
+  specimenNumber?: string | null;
+  isDrug: boolean;
+  isAlcohol: boolean;
+  clinic?: any;
+  notes?: string | null;
+  createdAt: string;
   issue: {
-    id: string
-    title: string
-    description?: string
-    status: string
-    priority: string
-  }
+    id: string;
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
+  };
 }
 
 interface Driver {
-  id: string
-  firstName: string
-  lastName: string
-  licenseNumber?: string
+  id: string;
+  firstName: string;
+  lastName: string;
+  licenseNumber?: string;
   party?: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 interface Organization {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface MasterOrg {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface PageData {
-  masterOrg: MasterOrg
-  organization: Organization
-  driver: Driver
-  drugAlcoholTests: DrugAlcoholTest[]
+  masterOrg: MasterOrg;
+  organization: Organization;
+  driver: Driver;
+  drugAlcoholTests: DrugAlcoholTest[];
 }
 
 export default function MasterDriverDrugAlcoholPage() {
-  const params = useParams()
-  const router = useRouter()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
-  const driverId = params.driverId as string
-  
-  const [data, setData] = useState<PageData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedTest, setSelectedTest] = useState<DrugAlcoholTest | null>(null)
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [attachments, setAttachments] = useState<any[]>([])
+  const params = useParams();
+  const router = useRouter();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
+  const driverId = params.driverId as string;
+
+  const [data, setData] = useState<PageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTest, setSelectedTest] = useState<DrugAlcoholTest | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [attachments, setAttachments] = useState<any[]>([]);
 
   // URL-driven data loading - Gold Standard pattern! 🚀
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        setError(null)
-        
-        // Single URL-driven API call with all contextual data pre-filtered! 
+        setLoading(true);
+        setError(null);
+
+        // Single URL-driven API call with all contextual data pre-filtered!
         const [drugAlcoholResult, orgsResult] = await Promise.allSettled([
           fetch(`/api/master/${masterOrgId}/organization/${orgId}/driver/${driverId}/drugalcohol`),
-          fetch('/api/organizations') // Still need for org selector
-        ])
-        
-        // Handle drug & alcohol data (primary)
-        if (drugAlcoholResult.status === 'fulfilled' && drugAlcoholResult.value.ok) {
-          const pageData: PageData = await drugAlcoholResult.value.json()
-          setData(pageData)
-          console.log('✅ URL-driven drug & alcohol API success!')
-          console.log(`🧪 Loaded ${pageData.drugAlcoholTests.length} test records for ${pageData.driver.firstName} ${pageData.driver.lastName}`)
-        } else {
-          const error = drugAlcoholResult.status === 'fulfilled' 
-            ? await drugAlcoholResult.value.text()
-            : drugAlcoholResult.reason
-          throw new Error(`Failed to fetch drug & alcohol data: ${error}`)
-        }
-        
-        // Handle organizations data (secondary)
-        if (orgsResult.status === 'fulfilled' && orgsResult.value.ok) {
-          const orgs = await orgsResult.value.json()
-          setOrganizations(orgs)
-        }
-        
-      } catch (err) {
-        console.error('❌ Drug & alcohol data fetch error:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load drug & alcohol data')
-      } finally {
-        setLoading(false)
-      }
-    }
+          fetch("/api/organizations"), // Still need for org selector
+        ]);
 
-    fetchData()
-  }, [masterOrgId, orgId, driverId])
+        // Handle drug & alcohol data (primary)
+        if (drugAlcoholResult.status === "fulfilled" && drugAlcoholResult.value.ok) {
+          const pageData: PageData = await drugAlcoholResult.value.json();
+          setData(pageData);
+          console.log("✅ URL-driven drug & alcohol API success!");
+          console.log(
+            `🧪 Loaded ${pageData.drugAlcoholTests.length} test records for ${pageData.driver.firstName} ${pageData.driver.lastName}`,
+          );
+        } else {
+          const error =
+            drugAlcoholResult.status === "fulfilled"
+              ? await drugAlcoholResult.value.text()
+              : drugAlcoholResult.reason;
+          throw new Error(`Failed to fetch drug & alcohol data: ${error}`);
+        }
+
+        // Handle organizations data (secondary)
+        if (orgsResult.status === "fulfilled" && orgsResult.value.ok) {
+          const orgs = await orgsResult.value.json();
+          setOrganizations(orgs);
+        }
+      } catch (err) {
+        console.error("❌ Drug & alcohol data fetch error:", err);
+        setError(err instanceof Error ? err.message : "Failed to load drug & alcohol data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [masterOrgId, orgId, driverId]);
 
   // Get result status for display
   const getResultStatus = (test: DrugAlcoholTest) => {
-    if (test.result === 'Negative') {
+    if (test.result === "Negative") {
       return {
-        status: 'pass',
-        badge: <Badge className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
-          <CheckCircle className="h-3 w-3" />
-          Negative
-        </Badge>
-      }
-    } else if (test.result === 'Positive') {
+        status: "pass",
+        badge: (
+          <Badge className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
+            <CheckCircle className="h-3 w-3" />
+            Negative
+          </Badge>
+        ),
+      };
+    } else if (test.result === "Positive") {
       return {
-        status: 'fail',
-        badge: <Badge variant="destructive" className="flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          Positive
-        </Badge>
-      }
-    } else if (test.result === 'Negative_Dilute') {
+        status: "fail",
+        badge: (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Positive
+          </Badge>
+        ),
+      };
+    } else if (test.result === "Negative_Dilute") {
       return {
-        status: 'warning',
-        badge: <Badge className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border-yellow-200">
-          <Clock className="h-3 w-3" />
-          Negative Dilute
-        </Badge>
-      }
+        status: "warning",
+        badge: (
+          <Badge className="flex items-center gap-1 bg-yellow-100 text-yellow-800 border-yellow-200">
+            <Clock className="h-3 w-3" />
+            Negative Dilute
+          </Badge>
+        ),
+      };
     }
-    
-    return {
-      status: 'unknown',
-      badge: <Badge variant="secondary" className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        Pending
-      </Badge>
-    }
-  }
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    return {
+      status: "unknown",
+      badge: (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Pending
+        </Badge>
+      ),
+    };
+  };
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddTest = async (formData: any) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const response = await fetch('/api/drugalcohol_issues', {
-        method: 'POST',
+      const response = await fetch("/api/drugalcohol_issues", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
-          partyId: data?.driver.party?.id
+          partyId: data?.driver.party?.id,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Failed to create test: ${errorText}`)
+        const errorText = await response.text();
+        throw new Error(`Failed to create test: ${errorText}`);
       }
 
-      const newTest = await response.json()
-      
+      const newTest = await response.json();
+
       // Refresh the data
-      setData(prev => {
-        if (!prev) return prev
+      setData((prev) => {
+        if (!prev) return prev;
         return {
           ...prev,
-          drugAlcoholTests: [newTest, ...prev.drugAlcoholTests]
-        }
-      })
-      setIsAddDialogOpen(false)
-      setSelectedTest(newTest)
+          drugAlcoholTests: [newTest, ...prev.drugAlcoholTests],
+        };
+      });
+      setIsAddDialogOpen(false);
+      setSelectedTest(newTest);
     } catch (error) {
-      console.error('Error creating test:', error)
-      alert(error instanceof Error ? error.message : 'An error occurred while creating the test')
+      console.error("Error creating test:", error);
+      alert(error instanceof Error ? error.message : "An error occurred while creating the test");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const refreshAttachments = async () => {
     if (selectedTest?.issue.id) {
       try {
-        const response = await fetch(`/api/attachments?issueId=${selectedTest.issue.id}`)
+        const response = await fetch(`/api/attachments?issueId=${selectedTest.issue.id}`);
         if (response.ok) {
-          const data = await response.json()
-          setAttachments(data)
+          const data = await response.json();
+          setAttachments(data);
         }
       } catch (error) {
-        console.error('Error fetching attachments:', error)
+        console.error("Error fetching attachments:", error);
       }
     }
-  }
+  };
 
   useEffect(() => {
     if (selectedTest?.issue.id) {
-      refreshAttachments()
+      refreshAttachments();
     } else {
-      setAttachments([])
+      setAttachments([]);
     }
-  }, [selectedTest])
+  }, [selectedTest]);
 
   if (loading) {
     return (
-      <AppLayout 
-        name="Loading..."
-        topNav={[]}
-        className="p-6"
-      >
+      <AppLayout name="Loading..." topNav={[]} className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (error || !data) {
     return (
-      <AppLayout 
-        name="FleeTrax"
-        topNav={[]}
-        className="p-6"
-      >
+      <AppLayout name="FleeTrax" topNav={[]} className="p-6">
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
           <p className="text-gray-600">{error}</p>
-          <Button 
-            onClick={() => router.refresh()} 
-            className="mt-4"
-          >
+          <Button onClick={() => router.refresh()} className="mt-4">
             Try Again
           </Button>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   // Build standard navigation
-  const topNav = buildStandardDriverNavigation(
-    driverId || '',
-    masterOrgId || '',
-    'drivers'
-  )
+  const topNav = buildStandardDriverNavigation(driverId || "", masterOrgId || "", "drivers");
 
   return (
-    <AppLayout 
-      name={data.masterOrg.name}
-      topNav={topNav}
-      className="p-6"
-    >
+    <AppLayout name={data.masterOrg.name} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto h-full">
         {/* Driver and Drug & Alcohol Header - Gold Standard */}
         <div className="flex items-center justify-between mb-6">
@@ -287,7 +291,7 @@ export default function MasterDriverDrugAlcoholPage() {
               <span>Tests: {data.drugAlcoholTests.length}</span>
             </div>
           </div>
-          
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -326,46 +330,48 @@ export default function MasterDriverDrugAlcoholPage() {
                   {data.drugAlcoholTests.length > 0 ? (
                     <div className="space-y-1">
                       {data.drugAlcoholTests.map((test) => {
-                        const resultStatus = getResultStatus(test)
-                        const isSelected = selectedTest?.id === test.id
-                        
+                        const resultStatus = getResultStatus(test);
+                        const isSelected = selectedTest?.id === test.id;
+
                         return (
                           <div
                             key={test.id}
                             className={`p-3 cursor-pointer border-l-4 transition-colors ${
-                              isSelected 
-                                ? 'bg-blue-50 border-l-blue-500' 
-                                : 'hover:bg-gray-50 border-l-transparent'
+                              isSelected
+                                ? "bg-blue-50 border-l-blue-500"
+                                : "hover:bg-gray-50 border-l-transparent"
                             }`}
                             onClick={() => setSelectedTest(test)}
                           >
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-sm truncate">
-                                  {test.issue.title}
-                                </h4>
+                                <h4 className="font-medium text-sm truncate">{test.issue.title}</h4>
                                 {resultStatus.badge}
                               </div>
-                              
+
                               <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <TestTubes className="h-3 w-3" />
-                                {test.isDrug && test.isAlcohol ? 'D&A' : 
-                                 test.isDrug ? 'Drug' : 
-                                 test.isAlcohol ? 'Alcohol' : 'Test'}
+                                {test.isDrug && test.isAlcohol
+                                  ? "D&A"
+                                  : test.isDrug
+                                    ? "Drug"
+                                    : test.isAlcohol
+                                      ? "Alcohol"
+                                      : "Test"}
                                 <span>•</span>
                                 <Clock className="h-3 w-3" />
-                                {format(new Date(test.createdAt), 'MMM d')}
+                                {format(new Date(test.createdAt), "MMM d")}
                               </div>
 
                               {test.reason && (
                                 <div className="flex items-center gap-1 text-xs text-gray-500">
                                   <Shield className="h-3 w-3" />
-                                  {test.reason.replace('_', ' ')}
+                                  {test.reason.replace("_", " ")}
                                 </div>
                               )}
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   ) : (
@@ -391,21 +397,19 @@ export default function MasterDriverDrugAlcoholPage() {
                         <TestTubes className="h-5 w-5" />
                         Test Details
                       </CardTitle>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setSelectedTest(null)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedTest(null)}>
                         ✕
                       </Button>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="flex-1 overflow-y-auto space-y-6">
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-gray-900">{selectedTest.issue.title}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{selectedTest.issue.description}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {selectedTest.issue.description}
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 text-sm">
@@ -413,11 +417,11 @@ export default function MasterDriverDrugAlcoholPage() {
                           <span className="font-medium text-gray-700">Result:</span>
                           <div className="mt-1">{getResultStatus(selectedTest).badge}</div>
                         </div>
-                        
+
                         <div>
                           <span className="font-medium text-gray-700">Date:</span>
                           <p className="text-gray-600 mt-1">
-                            {format(new Date(selectedTest.createdAt), 'MMM d, yyyy')}
+                            {format(new Date(selectedTest.createdAt), "MMM d, yyyy")}
                           </p>
                         </div>
                       </div>
@@ -447,9 +451,7 @@ export default function MasterDriverDrugAlcoholPage() {
                     {/* Activity Log */}
                     <div>
                       <h4 className="font-medium text-gray-900 mb-3">Activity Log</h4>
-                      <ActivityLog 
-                        issueId={selectedTest.issue.id}
-                      />
+                      <ActivityLog issueId={selectedTest.issue.id} />
                     </div>
                   </CardContent>
                 </div>
@@ -467,5 +469,5 @@ export default function MasterDriverDrugAlcoholPage() {
         </div>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

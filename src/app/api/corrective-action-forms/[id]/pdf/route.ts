@@ -1,23 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { CAFPDFGenerator } from '@/lib/pdf-generator'
-import { createId } from '@paralleldrive/cuid2'
-import { withApiError } from '@/lib/with-api-error'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { CAFPDFGenerator } from "@/lib/pdf-generator";
+import { createId } from "@paralleldrive/cuid2";
+import { withApiError } from "@/lib/with-api-error";
 
 // GET /api/corrective-action-forms/[id]/pdf - Generate CAF PDF
-export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) => {
-    const { userId } = await auth()
+export const GET = withApiError(
+  "/api/corrective-action-forms/[id]/pdf",
+  async (req: NextRequest, { params }: { params: { id: string } }) => {
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url)
-    const format = searchParams.get('format') || 'fillable' // 'fillable' or 'completed'
-    const download = searchParams.get('download') === 'true'
+    const { searchParams } = new URL(req.url);
+    const format = searchParams.get("format") || "fillable"; // 'fillable' or 'completed'
+    const download = searchParams.get("download") === "true";
 
     // Fetch CAF with all related data
     const caf = await db.corrective_action_form.findUnique({
@@ -27,28 +26,28 @@ export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
           include: {
             party: {
               include: {
-                person: true
-              }
-            }
-          }
+                person: true,
+              },
+            },
+          },
         },
         created_by_staff: {
           include: {
             party: {
               include: {
-                person: true
-              }
-            }
-          }
+                person: true,
+              },
+            },
+          },
         },
         approved_by_staff: {
           include: {
             party: {
               include: {
-                person: true
-              }
-            }
-          }
+                person: true,
+              },
+            },
+          },
         },
         organization: true,
         signatures: {
@@ -57,42 +56,42 @@ export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
               include: {
                 party: {
                   include: {
-                    person: true
-                  }
-                }
-              }
-            }
+                    person: true,
+                  },
+                },
+              },
+            },
           },
-          orderBy: { signedAt: 'asc' }
+          orderBy: { signedAt: "asc" },
         },
-        incident: true
-      }
-    })
+        incident: true,
+      },
+    });
 
     if (!caf) {
-      return NextResponse.json({ error: 'CAF not found' }, { status: 404 })
+      return NextResponse.json({ error: "CAF not found" }, { status: 404 });
     }
 
     // Verify user has access to this CAF
     const masterRole = await db.role.findFirst({
       where: {
         party: { userId },
-        roleType: 'master',
-        isActive: true
-      }
-    })
+        roleType: "master",
+        isActive: true,
+      },
+    });
 
     if (!masterRole) {
       const userRole = await db.role.findFirst({
         where: {
           party: { userId },
           organizationId: caf.organizationId,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (!userRole) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
     }
 
@@ -100,10 +99,10 @@ export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
     const cafData = {
       id: caf.id,
       cafNumber: caf.cafNumber,
-      incidentId: caf.incidentId || 'N/A',
-      violationType: caf.violationType || 'Unknown',
-      violationCodes: Array.isArray(caf.violationCodes) ? caf.violationCodes as string[] : [],
-      violationSummary: caf.violationSummary || 'No summary provided',
+      incidentId: caf.incidentId || "N/A",
+      violationType: caf.violationType || "Unknown",
+      violationCodes: Array.isArray(caf.violationCodes) ? (caf.violationCodes as string[]) : [],
+      violationSummary: caf.violationSummary || "No summary provided",
       title: caf.title,
       description: caf.description,
       priority: caf.priority,
@@ -115,66 +114,73 @@ export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
       completedAt: caf.completedAt?.toISOString(),
       approvedAt: caf.approvedAt?.toISOString(),
       createdAt: caf.createdAt.toISOString(),
-       assigned_staff: caf.assigned_staff ? {
-        party: {
-          person: {
-             firstName: caf.assigned_staff.party.person?.firstName || '',
-             lastName: caf.assigned_staff.party.person?.lastName || ''
+      assigned_staff: caf.assigned_staff
+        ? {
+            party: {
+              person: {
+                firstName: caf.assigned_staff.party.person?.firstName || "",
+                lastName: caf.assigned_staff.party.person?.lastName || "",
+              },
+            },
+            position: caf.assigned_staff.position || "N/A",
           }
-        },
-        position: caf.assigned_staff.position || 'N/A'
-      } : undefined,
-       created_by_staff: caf.created_by_staff ? {
-        party: {
-          person: {
-             firstName: caf.created_by_staff.party.person?.firstName || '',
-             lastName: caf.created_by_staff.party.person?.lastName || ''
+        : undefined,
+      created_by_staff: caf.created_by_staff
+        ? {
+            party: {
+              person: {
+                firstName: caf.created_by_staff.party.person?.firstName || "",
+                lastName: caf.created_by_staff.party.person?.lastName || "",
+              },
+            },
           }
-        }
-      } : undefined,
-      organization: caf.organization ? {
-        name: caf.organization.name
-      } : undefined,
-       signatures: caf.signatures?.map(sig => ({
-        signatureType: sig.signatureType,
-        signedAt: sig.signedAt.toISOString(),
-        digitalSignature: sig.digitalSignature || '',
-        staff: {
-          party: {
-            person: {
-               firstName: sig.staff.party.person?.firstName || '',
-               lastName: sig.staff.party.person?.lastName || ''
-            }
+        : undefined,
+      organization: caf.organization
+        ? {
+            name: caf.organization.name,
           }
-        }
-      })) || []
-    }
+        : undefined,
+      signatures:
+        caf.signatures?.map((sig) => ({
+          signatureType: sig.signatureType,
+          signedAt: sig.signedAt.toISOString(),
+          digitalSignature: sig.digitalSignature || "",
+          staff: {
+            party: {
+              person: {
+                firstName: sig.staff.party.person?.firstName || "",
+                lastName: sig.staff.party.person?.lastName || "",
+              },
+            },
+          },
+        })) || [],
+    };
 
     // Ensure types match CAFData
 
     // Generate PDF
-    const generator = new CAFPDFGenerator()
-    let pdfBytes: Uint8Array
+    const generator = new CAFPDFGenerator();
+    let pdfBytes: Uint8Array;
 
-    if (format === 'completed') {
-      pdfBytes = await generator.generateCompletedPDF(cafData)
+    if (format === "completed") {
+      pdfBytes = await generator.generateCompletedPDF(cafData);
     } else {
-      pdfBytes = await generator.generateFillablePDF(cafData)
+      pdfBytes = await generator.generateFillablePDF(cafData);
     }
 
     // Create filename
-    const timestamp = new Date().toISOString().split('T')[0]
-    const filename = `CAF_${caf.cafNumber}_${format}_${timestamp}.pdf`
+    const timestamp = new Date().toISOString().split("T")[0];
+    const filename = `CAF_${caf.cafNumber}_${format}_${timestamp}.pdf`;
 
     // Return PDF
-    const response = new NextResponse(pdfBytes)
-    response.headers.set('Content-Type', 'application/pdf')
-    response.headers.set('Content-Length', pdfBytes.length.toString())
-    
+    const response = new NextResponse(pdfBytes);
+    response.headers.set("Content-Type", "application/pdf");
+    response.headers.set("Content-Length", pdfBytes.length.toString());
+
     if (download) {
-      response.headers.set('Content-Disposition', `attachment; filename="${filename}"`)
+      response.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
     } else {
-      response.headers.set('Content-Disposition', `inline; filename="${filename}"`)
+      response.headers.set("Content-Disposition", `inline; filename="${filename}"`);
     }
 
     // Log the PDF generation
@@ -182,13 +188,19 @@ export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
       data: {
         id: createId(),
         cafId: params.id,
-        activityType: 'caf',
-        title: 'CAF PDF generated',
-        content: JSON.stringify({ format, filename, generatedBy: userId, fileSize: pdfBytes.length }),
-        tags: ['caf', 'pdf'],
+        activityType: "caf",
+        title: "CAF PDF generated",
+        content: JSON.stringify({
+          format,
+          filename,
+          generatedBy: userId,
+          fileSize: pdfBytes.length,
+        }),
+        tags: ["caf", "pdf"],
         createdBy: userId,
-      }
-    })
+      },
+    });
 
-    return response
-})
+    return response;
+  },
+);

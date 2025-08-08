@@ -1,84 +1,84 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { createId } from '@paralleldrive/cuid2'
-import { captureAPIError } from '@/lib/sentry-utils'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { createId } from "@paralleldrive/cuid2";
+import { captureAPIError } from "@/lib/sentry-utils";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } }
+  { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } },
 ) {
-  const { masterOrgId, orgId, equipmentId } = params
+  const { masterOrgId, orgId, equipmentId } = params;
   try {
-    const { userId } = await auth()
-    
+    const { userId } = await auth();
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get equipment details
     const equipment = await db.equipment.findUnique({
       where: { id: equipmentId },
       include: {
-        party: true
-      }
-    })
+        party: true,
+      },
+    });
 
     if (!equipment) {
-      return NextResponse.json({ error: 'Equipment not found' }, { status: 404 })
+      return NextResponse.json({ error: "Equipment not found" }, { status: 404 });
     }
 
     // Get organization details
     const organization = await db.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true }
-    })
+      select: { id: true, name: true },
+    });
 
     if (!organization) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     // Get master organization details
     const masterOrg = await db.organization.findUnique({
       where: { id: masterOrgId },
-      select: { id: true, name: true }
-    })
+      select: { id: true, name: true },
+    });
 
     if (!masterOrg) {
-      return NextResponse.json({ error: 'Master organization not found' }, { status: 404 })
+      return NextResponse.json({ error: "Master organization not found" }, { status: 404 });
     }
 
     // Get accidents for this equipment
     const accidents = await db.incident.findMany({
       where: {
-        incidentType: 'ACCIDENT',
+        incidentType: "ACCIDENT",
         equipment: {
           some: {
-            equipmentId: equipmentId
-          }
-        }
+            equipmentId: equipmentId,
+          },
+        },
       },
       include: {
         issue: {
           include: {
             party: {
               include: {
-                equipment: true
-              }
-            }
-          }
+                equipment: true,
+              },
+            },
+          },
         },
         equipment: true,
-        violations: true
+        violations: true,
       },
       orderBy: {
-        incidentDate: 'desc'
-      }
-    })
+        incidentDate: "desc",
+      },
+    });
 
     // Transform accidents data
-    const transformedAccidents = accidents.map(accident => {
-      const accidentData = accident.accidentData as any
+    const transformedAccidents = accidents.map((accident) => {
+      const accidentData = accident.accidentData as any;
       return {
         id: accident.id,
         reportNumber: accident.reportNumber,
@@ -112,17 +112,19 @@ export async function GET(
           priority: accident.issue.priority,
           party: {
             id: accident.issue.party.id,
-            equipment: accident.issue.party.equipment ? {
-              vehicleTypeId: accident.issue.party.equipment.vehicleTypeId,
-              make: accident.issue.party.equipment.make,
-              model: accident.issue.party.equipment.model,
-              year: accident.issue.party.equipment.year,
-              vin: accident.issue.party.equipment.vin,
-              plateNumber: accident.issue.party.equipment.plateNumber,
-            } : null
-          }
+            equipment: accident.issue.party.equipment
+              ? {
+                  vehicleTypeId: accident.issue.party.equipment.vehicleTypeId,
+                  make: accident.issue.party.equipment.make,
+                  model: accident.issue.party.equipment.model,
+                  year: accident.issue.party.equipment.year,
+                  vin: accident.issue.party.equipment.vin,
+                  plateNumber: accident.issue.party.equipment.plateNumber,
+                }
+              : null,
+          },
         },
-        equipment: accident.equipment.map(eq => ({
+        equipment: accident.equipment.map((eq) => ({
           id: eq.id,
           unitNumber: eq.unitNumber,
           unitType: eq.unitType,
@@ -130,29 +132,29 @@ export async function GET(
           model: eq.model,
           year: eq.year,
           plateNumber: eq.plateNumber,
-          vin: eq.vin
+          vin: eq.vin,
         })),
-        violations: accident.violations.map(violation => ({
+        violations: accident.violations.map((violation) => ({
           id: violation.id,
-          violationCode: violation.violationCode || 'Unknown',
+          violationCode: violation.violationCode || "Unknown",
           description: violation.description,
           outOfService: violation.outOfService,
           severity: violation.severity,
           unitNumber: violation.unitNumber,
           violationType: violation.violationType,
-          inspectorComments: violation.inspectorComments
-        }))
-      }
-    })
+          inspectorComments: violation.inspectorComments,
+        })),
+      };
+    });
 
     return NextResponse.json({
       masterOrg: {
         id: masterOrg.id,
-        name: masterOrg.name
+        name: masterOrg.name,
       },
       organization: {
         id: organization.id,
-        name: organization.name
+        name: organization.name,
       },
       equipment: {
         id: equipment.id,
@@ -163,70 +165,66 @@ export async function GET(
         vin: equipment.vin,
         plateNumber: equipment.plateNumber,
         party: {
-          id: equipment.party.id
-        }
+          id: equipment.party.id,
+        },
       },
-      accidents: transformedAccidents
-    })
-
+      accidents: transformedAccidents,
+    });
   } catch (error) {
-    console.error('Error fetching equipment accidents:', error)
-    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
-      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/accidents',
-      method: 'GET',
-      extra: { masterOrgId, orgId, equipmentId }
-    })
-    return NextResponse.json(
-      { error: 'Failed to fetch accidents' },
-      { status: 500 }
-    )
+    console.error("Error fetching equipment accidents:", error);
+    captureAPIError(error instanceof Error ? error : new Error("Unknown error"), {
+      endpoint: "/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/accidents",
+      method: "GET",
+      extra: { masterOrgId, orgId, equipmentId },
+    });
+    return NextResponse.json({ error: "Failed to fetch accidents" }, { status: 500 });
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } }
+  { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } },
 ) {
-  const { masterOrgId, orgId, equipmentId } = params
+  const { masterOrgId, orgId, equipmentId } = params;
   try {
-    const { userId } = await auth()
-    
+    const { userId } = await auth();
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const formData = await request.json()
+    const formData = await request.json();
 
     // Get equipment details
     const equipment = await db.equipment.findUnique({
       where: { id: equipmentId },
       include: {
-        party: true
-      }
-    })
+        party: true,
+      },
+    });
 
     if (!equipment) {
-      return NextResponse.json({ error: 'Equipment not found' }, { status: 404 })
+      return NextResponse.json({ error: "Equipment not found" }, { status: 404 });
     }
 
     // Create issue first
     const issue = await db.issue.create({
       data: {
         id: createId(),
-        issueType: 'ACCIDENT',
+        issueType: "ACCIDENT",
         title: `Accident - ${formData.reportNumber || new Date().toLocaleDateString()}`,
         description: `Accident involving ${equipment.make} ${equipment.model}`,
-        status: 'OPEN',
-        priority: formData.isFatality ? 'HIGH' : formData.isInjury ? 'MEDIUM' : 'LOW',
+        status: "OPEN",
+        priority: formData.isFatality ? "HIGH" : formData.isInjury ? "MEDIUM" : "LOW",
         partyId: equipment.partyId,
-        updatedAt: new Date()
-      }
-    })
+        updatedAt: new Date(),
+      },
+    });
 
     // Create incident
     const incident = await db.incident.create({
       data: {
         issueId: issue.id,
-        incidentType: 'ACCIDENT',
+        incidentType: "ACCIDENT",
         incidentDate: new Date(formData.incidentDate),
         incidentTime: formData.incidentTime,
         officerName: formData.officerName,
@@ -250,22 +248,22 @@ export async function POST(
           accidentDescription: formData.accidentDescription,
           weatherConditions: formData.weatherConditions,
           roadConditions: formData.roadConditions,
-          trafficConditions: formData.trafficConditions
-        }
-      }
-    })
+          trafficConditions: formData.trafficConditions,
+        },
+      },
+    });
 
     // Create equipment involvement records
     if (formData.selectedEquipmentIds?.length > 0) {
       for (let i = 0; i < formData.selectedEquipmentIds.length; i++) {
-        const equipId = formData.selectedEquipmentIds[i]
+        const equipId = formData.selectedEquipmentIds[i];
         await db.incident_equipment_involvement.create({
           data: {
             incidentId: incident.id,
             equipmentId: equipId,
-            unitNumber: i + 1
-          }
-        })
+            unitNumber: i + 1,
+          },
+        });
       }
     }
 
@@ -282,9 +280,9 @@ export async function POST(
             unitNumber: violation.unitNumber,
             violationType: violation.violationType,
             inspectorComments: violation.inspectorComments,
-            assignedPartyId: violation.assignedPartyId
-          }
-        })
+            assignedPartyId: violation.assignedPartyId,
+          },
+        });
       }
     }
 
@@ -296,28 +294,24 @@ export async function POST(
           include: {
             party: {
               include: {
-                equipment: true
-              }
-            }
-          }
+                equipment: true,
+              },
+            },
+          },
         },
         equipment: true,
-        violations: true
-      }
-    })
+        violations: true,
+      },
+    });
 
-    return NextResponse.json(createdIncident, { status: 201 })
-
+    return NextResponse.json(createdIncident, { status: 201 });
   } catch (error) {
-    console.error('Error creating equipment accident:', error)
-    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
-      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/accidents',
-      method: 'POST',
-      extra: { masterOrgId, orgId, equipmentId }
-    })
-    return NextResponse.json(
-      { error: 'Failed to create accident' },
-      { status: 500 }
-    )
+    console.error("Error creating equipment accident:", error);
+    captureAPIError(error instanceof Error ? error : new Error("Unknown error"), {
+      endpoint: "/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/accidents",
+      method: "POST",
+      extra: { masterOrgId, orgId, equipmentId },
+    });
+    return NextResponse.json({ error: "Failed to create accident" }, { status: 500 });
   }
-} 
+}

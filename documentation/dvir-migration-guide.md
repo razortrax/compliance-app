@@ -1,6 +1,6 @@
 # DVER → DVIR Migration Guide
 
-*Created: January 31, 2025*
+_Created: January 31, 2025_
 
 ## Overview
 
@@ -9,9 +9,11 @@ This guide documents the systematic migration from incorrect "DVER" terminology 
 ## ✅ COMPLETED UPDATES
 
 ### **1. Database Schema**
+
 - ✅ Updated `enum DverSource` → `enum DvirSource` in `prisma/schema.prisma`
 
 ### **2. Core Library Files**
+
 - ✅ **NEW**: `src/lib/dvir-automation.ts` (corrected implementation)
   - `DVIRDocument`, `DVIREquipment`, `DVIRViolation` interfaces
   - `DVIRProcessor` class with `processDVIR()` method
@@ -19,6 +21,7 @@ This guide documents the systematic migration from incorrect "DVER" terminology 
 - ✅ **DELETED**: `src/lib/dver-automation.ts` (old implementation)
 
 ### **3. UI Components**
+
 - ✅ **NEW**: `src/components/incidents/dvir-upload-modal.tsx` (corrected implementation)
   - `DVIRUploadModal` component
   - Proper DVIR terminology throughout
@@ -32,6 +35,7 @@ This guide documents the systematic migration from incorrect "DVER" terminology 
 - ✅ **NEW**: `src/components/roadside_inspections/roadside-inspection-form-fixed.tsx` (corrected implementation)
 
 ### **4. Page Components**
+
 - ✅ **UPDATED**: `src/app/roadside_inspections/page.tsx`
   - `dverReceived` → `dvirReceived`
   - `dverSource` → `dvirSource`
@@ -41,6 +45,7 @@ This guide documents the systematic migration from incorrect "DVER" terminology 
   - Display labels: "DVER" → "DVIR"
 
 ### **5. Documentation**
+
 - ✅ **UPDATED**: `documentation/current-status.md`
   - "DVER Auto-Population System" → "DVIR Auto-Population System"
 - ✅ **UPDATED**: `documentation/driver-issues-completion-plan.md`
@@ -67,6 +72,7 @@ npx prisma generate
 ```
 
 **Expected Migration SQL:**
+
 ```sql
 -- AlterEnum
 ALTER TYPE "DverSource" RENAME TO "DvirSource";
@@ -93,6 +99,7 @@ mv src/components/roadside_inspections/roadside-inspection-form-fixed.tsx \
 Update any files that import the DVIR components:
 
 **Files to check for import updates:**
+
 - Any files importing from `@/lib/dver-automation` → `@/lib/dvir-automation`
 - Any files importing `DVERUploadModal` → `DVIRUploadModal`
 - Check for any remaining DVER references in JSX components
@@ -118,6 +125,7 @@ grep -r "dver" documentation/
 After completing the migration, verify everything works:
 
 ### **Database Verification**
+
 ```bash
 # Check that the enum was renamed
 npx prisma studio
@@ -125,18 +133,21 @@ npx prisma studio
 ```
 
 ### **TypeScript Compilation**
+
 ```bash
 # Ensure no TypeScript errors
 npm run build
 ```
 
 ### **Component Functionality**
+
 - [ ] Roadside inspection form loads without errors
 - [ ] DVIR upload modal opens and functions correctly
 - [ ] All dropdown menus for DVIR source work properly
 - [ ] Form submissions include correct field names
 
 ### **UI Text Verification**
+
 - [ ] All labels show "DVIR" instead of "DVER"
 - [ ] Form field labels are correct
 - [ ] Error messages reference correct terminology
@@ -146,22 +157,25 @@ npm run build
 ## 📋 Database Field Mapping
 
 ### **Before Migration**
+
 ```sql
 dverReceived    Boolean   @default(false)
 dverSource      DverSource?
 ```
 
 ### **After Migration**
+
 ```sql
 dvirReceived    Boolean   @default(false)
 dvirSource      DvirSource?
 ```
 
 ### **Enum Values (Unchanged)**
+
 ```sql
 enum DvirSource {
   Driver_Reported
-  FMCSA_Portal_Check  
+  FMCSA_Portal_Check
   Third_Party_Report
 }
 ```
@@ -171,16 +185,19 @@ enum DvirSource {
 ## 🎯 Expected Outcomes
 
 ### **User-Facing Changes**
+
 - All forms and displays will show "DVIR" instead of "DVER"
 - Professional terminology aligns with DOT standards
 - No functional changes to workflow or data structure
 
 ### **Developer Benefits**
+
 - Consistent terminology throughout codebase
 - Proper alignment with DOT compliance standards
 - Reduced confusion for future development
 
 ### **Technical Improvements**
+
 - Clean TypeScript compilation
 - Proper enum naming in database
 - Consistent API field names
@@ -192,6 +209,7 @@ enum DvirSource {
 If issues arise during migration:
 
 ### **Database Rollback**
+
 ```bash
 # Revert the migration
 npx prisma migrate reset
@@ -199,6 +217,7 @@ npx prisma migrate reset
 ```
 
 ### **Code Rollback**
+
 ```bash
 # Restore from git if needed
 git checkout HEAD~1 -- src/components/roadside_inspections/
@@ -220,4 +239,4 @@ If you encounter issues during migration:
 
 **Important**: The migration primarily affects roadside inspections and accidents functionality. Regular license, training, MVR, and physical issue management will not be affected by this change.
 
-*Complete this migration before proceeding with additional driver issue overhauls to ensure consistent terminology throughout the system.* 
+_Complete this migration before proceeding with additional driver issue overhauls to ensure consistent terminology throughout the system._

@@ -1,111 +1,114 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useUser } from '@clerk/nextjs'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { 
-  Plus,
-  Edit,
-  Package,
-  ArrowLeft,
-  Settings,
-  Filter,
-  Tag,
-  X,
-  Search
-} from "lucide-react"
-import { EmptyState } from "@/components/ui/empty-state"
-import { ActivityLog } from "@/components/ui/activity-log"
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { useMasterOrg } from "@/hooks/use-master-org";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Edit, Package, ArrowLeft, Settings, Filter, Tag, X, Search } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ActivityLog } from "@/components/ui/activity-log";
 
 interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
+  id: string;
+  name: string;
+  dotNumber?: string | null;
 }
 
 interface Addon {
-  id: string
-  name: string
-  category: string
-  description?: string
-  status: 'active' | 'inactive'
-  tags: string[]
-  createdAt: string
-  updatedAt: string
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  status: "active" | "inactive";
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ADDON_CATEGORIES = [
-  'Safety',
-  'Operations', 
-  'Logistics',
-  'Maintenance',
-  'Compliance',
-  'Finance',
-  'HR',
-  'Technology'
-]
+  "Safety",
+  "Operations",
+  "Logistics",
+  "Maintenance",
+  "Compliance",
+  "Finance",
+  "HR",
+  "Technology",
+];
 
 const ADDON_STATUSES = [
-  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-800' },
-  { value: 'inactive', label: 'Inactive', color: 'bg-gray-100 text-gray-800' }
-]
+  { value: "active", label: "Active", color: "bg-green-100 text-green-800" },
+  { value: "inactive", label: "Inactive", color: "bg-gray-100 text-gray-800" },
+];
 
 export default function OrganizationOtherStuffPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { user } = useUser()
-  const { masterOrg } = useMasterOrg()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useUser();
+  const { masterOrg } = useMasterOrg();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
 
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [addons, setAddons] = useState<Addon[]>([])
-  const [filteredAddons, setFilteredAddons] = useState<Addon[]>([])
-  const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [addons, setAddons] = useState<Addon[]>([]);
+  const [filteredAddons, setFilteredAddons] = useState<Addon[]>([]);
+  const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   // Filter states
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+
   // Add form states
   const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    description: '',
-    status: 'active' as 'active' | 'inactive',
-    tags: [] as string[]
-  })
-  const [newTag, setNewTag] = useState('')
+    name: "",
+    category: "",
+    description: "",
+    status: "active" as "active" | "inactive",
+    tags: [] as string[],
+  });
+  const [newTag, setNewTag] = useState("");
 
   // Fetch organization data
   useEffect(() => {
     const fetchOrganization = async () => {
       try {
-        const response = await fetch(`/api/organizations/${orgId}`)
+        const response = await fetch(`/api/organizations/${orgId}`);
         if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
+          const data = await response.json();
+          setOrganization(data);
         }
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        console.error("Error fetching organization:", error);
       }
-    }
+    };
 
     const fetchAddons = async () => {
       try {
@@ -113,113 +116,112 @@ export default function OrganizationOtherStuffPage() {
         // For now, we'll use mock data structure
         const mockAddons: Addon[] = [
           {
-            id: '1',
-            name: 'Safety Equipment Tracking',
-            category: 'Safety',
-            description: 'Track safety equipment maintenance and inspections',
-            status: 'active',
-            tags: ['safety', 'equipment', 'maintenance'],
-            createdAt: '2024-01-15',
-            updatedAt: '2024-01-20'
+            id: "1",
+            name: "Safety Equipment Tracking",
+            category: "Safety",
+            description: "Track safety equipment maintenance and inspections",
+            status: "active",
+            tags: ["safety", "equipment", "maintenance"],
+            createdAt: "2024-01-15",
+            updatedAt: "2024-01-20",
           },
           {
-            id: '2',
-            name: 'Fuel Management System',
-            category: 'Operations',
-            description: 'Monitor fuel consumption and efficiency metrics',
-            status: 'active',
-            tags: ['fuel', 'efficiency', 'monitoring'],
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-18'
+            id: "2",
+            name: "Fuel Management System",
+            category: "Operations",
+            description: "Monitor fuel consumption and efficiency metrics",
+            status: "active",
+            tags: ["fuel", "efficiency", "monitoring"],
+            createdAt: "2024-01-10",
+            updatedAt: "2024-01-18",
           },
           {
-            id: '3',
-            name: 'Route Optimization',
-            category: 'Logistics',
-            description: 'Optimize delivery routes for efficiency',
-            status: 'inactive',
-            tags: ['routes', 'optimization', 'delivery'],
-            createdAt: '2024-01-05',
-            updatedAt: '2024-01-12'
+            id: "3",
+            name: "Route Optimization",
+            category: "Logistics",
+            description: "Optimize delivery routes for efficiency",
+            status: "inactive",
+            tags: ["routes", "optimization", "delivery"],
+            createdAt: "2024-01-05",
+            updatedAt: "2024-01-12",
           },
           {
-            id: '4',
-            name: 'Driver Performance Analytics',
-            category: 'HR',
-            description: 'Track and analyze driver performance metrics',
-            status: 'active',
-            tags: ['analytics', 'performance', 'drivers'],
-            createdAt: '2024-01-20',
-            updatedAt: '2024-01-25'
-          }
-        ]
+            id: "4",
+            name: "Driver Performance Analytics",
+            category: "HR",
+            description: "Track and analyze driver performance metrics",
+            status: "active",
+            tags: ["analytics", "performance", "drivers"],
+            createdAt: "2024-01-20",
+            updatedAt: "2024-01-25",
+          },
+        ];
 
-        setAddons(mockAddons)
-        setFilteredAddons(mockAddons)
+        setAddons(mockAddons);
+        setFilteredAddons(mockAddons);
         // Auto-select first addon if any
         if (mockAddons.length > 0) {
-          setSelectedAddon(mockAddons[0])
+          setSelectedAddon(mockAddons[0]);
         }
       } catch (error) {
-        console.error('Error fetching addons:', error)
+        console.error("Error fetching addons:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
     if (orgId) {
-      fetchOrganization()
-      fetchAddons()
+      fetchOrganization();
+      fetchAddons();
     }
-  }, [orgId])
+  }, [orgId]);
 
   // Filter addons based on search and filters
   useEffect(() => {
-    let filtered = addons
+    let filtered = addons;
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(addon =>
-        addon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        addon.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        addon.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        addon.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
+      filtered = filtered.filter(
+        (addon) =>
+          addon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          addon.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          addon.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          addon.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase())),
+      );
     }
 
     // Category filter
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(addon => selectedCategories.includes(addon.category))
+      filtered = filtered.filter((addon) => selectedCategories.includes(addon.category));
     }
 
     // Status filter
     if (selectedStatuses.length > 0) {
-      filtered = filtered.filter(addon => selectedStatuses.includes(addon.status))
+      filtered = filtered.filter((addon) => selectedStatuses.includes(addon.status));
     }
 
     // Tag filter
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(addon =>
-        selectedTags.some(tag => addon.tags.includes(tag))
-      )
+      filtered = filtered.filter((addon) => selectedTags.some((tag) => addon.tags.includes(tag)));
     }
 
-    setFilteredAddons(filtered)
-  }, [addons, searchTerm, selectedCategories, selectedTags, selectedStatuses])
+    setFilteredAddons(filtered);
+  }, [addons, searchTerm, selectedCategories, selectedTags, selectedStatuses]);
 
   // Get all unique tags from addons
-  const allTags = Array.from(new Set(addons.flatMap(addon => addon.tags)))
+  const allTags = Array.from(new Set(addons.flatMap((addon) => addon.tags)));
 
   const handleAddAddon = async () => {
     try {
       // Validation
       if (!formData.name.trim()) {
-        alert('Please enter a name for the addon')
-        return
+        alert("Please enter a name for the addon");
+        return;
       }
       if (!formData.category) {
-        alert('Please select a category')
-        return
+        alert("Please select a category");
+        return;
       }
 
       // TODO: Implement actual API call
@@ -231,40 +233,40 @@ export default function OrganizationOtherStuffPage() {
         status: formData.status,
         tags: formData.tags,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      
-      setAddons(prev => [...prev, newAddon])
-      setSelectedAddon(newAddon)
-      setIsAddDialogOpen(false)
-      
+        updatedAt: new Date().toISOString(),
+      };
+
+      setAddons((prev) => [...prev, newAddon]);
+      setSelectedAddon(newAddon);
+      setIsAddDialogOpen(false);
+
       // Reset form
       setFormData({
-        name: '',
-        category: '',
-        description: '',
-        status: 'active',
-        tags: []
-      })
+        name: "",
+        category: "",
+        description: "",
+        status: "active",
+        tags: [],
+      });
     } catch (error) {
-      console.error('Error adding addon:', error)
+      console.error("Error adding addon:", error);
     }
-  }
+  };
 
   const handleEditAddon = (addon: Addon) => {
     setFormData({
       name: addon.name,
       category: addon.category,
-      description: addon.description || '',
+      description: addon.description || "",
       status: addon.status,
-      tags: [...addon.tags]
-    })
-    setIsEditDialogOpen(true)
-  }
+      tags: [...addon.tags],
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const handleUpdateAddon = async () => {
-    if (!selectedAddon) return
-    
+    if (!selectedAddon) return;
+
     try {
       // TODO: Implement actual API call
       const updatedAddon: Addon = {
@@ -274,72 +276,70 @@ export default function OrganizationOtherStuffPage() {
         description: formData.description,
         status: formData.status,
         tags: formData.tags,
-        updatedAt: new Date().toISOString()
-      }
-      
-      setAddons(prev => prev.map(addon => 
-        addon.id === selectedAddon.id ? updatedAddon : addon
-      ))
-      setSelectedAddon(updatedAddon)
-      setIsEditDialogOpen(false)
+        updatedAt: new Date().toISOString(),
+      };
+
+      setAddons((prev) =>
+        prev.map((addon) => (addon.id === selectedAddon.id ? updatedAddon : addon)),
+      );
+      setSelectedAddon(updatedAddon);
+      setIsEditDialogOpen(false);
     } catch (error) {
-      console.error('Error updating addon:', error)
+      console.error("Error updating addon:", error);
     }
-  }
+  };
 
   const handleAddonSelect = (addon: Addon) => {
-    setSelectedAddon(addon)
-  }
+    setSelectedAddon(addon);
+  };
 
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }))
-      setNewTag('')
+        tags: [...prev.tags, newTag.trim()],
+      }));
+      setNewTag("");
     }
-  }
+  };
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }))
-  }
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
 
   const toggleCategoryFilter = (category: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    )
-  }
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
+    );
+  };
 
   const toggleTagFilter = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    )
-  }
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  };
 
   const toggleStatusFilter = (status: string) => {
-    setSelectedStatuses(prev =>
-      prev.includes(status)
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    )
-  }
+    setSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+    );
+  };
 
   const clearAllFilters = () => {
-    setSearchTerm('')
-    setSelectedCategories([])
-    setSelectedTags([])
-    setSelectedStatuses([])
-  }
+    setSearchTerm("");
+    setSelectedCategories([]);
+    setSelectedTags([]);
+    setSelectedStatuses([]);
+  };
 
-  const activeFilterCount = selectedCategories.length + selectedTags.length + selectedStatuses.length + (searchTerm ? 1 : 0)
+  const activeFilterCount =
+    selectedCategories.length +
+    selectedTags.length +
+    selectedStatuses.length +
+    (searchTerm ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -350,45 +350,41 @@ export default function OrganizationOtherStuffPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Correct static top navigation - NEVER make these dynamic!
   const topNav = [
-    { 
-      label: 'Master', 
-      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
-      isActive: false
+    {
+      label: "Master",
+      href: masterOrg?.id ? `/master/${masterOrg.id}` : "/dashboard",
+      isActive: false,
     },
-    { 
-      label: 'Organization', 
+    {
+      label: "Organization",
       href: `/organizations/${orgId}`,
-      isActive: true
+      isActive: true,
     },
-    { 
-      label: 'Drivers', 
+    {
+      label: "Drivers",
       href: `/organizations/${orgId}/drivers`,
-      isActive: false
+      isActive: false,
     },
-    { 
-      label: 'Equipment', 
+    {
+      label: "Equipment",
       href: `/organizations/${orgId}/equipment`,
-      isActive: false
-    }
-  ]
+      isActive: false,
+    },
+  ];
 
   return (
-    <AppLayout
-      name={masterOrg?.name || 'Master'}
-      topNav={topNav}
-      className="p-6"
-    >
+    <AppLayout name={masterOrg?.name || "Master"} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header with organization name */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => router.push(`/organizations/${orgId}`)}
             >
@@ -411,9 +407,7 @@ export default function OrganizationOtherStuffPage() {
                       Other Stuff
                       <Badge variant="secondary">{filteredAddons.length}</Badge>
                     </CardTitle>
-                    <CardDescription>
-                      Manage additional features and addons
-                    </CardDescription>
+                    <CardDescription>Manage additional features and addons</CardDescription>
                   </div>
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
@@ -435,39 +429,55 @@ export default function OrganizationOtherStuffPage() {
                           <Input
                             id="name"
                             value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, name: e.target.value }))
+                            }
                             placeholder="Enter addon name"
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="category">Category</Label>
-                          <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                          <Select
+                            value={formData.category}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({ ...prev, category: value }))
+                            }
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                             <SelectContent>
-                              {ADDON_CATEGORIES.map(category => (
-                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                              {ADDON_CATEGORIES.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="description">Description</Label>
                           <Textarea
                             id="description"
                             value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, description: e.target.value }))
+                            }
                             placeholder="Enter addon description"
                             rows={3}
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="status">Status</Label>
-                          <Select value={formData.status} onValueChange={(value: 'active' | 'inactive') => setFormData(prev => ({ ...prev, status: value }))}>
+                          <Select
+                            value={formData.status}
+                            onValueChange={(value: "active" | "inactive") =>
+                              setFormData((prev) => ({ ...prev, status: value }))
+                            }
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -477,7 +487,7 @@ export default function OrganizationOtherStuffPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div>
                           <Label>Tags</Label>
                           <div className="flex gap-2 mb-2">
@@ -485,33 +495,40 @@ export default function OrganizationOtherStuffPage() {
                               value={newTag}
                               onChange={(e) => setNewTag(e.target.value)}
                               placeholder="Add tag"
-                              onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                              onKeyPress={(e) => e.key === "Enter" && addTag()}
                             />
-                            <Button type="button" onClick={addTag} size="sm">Add</Button>
+                            <Button type="button" onClick={addTag} size="sm">
+                              Add
+                            </Button>
                           </div>
                           <div className="flex flex-wrap gap-1">
-                            {formData.tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                            {formData.tags.map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
                                 {tag}
-                                <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                                <X
+                                  className="h-3 w-3 cursor-pointer"
+                                  onClick={() => removeTag(tag)}
+                                />
                               </Badge>
                             ))}
                           </div>
                         </div>
-                        
+
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                             Cancel
                           </Button>
-                          <Button onClick={handleAddAddon}>
-                            Create Addon
-                          </Button>
+                          <Button onClick={handleAddAddon}>Create Addon</Button>
                         </div>
                       </div>
                     </DialogContent>
                   </Dialog>
                 </div>
-                
+
                 {/* Search and Filter Controls */}
                 <div className="space-y-3">
                   <div className="relative">
@@ -523,7 +540,7 @@ export default function OrganizationOtherStuffPage() {
                       className="pl-10"
                     />
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
@@ -543,10 +560,12 @@ export default function OrganizationOtherStuffPage() {
                           <div>
                             <Label className="text-sm font-medium">Categories</Label>
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {ADDON_CATEGORIES.map(category => (
+                              {ADDON_CATEGORIES.map((category) => (
                                 <Badge
                                   key={category}
-                                  variant={selectedCategories.includes(category) ? "default" : "outline"}
+                                  variant={
+                                    selectedCategories.includes(category) ? "default" : "outline"
+                                  }
                                   className="cursor-pointer"
                                   onClick={() => toggleCategoryFilter(category)}
                                 >
@@ -560,10 +579,12 @@ export default function OrganizationOtherStuffPage() {
                           <div>
                             <Label className="text-sm font-medium">Status</Label>
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {ADDON_STATUSES.map(status => (
+                              {ADDON_STATUSES.map((status) => (
                                 <Badge
                                   key={status.value}
-                                  variant={selectedStatuses.includes(status.value) ? "default" : "outline"}
+                                  variant={
+                                    selectedStatuses.includes(status.value) ? "default" : "outline"
+                                  }
                                   className="cursor-pointer"
                                   onClick={() => toggleStatusFilter(status.value)}
                                 >
@@ -578,7 +599,7 @@ export default function OrganizationOtherStuffPage() {
                             <div>
                               <Label className="text-sm font-medium">Tags</Label>
                               <div className="flex flex-wrap gap-1 mt-2 max-h-32 overflow-y-auto">
-                                {allTags.map(tag => (
+                                {allTags.map((tag) => (
                                   <Badge
                                     key={tag}
                                     variant={selectedTags.includes(tag) ? "default" : "outline"}
@@ -595,9 +616,9 @@ export default function OrganizationOtherStuffPage() {
 
                           {/* Clear Filters */}
                           {activeFilterCount > 0 && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={clearAllFilters}
                               className="w-full"
                             >
@@ -614,12 +635,12 @@ export default function OrganizationOtherStuffPage() {
                 {filteredAddons.length > 0 ? (
                   <div className="space-y-2">
                     {filteredAddons.map((addon) => (
-                      <Card 
+                      <Card
                         key={addon.id}
                         className={`cursor-pointer transition-colors ${
-                          selectedAddon?.id === addon.id 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'hover:bg-gray-50'
+                          selectedAddon?.id === addon.id
+                            ? "border-blue-500 bg-blue-50"
+                            : "hover:bg-gray-50"
                         }`}
                         onClick={() => handleAddonSelect(addon)}
                       >
@@ -629,7 +650,7 @@ export default function OrganizationOtherStuffPage() {
                               <h4 className="font-medium text-sm">{addon.name}</h4>
                               <p className="text-xs text-gray-600">{addon.category}</p>
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {addon.tags.slice(0, 2).map(tag => (
+                                {addon.tags.slice(0, 2).map((tag) => (
                                   <Badge key={tag} variant="secondary" className="text-xs px-1">
                                     {tag}
                                   </Badge>
@@ -641,8 +662,8 @@ export default function OrganizationOtherStuffPage() {
                                 )}
                               </div>
                             </div>
-                            <Badge 
-                              variant={addon.status === 'active' ? 'default' : 'secondary'}
+                            <Badge
+                              variant={addon.status === "active" ? "default" : "secondary"}
                               className="text-xs"
                             >
                               {addon.status}
@@ -655,15 +676,25 @@ export default function OrganizationOtherStuffPage() {
                 ) : (
                   <EmptyState
                     icon={Package}
-                    title={searchTerm || activeFilterCount > 0 ? "No matching addons" : "No addons yet"}
-                    description={searchTerm || activeFilterCount > 0 ? "Try adjusting your search or filters" : "Add your first addon to get started"}
-                    action={searchTerm || activeFilterCount > 0 ? {
-                      label: "Clear Filters",
-                      onClick: clearAllFilters
-                    } : {
-                      label: "Add First Addon",
-                      onClick: () => setIsAddDialogOpen(true)
-                    }}
+                    title={
+                      searchTerm || activeFilterCount > 0 ? "No matching addons" : "No addons yet"
+                    }
+                    description={
+                      searchTerm || activeFilterCount > 0
+                        ? "Try adjusting your search or filters"
+                        : "Add your first addon to get started"
+                    }
+                    action={
+                      searchTerm || activeFilterCount > 0
+                        ? {
+                            label: "Clear Filters",
+                            onClick: clearAllFilters,
+                          }
+                        : {
+                            label: "Add First Addon",
+                            onClick: () => setIsAddDialogOpen(true),
+                          }
+                    }
                   />
                 )}
               </CardContent>
@@ -682,13 +713,10 @@ export default function OrganizationOtherStuffPage() {
                         {selectedAddon.name}
                       </CardTitle>
                       <CardDescription>
-                        {selectedAddon.description || 'No description available'}
+                        {selectedAddon.description || "No description available"}
                       </CardDescription>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleEditAddon(selectedAddon)}
-                    >
+                    <Button variant="outline" onClick={() => handleEditAddon(selectedAddon)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
@@ -704,17 +732,23 @@ export default function OrganizationOtherStuffPage() {
                       </div>
                       <div>
                         <h5 className="font-medium text-sm text-gray-600 mb-1">Status</h5>
-                        <Badge variant={selectedAddon.status === 'active' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={selectedAddon.status === "active" ? "default" : "secondary"}
+                        >
                           {selectedAddon.status}
                         </Badge>
                       </div>
                       <div>
                         <h5 className="font-medium text-sm text-gray-600 mb-1">Created</h5>
-                        <p className="text-sm">{new Date(selectedAddon.createdAt).toLocaleDateString()}</p>
+                        <p className="text-sm">
+                          {new Date(selectedAddon.createdAt).toLocaleDateString()}
+                        </p>
                       </div>
                       <div>
                         <h5 className="font-medium text-sm text-gray-600 mb-1">Last Updated</h5>
-                        <p className="text-sm">{new Date(selectedAddon.updatedAt).toLocaleDateString()}</p>
+                        <p className="text-sm">
+                          {new Date(selectedAddon.updatedAt).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
 
@@ -722,7 +756,7 @@ export default function OrganizationOtherStuffPage() {
                     <div>
                       <h5 className="font-medium text-gray-900 mb-3">Tags</h5>
                       <div className="flex flex-wrap gap-2">
-                        {selectedAddon.tags.map(tag => (
+                        {selectedAddon.tags.map((tag) => (
                           <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                             <Tag className="h-3 w-3" />
                             {tag}
@@ -738,8 +772,8 @@ export default function OrganizationOtherStuffPage() {
                         <CardContent className="p-4">
                           <p className="text-sm text-gray-600">
                             Configuration options for {selectedAddon.name} will be available here.
-                            This is where users can customize settings, view usage statistics, 
-                            and manage addon-specific features.
+                            This is where users can customize settings, view usage statistics, and
+                            manage addon-specific features.
                           </p>
                         </CardContent>
                       </Card>
@@ -748,11 +782,7 @@ export default function OrganizationOtherStuffPage() {
                     {/* Activity Log */}
                     <div>
                       <h5 className="font-medium text-gray-900 mb-3">Recent Activity</h5>
-                      <ActivityLog 
-                        organizationId={orgId}
-                        title="Addon Activity"
-                        compact={true}
-                      />
+                      <ActivityLog organizationId={orgId} title="Addon Activity" compact={true} />
                     </div>
                   </div>
                 </CardContent>
@@ -761,9 +791,7 @@ export default function OrganizationOtherStuffPage() {
               <Card>
                 <CardContent className="p-12 text-center">
                   <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Select an addon
-                  </h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select an addon</h3>
                   <p className="text-gray-600">
                     Choose an addon from the list to view its details and configuration options.
                   </p>
@@ -778,9 +806,7 @@ export default function OrganizationOtherStuffPage() {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Edit Addon</DialogTitle>
-              <DialogDescription>
-                Update the addon information and settings
-              </DialogDescription>
+              <DialogDescription>Update the addon information and settings</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -788,39 +814,51 @@ export default function OrganizationOtherStuffPage() {
                 <Input
                   id="edit-name"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter addon name"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="edit-category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ADDON_CATEGORIES.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    {ADDON_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="edit-description">Description</Label>
                 <Textarea
                   id="edit-description"
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  }
                   placeholder="Enter addon description"
                   rows={3}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="edit-status">Status</Label>
-                <Select value={formData.status} onValueChange={(value: 'active' | 'inactive') => setFormData(prev => ({ ...prev, status: value }))}>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: "active" | "inactive") =>
+                    setFormData((prev) => ({ ...prev, status: value }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -830,7 +868,7 @@ export default function OrganizationOtherStuffPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>Tags</Label>
                 <div className="flex gap-2 mb-2">
@@ -838,12 +876,14 @@ export default function OrganizationOtherStuffPage() {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Add tag"
-                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                    onKeyPress={(e) => e.key === "Enter" && addTag()}
                   />
-                  <Button type="button" onClick={addTag} size="sm">Add</Button>
+                  <Button type="button" onClick={addTag} size="sm">
+                    Add
+                  </Button>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {formData.tags.map(tag => (
+                  {formData.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                       {tag}
                       <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
@@ -851,19 +891,17 @@ export default function OrganizationOtherStuffPage() {
                   ))}
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateAddon}>
-                  Update Addon
-                </Button>
+                <Button onClick={handleUpdateAddon}>Update Addon</Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

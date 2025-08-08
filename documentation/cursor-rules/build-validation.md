@@ -7,6 +7,7 @@
 ## Core Rules
 
 ### 1. **MANDATORY BUILD BEFORE COMMIT**
+
 ```bash
 # ALWAYS run this before any git commit
 npm run build
@@ -15,12 +16,14 @@ npm run build
 **No exceptions. Ever.**
 
 ### 2. **Zero Tolerance for TypeScript Errors**
+
 - ❌ **NEVER** ignore TypeScript compilation errors
 - ❌ **NEVER** use `@ts-ignore` as a quick fix
 - ❌ **NEVER** commit broken builds "to fix later"
 - ✅ Fix all type errors properly before committing
 
 ### 3. **Systematic Error Resolution**
+
 When build fails:
 
 1. **Don't fix errors one-by-one reactively**
@@ -36,6 +39,7 @@ When build fails:
 ## Development Workflow
 
 ### Daily Development
+
 ```bash
 # 1. Before starting work
 npm run build
@@ -54,6 +58,7 @@ npm run build
 ```
 
 ### Feature Development
+
 ```bash
 # 1. Create feature branch
 git checkout -b feature/my-feature
@@ -74,17 +79,20 @@ npm run build
 ## Build Error Categories
 
 ### 1. **Critical Errors (Fix Immediately)**
+
 - Type mismatches in core interfaces
 - Missing imports/exports
 - Syntax errors
 - Schema mismatches
 
 ### 2. **Pattern Errors (Fix Systematically)**
+
 - Repeated prop mismatches across files
 - Consistent function signature issues
 - Widespread interface changes
 
 ### 3. **Warning Errors (Address Regularly)**
+
 - Unused variables
 - Missing dependencies in useEffect
 - Deprecated prop usages
@@ -92,6 +100,7 @@ npm run build
 ## Automated Checks
 
 ### Git Hooks (Recommended)
+
 ```bash
 # .git/hooks/pre-commit
 #!/bin/sh
@@ -105,6 +114,7 @@ echo "✅ Build successful. Proceeding with commit."
 ```
 
 ### CI/CD Pipeline
+
 ```yaml
 # Ensure builds are validated in CI
 steps:
@@ -117,6 +127,7 @@ steps:
 ## Emergency Procedures
 
 ### If You Accidentally Commit Broken Build
+
 ```bash
 # 1. Immediate revert
 git revert HEAD
@@ -135,6 +146,7 @@ git commit -m "fix: resolve build compilation errors"
 ```
 
 ### If Build Suddenly Breaks
+
 ```bash
 # 1. Check recent changes
 git log --oneline -5
@@ -151,6 +163,7 @@ git revert <problematic-commit>
 ## Tools for Build Validation
 
 ### Quick Build Check Script
+
 ```bash
 #!/bin/bash
 # save as: scripts/quick-build-check.sh
@@ -165,6 +178,7 @@ fi
 ```
 
 ### Error Pattern Analysis
+
 ```bash
 # Find common error patterns
 npm run build 2>&1 | grep -E "(Property.*does not exist|Type.*not assignable|Cannot find|Expected.*arguments)"
@@ -179,4 +193,4 @@ npm run build 2>&1 | grep -E "(Property.*does not exist|Type.*not assignable|Can
 
 ---
 
-**Remember: A broken build affects everyone. Build validation is a team responsibility.** 
+**Remember: A broken build affects everyone. Build validation is a team responsibility.**

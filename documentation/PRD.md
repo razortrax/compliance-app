@@ -53,4 +53,3 @@ ComplianceApp is a web-based fleet compliance platform that simplifies DOT recor
   - Yellow = Due in 60d
   - Orange = Due in 30d
   - Red = Expired
-

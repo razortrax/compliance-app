@@ -1,14 +1,14 @@
-import { OrganizationList } from "@/components/organizations/organization-list"
+import { OrganizationList } from "@/components/organizations/organization-list";
 
 interface OrganizationPageProps {
   params: {
-    masterOrgId: string
-  }
+    masterOrgId: string;
+  };
 }
 
 export default function OrganizationPage({ params }: OrganizationPageProps) {
-  const { masterOrgId } = params
-  
+  const { masterOrgId } = params;
+
   return (
     <div className="container mx-auto py-8">
       <div className="space-y-6">
@@ -18,9 +18,9 @@ export default function OrganizationPage({ params }: OrganizationPageProps) {
             Manage your fleet organizations and track compliance status
           </p>
         </div>
-        
+
         <OrganizationList masterOrgId={masterOrgId} />
       </div>
     </div>
-  )
-} 
+  );
+}

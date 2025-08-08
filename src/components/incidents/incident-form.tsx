@@ -1,59 +1,72 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
 
 // Types for the unified incident system
-type IncidentType = 'ACCIDENT' | 'ROADSIDE_INSPECTION'
+type IncidentType = "ACCIDENT" | "ROADSIDE_INSPECTION";
 
 interface AccidentData {
-  isFatality: boolean
-  isReportable: boolean
-  isInjury: boolean
-  isTow: boolean
-  isCitation: boolean
-  needsReport: boolean
-  needsDrugTest: boolean
-  numberOfFatalities?: number
-  numberOfVehicles?: number
-  reportableNumber?: string
-  specimenNumber?: string
+  isFatality: boolean;
+  isReportable: boolean;
+  isInjury: boolean;
+  isTow: boolean;
+  isCitation: boolean;
+  needsReport: boolean;
+  needsDrugTest: boolean;
+  numberOfFatalities?: number;
+  numberOfVehicles?: number;
+  reportableNumber?: string;
+  specimenNumber?: string;
 }
 
 interface RoadsideData {
-  inspectionLevel?: string
-  overallResult?: string
-  facilityName?: string
-  facilityAddress?: string
-  facilityCity?: string
-  facilityState?: string
-  facilityZip?: string
-  driverLicense?: string
-  driverLicenseState?: string
-  driverDOB?: string
-  dvirReceived: boolean
-  dvirSource?: string
-  entryMethod: string
+  inspectionLevel?: string;
+  overallResult?: string;
+  facilityName?: string;
+  facilityAddress?: string;
+  facilityCity?: string;
+  facilityState?: string;
+  facilityZip?: string;
+  driverLicense?: string;
+  driverLicenseState?: string;
+  driverDOB?: string;
+  dvirReceived: boolean;
+  dvirSource?: string;
+  entryMethod: string;
 }
 
 // Unified schema that validates both incident types
 const incidentSchema = z.object({
-  incidentType: z.enum(['ACCIDENT', 'ROADSIDE_INSPECTION']),
+  incidentType: z.enum(["ACCIDENT", "ROADSIDE_INSPECTION"]),
   incidentDate: z.string(),
   incidentTime: z.string().optional(),
-  officerName: z.string().min(1, 'Officer/Inspector name is required'),
+  officerName: z.string().min(1, "Officer/Inspector name is required"),
   agencyName: z.string().optional(),
   officerBadge: z.string().optional(),
   reportNumber: z.string().optional(),
@@ -64,47 +77,53 @@ const incidentSchema = z.object({
   // Type-specific data
   accidentData: z.any().optional(),
   roadsideData: z.any().optional(),
-})
+});
 
 interface IncidentFormProps {
-  incidentType: IncidentType
-  onSubmit: (data: any) => void
-  initialData?: any
+  incidentType: IncidentType;
+  onSubmit: (data: any) => void;
+  initialData?: any;
 }
 
 export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFormProps) {
-  const [activeTab, setActiveTab] = useState('basic')
-  
+  const [activeTab, setActiveTab] = useState("basic");
+
   const form = useForm({
     resolver: zodResolver(incidentSchema),
     defaultValues: {
       incidentType,
-      incidentDate: new Date().toISOString().split('T')[0],
-      incidentTime: '',
-      officerName: '',
-      agencyName: '',
-      officerBadge: '',
-      reportNumber: '',
-      locationAddress: '',
-      locationCity: '',
-      locationState: '',
-      locationZip: '',
-      accidentData: incidentType === 'ACCIDENT' ? {
-        isFatality: false,
-        isReportable: false,
-        isInjury: false,
-        isTow: false,
-        isCitation: false,
-        needsReport: false,
-        needsDrugTest: false,
-      } : undefined,
-      roadsideData: incidentType === 'ROADSIDE_INSPECTION' ? {
-        dvirReceived: false,
-        entryMethod: 'Manual_Entry',
-      } : undefined,
+      incidentDate: new Date().toISOString().split("T")[0],
+      incidentTime: "",
+      officerName: "",
+      agencyName: "",
+      officerBadge: "",
+      reportNumber: "",
+      locationAddress: "",
+      locationCity: "",
+      locationState: "",
+      locationZip: "",
+      accidentData:
+        incidentType === "ACCIDENT"
+          ? {
+              isFatality: false,
+              isReportable: false,
+              isInjury: false,
+              isTow: false,
+              isCitation: false,
+              needsReport: false,
+              needsDrugTest: false,
+            }
+          : undefined,
+      roadsideData:
+        incidentType === "ROADSIDE_INSPECTION"
+          ? {
+              dvirReceived: false,
+              entryMethod: "Manual_Entry",
+            }
+          : undefined,
       ...initialData,
     },
-  })
+  });
 
   // Render accident-specific fields
   const renderAccidentFields = () => (
@@ -159,8 +178,8 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
           )}
         />
       </div>
-      
-      {form.watch('accidentData.isFatality') && (
+
+      {form.watch("accidentData.isFatality") && (
         <FormField
           control={form.control}
           name="accidentData.numberOfFatalities"
@@ -176,7 +195,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
         />
       )}
     </div>
-  )
+  );
 
   // Render roadside inspection specific fields
   const renderRoadsideFields = () => (
@@ -207,7 +226,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="roadsideData.overallResult"
@@ -231,7 +250,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
           )}
         />
       </div>
-      
+
       <FormField
         control={form.control}
         name="roadsideData.facilityName"
@@ -246,7 +265,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
         )}
       />
     </div>
-  )
+  );
 
   return (
     <Form {...form}>
@@ -254,16 +273,13 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {incidentType === 'ACCIDENT' ? '🚗 Accident Report' : '🚛 Roadside Inspection'}
-              <Badge variant="outline">
-                {incidentType === 'ACCIDENT' ? 'Accident' : 'RSIN'}
-              </Badge>
+              {incidentType === "ACCIDENT" ? "🚗 Accident Report" : "🚛 Roadside Inspection"}
+              <Badge variant="outline">{incidentType === "ACCIDENT" ? "Accident" : "RSIN"}</Badge>
             </CardTitle>
             <CardDescription>
-              {incidentType === 'ACCIDENT' 
-                ? 'Document motor vehicle accident details and violations'
-                : 'Record roadside inspection findings and violations'
-              }
+              {incidentType === "ACCIDENT"
+                ? "Document motor vehicle accident details and violations"
+                : "Record roadside inspection findings and violations"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -271,12 +287,12 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="specific">
-                  {incidentType === 'ACCIDENT' ? 'Accident Details' : 'Inspection Details'}
+                  {incidentType === "ACCIDENT" ? "Accident Details" : "Inspection Details"}
                 </TabsTrigger>
                 <TabsTrigger value="equipment">Equipment</TabsTrigger>
                 <TabsTrigger value="violations">Violations</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="basic" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -285,7 +301,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {incidentType === 'ACCIDENT' ? 'Accident Date' : 'Inspection Date'}
+                          {incidentType === "ACCIDENT" ? "Accident Date" : "Inspection Date"}
                         </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
@@ -294,14 +310,14 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="incidentTime"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {incidentType === 'ACCIDENT' ? 'Accident Time' : 'Inspection Time'}
+                          {incidentType === "ACCIDENT" ? "Accident Time" : "Inspection Time"}
                         </FormLabel>
                         <FormControl>
                           <Input type="time" {...field} />
@@ -311,7 +327,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
                     )}
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -319,7 +335,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {incidentType === 'ACCIDENT' ? 'Officer Name' : 'Inspector Name'}
+                          {incidentType === "ACCIDENT" ? "Officer Name" : "Inspector Name"}
                         </FormLabel>
                         <FormControl>
                           <Input {...field} />
@@ -328,7 +344,7 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="agencyName"
@@ -344,17 +360,17 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
                   />
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="specific" className="space-y-4">
-                {incidentType === 'ACCIDENT' ? renderAccidentFields() : renderRoadsideFields()}
+                {incidentType === "ACCIDENT" ? renderAccidentFields() : renderRoadsideFields()}
               </TabsContent>
-              
+
               <TabsContent value="equipment" className="space-y-4">
                 <div className="text-sm text-muted-foreground">
                   Equipment involvement tracking (shared component)
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="violations" className="space-y-4">
                 <div className="text-sm text-muted-foreground">
                   Violations and CAF generation (shared component)
@@ -363,16 +379,16 @@ export function IncidentForm({ incidentType, onSubmit, initialData }: IncidentFo
             </Tabs>
           </CardContent>
         </Card>
-        
+
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline">
             Cancel
           </Button>
           <Button type="submit">
-            Save {incidentType === 'ACCIDENT' ? 'Accident' : 'Inspection'}
+            Save {incidentType === "ACCIDENT" ? "Accident" : "Inspection"}
           </Button>
         </div>
       </form>
     </Form>
-  )
-} 
+  );
+}

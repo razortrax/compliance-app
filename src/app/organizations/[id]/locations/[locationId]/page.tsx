@@ -1,62 +1,62 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { EntityDetailLayout } from '@/components/layouts/entity-detail-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
-import { Building2, Users, Truck, AlertCircle, MapPin, Phone, Mail, Plus } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { EntityDetailLayout } from "@/components/layouts/entity-detail-layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import { Building2, Users, Truck, AlertCircle, MapPin, Phone, Mail, Plus } from "lucide-react";
 
 interface LocationDetailPageProps {
   params: {
-    id: string // organization ID
-    locationId: string
-  }
+    id: string; // organization ID
+    locationId: string;
+  };
 }
 
 export default function LocationDetailPage({ params }: LocationDetailPageProps) {
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState('overview')
-  const [location, setLocation] = useState<any>(null)
-  const [organization, setOrganization] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [location, setLocation] = useState<any>(null);
+  const [organization, setOrganization] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLocationData()
-  }, [params.locationId])
+    fetchLocationData();
+  }, [params.locationId]);
 
   const fetchLocationData = async () => {
     try {
       // Fetch location details
       const [locResponse, orgResponse] = await Promise.all([
         fetch(`/api/organizations/${params.id}/locations/${params.locationId}`),
-        fetch(`/api/organizations/${params.id}`)
-      ])
+        fetch(`/api/organizations/${params.id}`),
+      ]);
 
       if (locResponse.ok) {
-        const locData = await locResponse.json()
-        setLocation(locData)
+        const locData = await locResponse.json();
+        setLocation(locData);
       }
 
       if (orgResponse.ok) {
-        const orgData = await orgResponse.json()
-        setOrganization(orgData)
+        const orgData = await orgResponse.json();
+        setOrganization(orgData);
       }
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error("Error fetching data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   if (!location) {
-    return <div className="flex items-center justify-center min-h-screen">Location not found</div>
+    return <div className="flex items-center justify-center min-h-screen">Location not found</div>;
   }
 
   // Overview tab content
@@ -76,8 +76,8 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Status</p>
-              <Badge variant={location.isActive ? 'default' : 'secondary'}>
-                {location.isActive ? 'Active' : 'Inactive'}
+              <Badge variant={location.isActive ? "default" : "secondary"}>
+                {location.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
           </div>
@@ -88,12 +88,13 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
               <div>
                 <p className="text-sm font-medium text-gray-500">Address</p>
                 <p className="mt-1">
-                  {location.address}<br />
+                  {location.address}
+                  <br />
                   {location.city}, {location.state} {location.zipCode}
                 </p>
               </div>
             </div>
-            
+
             {location.phone && (
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-gray-400" />
@@ -103,7 +104,7 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
                 </div>
               </div>
             )}
-            
+
             {location.email && (
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-gray-400" />
@@ -156,7 +157,7 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
         </Card>
       </div>
     </div>
-  )
+  );
 
   // Staff tab content (same pattern as org page)
   const staffContent = (
@@ -168,10 +169,10 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
         label: "Assign Staff",
         onClick: () => {
           // TODO: Implement staff assignment
-        }
+        },
       }}
     />
-  )
+  );
 
   // Equipment tab content (same pattern as org page)
   const equipmentContent = (
@@ -189,7 +190,7 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
         description="Equipment assigned to this location will appear here."
       />
     </div>
-  )
+  );
 
   // Issues tab content (same pattern as org page)
   const issuesContent = (
@@ -198,39 +199,40 @@ export default function LocationDetailPage({ params }: LocationDetailPageProps) 
       title="No active issues"
       description="Compliance issues for this location will appear here."
     />
-  )
+  );
 
   const tabs = [
-    { id: 'overview', label: 'Overview', content: overviewContent },
-    { id: 'staff', label: 'Staff', content: staffContent },
-    { id: 'equipment', label: 'Equipment', content: equipmentContent },
-    { id: 'issues', label: 'Issues', content: issuesContent },
-  ]
+    { id: "overview", label: "Overview", content: overviewContent },
+    { id: "staff", label: "Staff", content: staffContent },
+    { id: "equipment", label: "Equipment", content: equipmentContent },
+    { id: "issues", label: "Issues", content: issuesContent },
+  ];
 
   return (
     <EntityDetailLayout
       entityType="location"
       entityName={location.name}
-      entityStatus={location.isActive ? 'active' : 'inactive'}
+      entityStatus={location.isActive ? "active" : "inactive"}
       breadcrumbs={[
-        { label: organization?.name || 'Organization', href: `/organizations/${params.id}` }
+        { label: organization?.name || "Organization", href: `/organizations/${params.id}` },
       ]}
       tabs={tabs}
       activeTab={activeTab}
       onTabChange={setActiveTab}
       actions={[
-        { 
-          label: 'Edit Location', 
-          onClick: () => router.push(`/organizations/${params.id}/locations/${params.locationId}/edit`)
+        {
+          label: "Edit Location",
+          onClick: () =>
+            router.push(`/organizations/${params.id}/locations/${params.locationId}/edit`),
         },
-        { 
-          label: 'Deactivate Location', 
+        {
+          label: "Deactivate Location",
           onClick: () => {
             // TODO: Implement deactivation
-          }, 
-          destructive: true 
+          },
+          destructive: true,
         },
       ]}
     />
-  )
-} 
+  );
+}

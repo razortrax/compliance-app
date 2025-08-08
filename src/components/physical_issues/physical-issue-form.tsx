@@ -1,138 +1,164 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, Calendar, Stethoscope, Clock } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, Calendar, Stethoscope, Clock } from "lucide-react";
 
 interface PhysicalIssue {
-  id: string
-  issueId: string
-  type?: string
-  medicalExaminer?: string
-  selfCertified: boolean
-  nationalRegistry: boolean
-  result?: string
-  status: string
-  startDate?: string
-  expirationDate?: string
-  outOfServiceDate?: string
-  backInServiceDate?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  issueId: string;
+  type?: string;
+  medicalExaminer?: string;
+  selfCertified: boolean;
+  nationalRegistry: boolean;
+  result?: string;
+  status: string;
+  startDate?: string;
+  expirationDate?: string;
+  outOfServiceDate?: string;
+  backInServiceDate?: string;
+  createdAt: string;
+  updatedAt: string;
   issue: {
-    id: string
-    title: string
-    description?: string
-    status: string
-    priority: string
-  }
+    id: string;
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
+  };
 }
 
 interface PhysicalIssueFormProps {
-  physicalIssue?: PhysicalIssue | null
-  partyId?: string  // Changed from personId to partyId
-  onSubmit: (data: any) => void
-  onCancel: () => void
-  isSubmitting?: boolean
+  physicalIssue?: PhysicalIssue | null;
+  partyId?: string; // Changed from personId to partyId
+  onSubmit: (data: any) => void;
+  onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 const physicalTypes = [
-  { value: 'Annual', label: 'Annual' },
-  { value: 'Bi_Annual', label: 'Bi-Annual' },
-  { value: 'Return_to_Duty', label: 'Return to Duty' },
-  { value: 'Post_Accident', label: 'Post Accident' },
-  { value: 'One_Month', label: '1 Month' },
-  { value: 'Three_Month', label: '3 Month' },
-  { value: 'Six_Month', label: '6 Month' },
-  { value: 'Pre_Hire', label: 'Pre-Hire' },
-  { value: 'No_Physical_Issue', label: 'No Physical Issue' }
-]
+  { value: "Annual", label: "Annual" },
+  { value: "Bi_Annual", label: "Bi-Annual" },
+  { value: "Return_to_Duty", label: "Return to Duty" },
+  { value: "Post_Accident", label: "Post Accident" },
+  { value: "One_Month", label: "1 Month" },
+  { value: "Three_Month", label: "3 Month" },
+  { value: "Six_Month", label: "6 Month" },
+  { value: "Pre_Hire", label: "Pre-Hire" },
+  { value: "No_Physical_Issue", label: "No Physical Issue" },
+];
 
 const physicalResults = [
-  { value: 'Three_Month', label: '3 Months', months: 3 },
-  { value: 'Six_Month', label: '6 Months', months: 6 },
-  { value: 'One_Year', label: '1 Year', months: 12 },
-  { value: 'Two_Years', label: '2 Years', months: 24 },
-  { value: 'Disqualified', label: 'Disqualified', months: 0 }
-]
+  { value: "Three_Month", label: "3 Months", months: 3 },
+  { value: "Six_Month", label: "6 Months", months: 6 },
+  { value: "One_Year", label: "1 Year", months: 12 },
+  { value: "Two_Years", label: "2 Years", months: 24 },
+  { value: "Disqualified", label: "Disqualified", months: 0 },
+];
 
-export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, onCancel, isSubmitting = false }: PhysicalIssueFormProps) {
+export default function PhysicalIssueForm({
+  partyId,
+  physicalIssue,
+  onSubmit,
+  onCancel,
+  isSubmitting = false,
+}: PhysicalIssueFormProps) {
   const [formData, setFormData] = useState({
-    type: physicalIssue?.type || '',
-    medicalExaminer: physicalIssue?.medicalExaminer || '',
+    type: physicalIssue?.type || "",
+    medicalExaminer: physicalIssue?.medicalExaminer || "",
     selfCertified: physicalIssue?.selfCertified || false,
     nationalRegistry: physicalIssue?.nationalRegistry || false,
-    result: physicalIssue?.result || '',
-    startDate: physicalIssue?.startDate ? new Date(physicalIssue.startDate).toISOString().split('T')[0] : '',
-    expirationDate: physicalIssue?.expirationDate ? new Date(physicalIssue.expirationDate).toISOString().split('T')[0] : '',
-    outOfServiceDate: physicalIssue?.outOfServiceDate ? new Date(physicalIssue.outOfServiceDate).toISOString().split('T')[0] : '',
-    backInServiceDate: physicalIssue?.backInServiceDate ? new Date(physicalIssue.backInServiceDate).toISOString().split('T')[0] : '',
-    status: physicalIssue?.status || 'Qualified'
-  })
+    result: physicalIssue?.result || "",
+    startDate: physicalIssue?.startDate
+      ? new Date(physicalIssue.startDate).toISOString().split("T")[0]
+      : "",
+    expirationDate: physicalIssue?.expirationDate
+      ? new Date(physicalIssue.expirationDate).toISOString().split("T")[0]
+      : "",
+    outOfServiceDate: physicalIssue?.outOfServiceDate
+      ? new Date(physicalIssue.outOfServiceDate).toISOString().split("T")[0]
+      : "",
+    backInServiceDate: physicalIssue?.backInServiceDate
+      ? new Date(physicalIssue.backInServiceDate).toISOString().split("T")[0]
+      : "",
+    status: physicalIssue?.status || "Qualified",
+  });
 
   // Auto-calculate expiration date when start date or result changes
   useEffect(() => {
-    if (formData.startDate && formData.result && formData.result !== 'Disqualified') {
-      const selectedResult = physicalResults.find(r => r.value === formData.result)
+    if (formData.startDate && formData.result && formData.result !== "Disqualified") {
+      const selectedResult = physicalResults.find((r) => r.value === formData.result);
       if (selectedResult) {
-        const startDate = new Date(formData.startDate)
-        const expirationDate = new Date(startDate)
-        expirationDate.setMonth(expirationDate.getMonth() + selectedResult.months)
-        
-        setFormData(prev => ({
+        const startDate = new Date(formData.startDate);
+        const expirationDate = new Date(startDate);
+        expirationDate.setMonth(expirationDate.getMonth() + selectedResult.months);
+
+        setFormData((prev) => ({
           ...prev,
-          expirationDate: expirationDate.toISOString().split('T')[0]
-        }))
+          expirationDate: expirationDate.toISOString().split("T")[0],
+        }));
       }
-    } else if (formData.result === 'Disqualified') {
+    } else if (formData.result === "Disqualified") {
       // Clear expiration date for disqualified results
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        expirationDate: '',
-        status: 'Disqualified',
-        outOfServiceDate: formData.startDate // Set out of service to exam date
-      }))
-    } else if (formData.result && formData.result !== 'Disqualified') {
+        expirationDate: "",
+        status: "Disqualified",
+        outOfServiceDate: formData.startDate, // Set out of service to exam date
+      }));
+    } else if (formData.result && formData.result !== "Disqualified") {
       // Reset status to qualified for valid results
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        status: 'Qualified',
-        outOfServiceDate: '',
-        backInServiceDate: ''
-      }))
+        status: "Qualified",
+        outOfServiceDate: "",
+        backInServiceDate: "",
+      }));
     }
-  }, [formData.startDate, formData.result])
+  }, [formData.startDate, formData.result]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     const submitData = {
       ...formData,
-      title: `Physical Exam - ${formData.type}`,  // Generate title like MVR does
-      partyId: physicalIssue ? undefined : partyId,  // Use partyId like MVR
+      title: `Physical Exam - ${formData.type}`, // Generate title like MVR does
+      partyId: physicalIssue ? undefined : partyId, // Use partyId like MVR
       // Convert dates to proper format
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-      expirationDate: formData.expirationDate ? new Date(formData.expirationDate).toISOString() : null,
-      outOfServiceDate: formData.outOfServiceDate ? new Date(formData.outOfServiceDate).toISOString() : null,
-      backInServiceDate: formData.backInServiceDate ? new Date(formData.backInServiceDate).toISOString() : null,
-    }
+      expirationDate: formData.expirationDate
+        ? new Date(formData.expirationDate).toISOString()
+        : null,
+      outOfServiceDate: formData.outOfServiceDate
+        ? new Date(formData.outOfServiceDate).toISOString()
+        : null,
+      backInServiceDate: formData.backInServiceDate
+        ? new Date(formData.backInServiceDate).toISOString()
+        : null,
+    };
 
-    onSubmit(submitData)
-  }
+    onSubmit(submitData);
+  };
 
-  const isDisqualified = formData.result === 'Disqualified'
+  const isDisqualified = formData.result === "Disqualified";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -147,7 +173,10 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
           {/* Type */}
           <div className="space-y-2">
             <Label htmlFor="type">Physical Type *</Label>
-            <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+            <Select
+              value={formData.type}
+              onValueChange={(value) => handleInputChange("type", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select physical type" />
               </SelectTrigger>
@@ -167,7 +196,7 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
             <Input
               id="medicalExaminer"
               value={formData.medicalExaminer}
-              onChange={(e) => handleInputChange('medicalExaminer', e.target.value)}
+              onChange={(e) => handleInputChange("medicalExaminer", e.target.value)}
               placeholder="Name of medical examiner"
             />
           </div>
@@ -178,7 +207,7 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
               <Checkbox
                 id="selfCertified"
                 checked={formData.selfCertified}
-                onCheckedChange={(checked) => handleInputChange('selfCertified', !!checked)}
+                onCheckedChange={(checked) => handleInputChange("selfCertified", !!checked)}
               />
               <Label htmlFor="selfCertified">Self Certified</Label>
             </div>
@@ -186,7 +215,7 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
               <Checkbox
                 id="nationalRegistry"
                 checked={formData.nationalRegistry}
-                onCheckedChange={(checked) => handleInputChange('nationalRegistry', !!checked)}
+                onCheckedChange={(checked) => handleInputChange("nationalRegistry", !!checked)}
               />
               <Label htmlFor="nationalRegistry">National Registry</Label>
             </div>
@@ -199,7 +228,7 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
               id="startDate"
               type="date"
               value={formData.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
+              onChange={(e) => handleInputChange("startDate", e.target.value)}
               required
             />
           </div>
@@ -207,7 +236,10 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
           {/* Result */}
           <div className="space-y-2">
             <Label htmlFor="result">Medical Result *</Label>
-            <Select value={formData.result} onValueChange={(value) => handleInputChange('result', value)}>
+            <Select
+              value={formData.result}
+              onValueChange={(value) => handleInputChange("result", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select medical result" />
               </SelectTrigger>
@@ -235,9 +267,9 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
                 id="expirationDate"
                 type="date"
                 value={formData.expirationDate}
-                onChange={(e) => handleInputChange('expirationDate', e.target.value)}
+                onChange={(e) => handleInputChange("expirationDate", e.target.value)}
                 readOnly={!!(formData.startDate && formData.result)}
-                className={formData.startDate && formData.result ? 'bg-green-50' : ''}
+                className={formData.startDate && formData.result ? "bg-green-50" : ""}
               />
             </div>
           )}
@@ -258,7 +290,7 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
                     id="outOfServiceDate"
                     type="date"
                     value={formData.outOfServiceDate}
-                    onChange={(e) => handleInputChange('outOfServiceDate', e.target.value)}
+                    onChange={(e) => handleInputChange("outOfServiceDate", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -267,7 +299,7 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
                     id="backInServiceDate"
                     type="date"
                     value={formData.backInServiceDate}
-                    onChange={(e) => handleInputChange('backInServiceDate', e.target.value)}
+                    onChange={(e) => handleInputChange("backInServiceDate", e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -283,9 +315,8 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
             <div className="flex items-center gap-2 text-blue-700">
               <Clock className="h-4 w-4" />
               <span className="text-sm">
-                <strong>Auto-calculated:</strong> Expiration date set to {formData.startDate} + {
-                  physicalResults.find(r => r.value === formData.result)?.label.toLowerCase()
-                }
+                <strong>Auto-calculated:</strong> Expiration date set to {formData.startDate} +{" "}
+                {physicalResults.find((r) => r.value === formData.result)?.label.toLowerCase()}
               </span>
             </div>
           </CardContent>
@@ -298,9 +329,9 @@ export default function PhysicalIssueForm({ partyId, physicalIssue, onSubmit, on
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : physicalIssue ? 'Update Physical' : 'Create Physical'}
+          {isSubmitting ? "Saving..." : physicalIssue ? "Update Physical" : "Create Physical"}
         </Button>
       </div>
     </form>
-  )
-} 
+  );
+}

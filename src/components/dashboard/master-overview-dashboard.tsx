@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { 
-  Building2, 
-  Users, 
-  AlertTriangle, 
-  ClipboardCheck, 
+} from "@/components/ui/select";
+import {
+  Building2,
+  Users,
+  AlertTriangle,
+  ClipboardCheck,
   TrendingUp,
   Plus,
   FileText,
   Eye,
-  Edit
-} from "lucide-react"
-import { OrganizationForm } from "@/components/organizations/organization-form"
-import { useAuth } from "@clerk/nextjs"
-import { useRouter } from "next/navigation"
+  Edit,
+} from "lucide-react";
+import { OrganizationForm } from "@/components/organizations/organization-form";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 // Mock data - will be replaced with API calls
 const mockOrganizations = [
@@ -35,16 +35,16 @@ const mockOrganizations = [
     equipmentCount: 23,
     expiringIssues: 3,
     openInspections: 1,
-    status: "active" as const
+    status: "active" as const,
   },
   {
-    id: "2", 
+    id: "2",
     name: "XYZ Logistics",
     driversCount: 32,
     equipmentCount: 18,
     expiringIssues: 2,
     openInspections: 0,
-    status: "pending" as const
+    status: "pending" as const,
   },
   {
     id: "3",
@@ -53,7 +53,7 @@ const mockOrganizations = [
     equipmentCount: 15,
     expiringIssues: 0,
     openInspections: 1,
-    status: "active" as const
+    status: "active" as const,
   },
   {
     id: "4",
@@ -62,76 +62,75 @@ const mockOrganizations = [
     equipmentCount: 12,
     expiringIssues: 1,
     openInspections: 2,
-    status: "pending" as const
-  }
-]
+    status: "pending" as const,
+  },
+];
 
 interface Organization {
-  id: string
-  name: string
-  driversCount: number
-  equipmentCount: number
-  expiringIssues: number
-  openInspections: number
-  status: 'pending' | 'active' | 'inactive'
+  id: string;
+  name: string;
+  driversCount: number;
+  equipmentCount: number;
+  expiringIssues: number;
+  openInspections: number;
+  status: "pending" | "active" | "inactive";
   party?: {
-    userId: string | null
-  }
+    userId: string | null;
+  };
 }
 
 interface MasterOverviewDashboardProps {
-  masterOrgId: string
+  masterOrgId: string;
 }
 
 export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboardProps) {
-  const router = useRouter()
-  const { userId, getToken } = useAuth()
-  const [selectedCompany, setSelectedCompany] = useState("all")
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [masterCompany, setMasterCompany] = useState<Organization | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter();
+  const { userId, getToken } = useAuth();
+  const [selectedCompany, setSelectedCompany] = useState("all");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [masterCompany, setMasterCompany] = useState<Organization | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchOrganizations = useCallback(async () => {
     try {
-      const token = await getToken()
+      const token = await getToken();
       const response = await fetch(`/api/master/${masterOrgId}/organizations`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-      })
-      
+      });
+
       if (response.ok) {
-        const data = await response.json()
-        console.log('📊 URL-driven API data:', data)
-        
+        const data = await response.json();
+        console.log("📊 URL-driven API data:", data);
+
         // Data is already pre-filtered and structured by the new API
         if (data.masterCompany) {
-          setMasterCompany(data.masterCompany)
-          console.log('✅ Master company:', data.masterCompany)
+          setMasterCompany(data.masterCompany);
+          console.log("✅ Master company:", data.masterCompany);
         }
-        
-        setOrganizations(data.childOrganizations || [])
-        console.log(`✅ Loaded ${data.totalOrganizations} child organizations`)
-        
+
+        setOrganizations(data.childOrganizations || []);
+        console.log(`✅ Loaded ${data.totalOrganizations} child organizations`);
       } else {
-        console.warn('🔥 Organizations API failed:', response.status, response.statusText)
+        console.warn("🔥 Organizations API failed:", response.status, response.statusText);
         // Don't clear existing data on API errors - just log the error
         if (response.status === 401) {
-          console.warn('🔒 Authentication error - user may need to re-authenticate')
+          console.warn("🔒 Authentication error - user may need to re-authenticate");
         }
       }
     } catch (error) {
-      console.error('🔥 Network error fetching organizations:', error)
+      console.error("🔥 Network error fetching organizations:", error);
       // Don't clear existing data on network errors - preserve what we have
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [getToken, masterOrgId])
+  }, [getToken, masterOrgId]);
 
   useEffect(() => {
-    fetchOrganizations()
-  }, [fetchOrganizations])
+    fetchOrganizations();
+  }, [fetchOrganizations]);
 
   // Only redirect to profile completion if we're certain the user has no master company
   // Don't redirect on API failures or loading states
@@ -139,118 +138,127 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
     // Only redirect if:
     // 1. Not loading
     // 2. No master company found
-    // 3. No organizations (sub-organizations) found  
+    // 3. No organizations (sub-organizations) found
     // 4. We actually tried to fetch (not API error)
     // 5. We're on the root master page (not sub-pages)
-    const currentPath = window.location.pathname
-    const isRootMasterPage = currentPath === `/master/${masterOrgId}` || currentPath.endsWith(`/master/${masterOrgId}`)
-    
+    const currentPath = window.location.pathname;
+    const isRootMasterPage =
+      currentPath === `/master/${masterOrgId}` || currentPath.endsWith(`/master/${masterOrgId}`);
+
     if (!isLoading && !masterCompany && organizations.length === 0 && isRootMasterPage) {
       // Add a small delay to ensure API calls have completed
       const timeoutId = setTimeout(() => {
-        console.log('🔄 No master company found for user, redirecting to profile completion')
-        router.push('/complete-profile?role=master')
-      }, 1000)
-      
-      return () => clearTimeout(timeoutId)
+        console.log("🔄 No master company found for user, redirecting to profile completion");
+        router.push("/complete-profile?role=master");
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [isLoading, masterCompany, organizations, router, masterOrgId])
+  }, [isLoading, masterCompany, organizations, router, masterOrgId]);
 
   const handleOrganizationSubmit = async (data: any) => {
     try {
-      const token = await getToken()
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
+      const token = await getToken();
+      const response = await fetch("/api/organizations", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
-      })
+      });
 
       if (response.ok) {
         // Refresh the organizations list after adding a new one
-        await fetchOrganizations()
-        setIsAddModalOpen(false)
+        await fetchOrganizations();
+        setIsAddModalOpen(false);
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Failed to create organization:', response.status, errorData)
-        
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to create organization:", response.status, errorData);
+
         // If we're in a connectivity issue, simulate adding to mock data for demo purposes
         if (response.status >= 500 || !navigator.onLine) {
-          console.log('Adding to mock data due to connectivity issues')
-                     const newMockOrg: Organization = {
-             id: `mock-${Date.now()}`,
-             name: data.name,
-             status: 'pending' as const,
-             driversCount: 0,
-             equipmentCount: 0,
-             expiringIssues: 0,
-             openInspections: 0
-           }
-          setOrganizations(prev => [newMockOrg, ...prev])
-          setIsAddModalOpen(false)
-          return
+          console.log("Adding to mock data due to connectivity issues");
+          const newMockOrg: Organization = {
+            id: `mock-${Date.now()}`,
+            name: data.name,
+            status: "pending" as const,
+            driversCount: 0,
+            equipmentCount: 0,
+            expiringIssues: 0,
+            openInspections: 0,
+          };
+          setOrganizations((prev) => [newMockOrg, ...prev]);
+          setIsAddModalOpen(false);
+          return;
         }
-        
-        throw new Error(errorData.error || 'Failed to create organization')
+
+        throw new Error(errorData.error || "Failed to create organization");
       }
     } catch (error) {
-      console.error('Error creating organization:', error)
-      throw error // Re-throw to let the form handle the error
+      console.error("Error creating organization:", error);
+      throw error; // Re-throw to let the form handle the error
     }
-  }
+  };
 
   // Calculate aggregated metrics (including master company if it exists)
-  const allOrgs = masterCompany ? [masterCompany, ...organizations] : organizations
-  const totalDrivers = allOrgs.reduce((sum, org) => sum + (org.driversCount || 0), 0)
-  const totalEquipment = allOrgs.reduce((sum, org) => sum + (org.equipmentCount || 0), 0)
-  const totalExpiringIssues = allOrgs.reduce((sum, org) => sum + (org.expiringIssues || 0), 0)
-  const totalOpenInspections = allOrgs.reduce((sum, org) => sum + (org.openInspections || 0), 0)
+  const allOrgs = masterCompany ? [masterCompany, ...organizations] : organizations;
+  const totalDrivers = allOrgs.reduce((sum, org) => sum + (org.driversCount || 0), 0);
+  const totalEquipment = allOrgs.reduce((sum, org) => sum + (org.equipmentCount || 0), 0);
+  const totalExpiringIssues = allOrgs.reduce((sum, org) => sum + (org.expiringIssues || 0), 0);
+  const totalOpenInspections = allOrgs.reduce((sum, org) => sum + (org.openInspections || 0), 0);
 
   // Helper function to display metrics
   const displayMetric = (value: number, emptyText: string = "None") => {
-    return value > 0 ? value.toString() : emptyText
-  }
+    return value > 0 ? value.toString() : emptyText;
+  };
 
   // Sort organizations: pending first, active next, inactive last, alphabetical within each group
   const sortedOrganizations = [...organizations].sort((a, b) => {
     // Define status priority (lower number = higher priority)
     const statusPriority = {
-      'pending': 1,
-      'active': 2, 
-      'inactive': 3
-    }
-    
-    const aPriority = statusPriority[a.status as keyof typeof statusPriority] || 4
-    const bPriority = statusPriority[b.status as keyof typeof statusPriority] || 4
-    
+      pending: 1,
+      active: 2,
+      inactive: 3,
+    };
+
+    const aPriority = statusPriority[a.status as keyof typeof statusPriority] || 4;
+    const bPriority = statusPriority[b.status as keyof typeof statusPriority] || 4;
+
     // First sort by status priority
     if (aPriority !== bPriority) {
-      return aPriority - bPriority
+      return aPriority - bPriority;
     }
-    
+
     // Then sort alphabetically within same status
-    return a.name.localeCompare(b.name)
-  })
+    return a.name.localeCompare(b.name);
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-700 border-green-200'
-      case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-      case 'inactive': return 'bg-red-100 text-red-700 border-red-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case "active":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "inactive":
+        return "bg-red-100 text-red-700 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return '🟢'
-      case 'pending': return '🟡'
-      case 'inactive': return '🔴'
-      default: return '⚪'
+      case "active":
+        return "🟢";
+      case "pending":
+        return "🟡";
+      case "inactive":
+        return "🔴";
+      default:
+        return "⚪";
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -281,7 +289,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -291,7 +299,8 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Master Overview</h1>
           <p className="text-muted-foreground">
-            Fleet compliance across {organizations.length} organization{organizations.length === 1 ? '' : 's'}
+            Fleet compliance across {organizations.length} organization
+            {organizations.length === 1 ? "" : "s"}
           </p>
         </div>
         <div className="flex gap-3">
@@ -315,11 +324,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
                 <CardTitle className="text-xl">{masterCompany.name}</CardTitle>
                 <CardDescription>Your Master Company</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => router.push('/settings')}
-              >
+              <Button variant="outline" size="sm" onClick={() => router.push("/settings")}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Master
               </Button>
@@ -357,9 +362,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{displayMetric(totalDrivers, "No drivers")}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all organizations
-            </p>
+            <p className="text-xs text-muted-foreground">Across all organizations</p>
           </CardContent>
         </Card>
 
@@ -370,9 +373,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{displayMetric(totalEquipment, "No vehicles")}</div>
-            <p className="text-xs text-muted-foreground">
-              Equipment under management
-            </p>
+            <p className="text-xs text-muted-foreground">Equipment under management</p>
           </CardContent>
         </Card>
 
@@ -382,10 +383,10 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{displayMetric(totalExpiringIssues, "None")}</div>
-            <p className="text-xs text-muted-foreground">
-              Require urgent attention
-            </p>
+            <div className="text-2xl font-bold text-orange-600">
+              {displayMetric(totalExpiringIssues, "None")}
+            </div>
+            <p className="text-xs text-muted-foreground">Require urgent attention</p>
           </CardContent>
         </Card>
 
@@ -395,10 +396,10 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
             <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{displayMetric(totalOpenInspections, "None")}</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting resolution
-            </p>
+            <div className="text-2xl font-bold text-blue-600">
+              {displayMetric(totalOpenInspections, "None")}
+            </div>
+            <p className="text-xs text-muted-foreground">Awaiting resolution</p>
           </CardContent>
         </Card>
       </div>
@@ -439,87 +440,85 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
             </div>
           ) : (
             sortedOrganizations.map((org) => (
-            <Card 
-              key={org.id} 
-              className="relative hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push(`/master/${masterOrgId}/organization/${org.id}`)}
-            >
-                           <CardHeader className="pb-3">
-                 <div className="flex items-center justify-between">
-                   <CardTitle className="text-lg">{org.name}</CardTitle>
-                   <div className="flex gap-2">
-                     {/* Organization Status */}
-                     <div className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(org.status)}`}>
-                       {getStatusIcon(org.status)} {org.status}
-                     </div>
-                     {/* Add any additional status badges here */}
-                   </div>
-                 </div>
-               </CardHeader>
-              <CardContent className="space-y-4">
-                               <div className="grid grid-cols-2 gap-4">
-                   <div className="text-center">
-                     <div className="text-2xl font-bold text-blue-600">
-                       {org.driversCount > 0 ? org.driversCount : "0"}
-                     </div>
-                     <p className="text-xs text-muted-foreground">Drivers</p>
-                   </div>
-                   <div className="text-center">
-                     <div className="text-2xl font-bold text-green-600">
-                       {org.equipmentCount > 0 ? org.equipmentCount : "0"}
-                     </div>
-                     <p className="text-xs text-muted-foreground">Vehicles</p>
-                   </div>
-                 </div>
+              <Card
+                key={org.id}
+                className="relative hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => router.push(`/master/${masterOrgId}/organization/${org.id}`)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{org.name}</CardTitle>
+                    <div className="flex gap-2">
+                      {/* Organization Status */}
+                      <div
+                        className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(org.status)}`}
+                      >
+                        {getStatusIcon(org.status)} {org.status}
+                      </div>
+                      {/* Add any additional status badges here */}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {org.driversCount > 0 ? org.driversCount : "0"}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Drivers</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {org.equipmentCount > 0 ? org.equipmentCount : "0"}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Vehicles</p>
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  {org.expiringIssues > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-orange-600">Expiring Issues</span>
-                      <Badge variant="outline" className="text-orange-600 border-orange-200">
-                        {org.expiringIssues}
-                      </Badge>
-                    </div>
-                  )}
-                  {org.openInspections > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-blue-600">Open Inspections</span>
-                      <Badge variant="outline" className="text-blue-600 border-blue-200">
-                        {org.openInspections}
-                      </Badge>
-                    </div>
-                  )}
-                  {org.expiringIssues === 0 && org.openInspections === 0 && (
-                    <div className="text-sm text-green-600 flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      All issues current
-                    </div>
-                  )}
-                </div>
+                  <div className="space-y-2">
+                    {org.expiringIssues > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-orange-600">Expiring Issues</span>
+                        <Badge variant="outline" className="text-orange-600 border-orange-200">
+                          {org.expiringIssues}
+                        </Badge>
+                      </div>
+                    )}
+                    {org.openInspections > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-blue-600">Open Inspections</span>
+                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                          {org.openInspections}
+                        </Badge>
+                      </div>
+                    )}
+                    {org.expiringIssues === 0 && org.openInspections === 0 && (
+                      <div className="text-sm text-green-600 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        All issues current
+                      </div>
+                    )}
+                  </div>
 
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1" 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(`/master/${masterOrgId}/organization/${org.id}`)
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Details
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-                        </Card>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/master/${masterOrgId}/organization/${org.id}`);
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))
           )}
         </div>
@@ -529,9 +528,7 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common management tasks across all organizations
-          </CardDescription>
+          <CardDescription>Common management tasks across all organizations</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -552,11 +549,11 @@ export function MasterOverviewDashboard({ masterOrgId }: MasterOverviewDashboard
       </Card>
 
       {/* Add Organization Modal */}
-      <OrganizationForm 
+      <OrganizationForm
         open={isAddModalOpen}
         onOpenChange={setIsAddModalOpen}
         onSubmit={handleOrganizationSubmit}
       />
     </div>
-  )
-} 
+  );
+}

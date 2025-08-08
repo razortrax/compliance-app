@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: personId } = await context.params
+    const { id: personId } = await context.params;
 
     // Fetch the person with their party and role information
     const person = await db.person.findUnique({
@@ -24,17 +21,17 @@ export async function GET(
               where: { isActive: true },
               include: {
                 location: {
-                  select: { id: true, name: true }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!person) {
-      return NextResponse.json({ error: 'Person not found' }, { status: 404 })
+      return NextResponse.json({ error: "Person not found" }, { status: 404 });
     }
 
     // Manually fetch organization data for each role
@@ -43,10 +40,10 @@ export async function GET(
         if (role.organizationId) {
           const organization = await db.organization.findUnique({
             where: { id: role.organizationId },
-            select: { id: true, name: true }
-          })
+            select: { id: true, name: true },
+          });
           // Add organization to role object
-          ;(role as any).organization = organization
+          (role as any).organization = organization;
         }
       }
     }
@@ -54,30 +51,30 @@ export async function GET(
     // TODO: Add access control logic similar to /api/persons GET
     // For now, allowing if user has any relationship to the person's organization
 
-    return NextResponse.json(person)
+    return NextResponse.json(person);
   } catch (error) {
-    console.error('Error fetching person:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error fetching person:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: personId } = await context.params
-    const { firstName, lastName, dateOfBirth, locationId, organizationId } = await req.json()
+    const { id: personId } = await context.params;
+    const { firstName, lastName, dateOfBirth, locationId, organizationId } = await req.json();
 
     if (!firstName || !lastName) {
-      return NextResponse.json({
-        error: 'Missing required fields: firstName, lastName'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Missing required fields: firstName, lastName",
+        },
+        { status: 400 },
+      );
     }
 
     // Verify the person exists and get their current party/role info
@@ -87,15 +84,15 @@ export async function PUT(
         party: {
           include: {
             role: {
-              where: { isActive: true }
-            }
-          }
-        }
-      }
-    })
+              where: { isActive: true },
+            },
+          },
+        },
+      },
+    });
 
     if (!existingPerson) {
-      return NextResponse.json({ error: 'Person not found' }, { status: 404 })
+      return NextResponse.json({ error: "Person not found" }, { status: 404 });
     }
 
     // TODO: Add access control logic similar to /api/persons POST
@@ -110,36 +107,36 @@ export async function PUT(
           firstName,
           lastName,
           dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        }
-      })
+        },
+      });
 
       // If locationId is provided and different from current, update the role
-      const currentRole = existingPerson.party?.role?.[0]
-      if (currentRole && (locationId !== (currentRole.locationId || 'none'))) {
+      const currentRole = existingPerson.party?.role?.[0];
+      if (currentRole && locationId !== (currentRole.locationId || "none")) {
         await tx.role.update({
           where: { id: currentRole.id },
           data: {
-            locationId: locationId === 'none' ? null : locationId
-          }
-        })
+            locationId: locationId === "none" ? null : locationId,
+          },
+        });
       }
 
-      return updatedPerson
-    })
+      return updatedPerson;
+    });
 
-    console.log('✅ Updated person:', {
+    console.log("✅ Updated person:", {
       personId,
       name: `${firstName} ${lastName}`,
       organizationId,
-      locationId: locationId === 'none' ? null : locationId
-    })
+      locationId: locationId === "none" ? null : locationId,
+    });
 
     return NextResponse.json({
-      message: 'Person updated successfully',
-      person: result
-    })
+      message: "Person updated successfully",
+      person: result,
+    });
   } catch (error) {
-    console.error('Error updating person:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error updating person:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

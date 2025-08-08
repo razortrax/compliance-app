@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useUser } from '@clerk/nextjs'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { 
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { useMasterOrg } from "@/hooks/use-master-org";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
   ArrowLeft,
   Settings,
   Bell,
@@ -20,46 +20,46 @@ import {
   Shield,
   Palette,
   Globe,
-  AlertTriangle
-} from "lucide-react"
+  AlertTriangle,
+} from "lucide-react";
 
 interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
+  id: string;
+  name: string;
+  dotNumber?: string | null;
 }
 
 export default function OrganizationPreferencesPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { user } = useUser()
-  const { masterOrg } = useMasterOrg()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useUser();
+  const { masterOrg } = useMasterOrg();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
 
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch organization data
   useEffect(() => {
     const fetchOrganization = async () => {
       try {
-        const response = await fetch(`/api/organizations/${orgId}`)
+        const response = await fetch(`/api/organizations/${orgId}`);
         if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
+          const data = await response.json();
+          setOrganization(data);
         }
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        console.error("Error fetching organization:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
     if (orgId) {
-      fetchOrganization()
+      fetchOrganization();
     }
-  }, [orgId])
+  }, [orgId]);
 
   if (isLoading) {
     return (
@@ -70,45 +70,41 @@ export default function OrganizationPreferencesPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Correct static top navigation - NEVER make these dynamic!
   const topNav = [
-    { 
-      label: 'Master', 
-      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
-      isActive: false
+    {
+      label: "Master",
+      href: masterOrg?.id ? `/master/${masterOrg.id}` : "/dashboard",
+      isActive: false,
     },
-    { 
-      label: 'Organization', 
+    {
+      label: "Organization",
       href: `/organizations/${orgId}`,
-      isActive: true
+      isActive: true,
     },
-    { 
-      label: 'Drivers', 
+    {
+      label: "Drivers",
       href: `/organizations/${orgId}/drivers`,
-      isActive: false
+      isActive: false,
     },
-    { 
-      label: 'Equipment', 
+    {
+      label: "Equipment",
       href: `/organizations/${orgId}/equipment`,
-      isActive: false
-    }
-  ]
+      isActive: false,
+    },
+  ];
 
   return (
-    <AppLayout
-      name={masterOrg?.name || 'Master'}
-      topNav={topNav}
-      className="p-6"
-    >
+    <AppLayout name={masterOrg?.name || "Master"} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header with organization name */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => router.push(`/master/${masterOrgId}/organization/${orgId}`)}
             >
@@ -128,10 +124,12 @@ export default function OrganizationPreferencesPage() {
               </div>
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Organization Preferences</h2>
-            <Badge variant="secondary" className="mb-4">Coming Soon</Badge>
+            <Badge variant="secondary" className="mb-4">
+              Coming Soon
+            </Badge>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Comprehensive organization settings for customizing reports, notifications, user management, 
-              and compliance workflows to match your operational preferences.
+              Comprehensive organization settings for customizing reports, notifications, user
+              management, and compliance workflows to match your operational preferences.
             </p>
           </CardContent>
         </Card>
@@ -147,7 +145,7 @@ export default function OrganizationPreferencesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Customize how reports look, what data is included, and default formatting options 
+                Customize how reports look, what data is included, and default formatting options
                 for compliance documentation.
               </p>
               <div className="space-y-2 text-sm text-gray-500">
@@ -168,8 +166,8 @@ export default function OrganizationPreferencesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Manage which staff members receive reports, notifications, and have access 
-                to different compliance information.
+                Manage which staff members receive reports, notifications, and have access to
+                different compliance information.
               </p>
               <div className="space-y-2 text-sm text-gray-500">
                 <div>• Report distribution lists</div>
@@ -189,8 +187,8 @@ export default function OrganizationPreferencesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Configure when, how, and how often your organization wants to be reminded 
-                of expiring or open compliance issues.
+                Configure when, how, and how often your organization wants to be reminded of
+                expiring or open compliance issues.
               </p>
               <div className="space-y-2 text-sm text-gray-500">
                 <div>• Expiration reminder schedules</div>
@@ -210,8 +208,8 @@ export default function OrganizationPreferencesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Customize dashboard layouts, KPI displays, and default views for 
-                different user roles within your organization.
+                Customize dashboard layouts, KPI displays, and default views for different user
+                roles within your organization.
               </p>
               <div className="space-y-2 text-sm text-gray-500">
                 <div>• Widget arrangement and sizing</div>
@@ -231,8 +229,8 @@ export default function OrganizationPreferencesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Set organization-specific compliance requirements, grace periods, 
-                and enforcement policies for various issue types.
+                Set organization-specific compliance requirements, grace periods, and enforcement
+                policies for various issue types.
               </p>
               <div className="space-y-2 text-sm text-gray-500">
                 <div>• Grace period configurations</div>
@@ -252,8 +250,8 @@ export default function OrganizationPreferencesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Automate routine compliance tasks, set up recurring processes, 
-                and configure smart reminders for your team.
+                Automate routine compliance tasks, set up recurring processes, and configure smart
+                reminders for your team.
               </p>
               <div className="space-y-2 text-sm text-gray-500">
                 <div>• Automatic renewal scheduling</div>
@@ -284,7 +282,7 @@ export default function OrganizationPreferencesPage() {
                   <div>
                     <h4 className="font-medium text-gray-900">Communication Templates</h4>
                     <p className="text-sm text-gray-600">
-                      Customize email templates for notifications, reports, and compliance 
+                      Customize email templates for notifications, reports, and compliance
                       communications with drivers and staff.
                     </p>
                   </div>
@@ -295,7 +293,7 @@ export default function OrganizationPreferencesPage() {
                   <div>
                     <h4 className="font-medium text-gray-900">Branding & Appearance</h4>
                     <p className="text-sm text-gray-600">
-                      Apply your organization's branding to reports, documents, and system 
+                      Apply your organization's branding to reports, documents, and system
                       interfaces for a consistent professional appearance.
                     </p>
                   </div>
@@ -306,8 +304,8 @@ export default function OrganizationPreferencesPage() {
                   <div>
                     <h4 className="font-medium text-gray-900">Regional Settings</h4>
                     <p className="text-sm text-gray-600">
-                      Configure time zones, date formats, measurement units, and local 
-                      compliance requirements specific to your operating regions.
+                      Configure time zones, date formats, measurement units, and local compliance
+                      requirements specific to your operating regions.
                     </p>
                   </div>
                 </div>
@@ -319,8 +317,8 @@ export default function OrganizationPreferencesPage() {
                   <div>
                     <h4 className="font-medium text-gray-900">Document Management</h4>
                     <p className="text-sm text-gray-600">
-                      Set default storage locations, retention policies, and naming conventions 
-                      for compliance documents and attachments.
+                      Set default storage locations, retention policies, and naming conventions for
+                      compliance documents and attachments.
                     </p>
                   </div>
                 </div>
@@ -330,8 +328,8 @@ export default function OrganizationPreferencesPage() {
                   <div>
                     <h4 className="font-medium text-gray-900">User Access Control</h4>
                     <p className="text-sm text-gray-600">
-                      Define user roles, permissions, and access levels for different 
-                      areas of the compliance management system.
+                      Define user roles, permissions, and access levels for different areas of the
+                      compliance management system.
                     </p>
                   </div>
                 </div>
@@ -341,8 +339,8 @@ export default function OrganizationPreferencesPage() {
                   <div>
                     <h4 className="font-medium text-gray-900">Performance Metrics</h4>
                     <p className="text-sm text-gray-600">
-                      Choose which KPIs to track, set target values, and configure 
-                      performance benchmarks for your organization.
+                      Choose which KPIs to track, set target values, and configure performance
+                      benchmarks for your organization.
                     </p>
                   </div>
                 </div>
@@ -359,10 +357,10 @@ export default function OrganizationPreferencesPage() {
               <div>
                 <h4 className="font-medium text-blue-900 mb-2">Development Approach</h4>
                 <p className="text-sm text-blue-800 mb-4">
-                  Organization preferences will be developed progressively as we implement 
-                  reporting processes and identify the most valuable configuration options. 
-                  This ensures the preferences system addresses real workflow needs rather 
-                  than theoretical requirements.
+                  Organization preferences will be developed progressively as we implement reporting
+                  processes and identify the most valuable configuration options. This ensures the
+                  preferences system addresses real workflow needs rather than theoretical
+                  requirements.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">Core Features Complete ✓</Badge>
@@ -375,5 +373,5 @@ export default function OrganizationPreferencesPage() {
         </Card>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

@@ -1,114 +1,121 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Shield, Star, MapPin, Clock, DollarSign, Search } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Shield, Star, MapPin, Clock, DollarSign, Search } from "lucide-react";
 
 interface Consultant {
-  id: string
-  name: string
-  licenseNumber?: string
-  yearsExperience: number
-  hourlyRate: number
-  bio: string
-  specializations: string[]
-  isVerified: boolean
-  rating?: number
-  location?: string
+  id: string;
+  name: string;
+  licenseNumber?: string;
+  yearsExperience: number;
+  hourlyRate: number;
+  bio: string;
+  specializations: string[];
+  isVerified: boolean;
+  rating?: number;
+  location?: string;
 }
 
 // Mock data for now - this will come from API later
 const mockConsultants: Consultant[] = [
   {
-    id: '1',
-    name: 'Sarah Johnson',
-    licenseNumber: 'DOT-12345',
+    id: "1",
+    name: "Sarah Johnson",
+    licenseNumber: "DOT-12345",
     yearsExperience: 15,
     hourlyRate: 175,
-    bio: 'Experienced DOT compliance expert specializing in audit preparation and safety management. Former FMCSA investigator with deep knowledge of regulatory requirements.',
-    specializations: ['DOT_AUDIT', 'SAFETY', 'HOURS_OF_SERVICE'],
+    bio: "Experienced DOT compliance expert specializing in audit preparation and safety management. Former FMCSA investigator with deep knowledge of regulatory requirements.",
+    specializations: ["DOT_AUDIT", "SAFETY", "HOURS_OF_SERVICE"],
     isVerified: true,
     rating: 4.9,
-    location: 'Texas, USA'
+    location: "Texas, USA",
   },
   {
-    id: '2',
-    name: 'Michael Chen',
-    licenseNumber: 'DOT-67890',
+    id: "2",
+    name: "Michael Chen",
+    licenseNumber: "DOT-67890",
     yearsExperience: 12,
     hourlyRate: 150,
-    bio: 'Fleet safety consultant with expertise in driver qualification files and vehicle maintenance records. Helped 200+ companies achieve compliance.',
-    specializations: ['DRIVER_QUALIFICATION', 'VEHICLE_MAINTENANCE', 'DRUG_ALCOHOL'],
+    bio: "Fleet safety consultant with expertise in driver qualification files and vehicle maintenance records. Helped 200+ companies achieve compliance.",
+    specializations: ["DRIVER_QUALIFICATION", "VEHICLE_MAINTENANCE", "DRUG_ALCOHOL"],
     isVerified: true,
     rating: 4.8,
-    location: 'California, USA'
+    location: "California, USA",
   },
   {
-    id: '3',
-    name: 'Jennifer Williams',
+    id: "3",
+    name: "Jennifer Williams",
     yearsExperience: 8,
     hourlyRate: 125,
-    bio: 'DOT compliance specialist focused on small to medium fleets. Expert in streamlining compliance processes and reducing regulatory burden.',
-    specializations: ['GENERAL', 'HOURS_OF_SERVICE', 'SAFETY'],
+    bio: "DOT compliance specialist focused on small to medium fleets. Expert in streamlining compliance processes and reducing regulatory burden.",
+    specializations: ["GENERAL", "HOURS_OF_SERVICE", "SAFETY"],
     isVerified: false,
     rating: 4.7,
-    location: 'Florida, USA'
-  }
-]
+    location: "Florida, USA",
+  },
+];
 
 const specializations = [
-  { value: 'DOT_AUDIT', label: 'DOT Audit Preparation' },
-  { value: 'SAFETY', label: 'Safety Management' },
-  { value: 'HOURS_OF_SERVICE', label: 'Hours of Service Compliance' },
-  { value: 'DRIVER_QUALIFICATION', label: 'Driver Qualification Files' },
-  { value: 'VEHICLE_MAINTENANCE', label: 'Vehicle Maintenance Records' },
-  { value: 'DRUG_ALCOHOL', label: 'Drug & Alcohol Testing' },
-  { value: 'HAZMAT', label: 'Hazmat Transportation' },
-  { value: 'GENERAL', label: 'General DOT Compliance' }
-]
+  { value: "DOT_AUDIT", label: "DOT Audit Preparation" },
+  { value: "SAFETY", label: "Safety Management" },
+  { value: "HOURS_OF_SERVICE", label: "Hours of Service Compliance" },
+  { value: "DRIVER_QUALIFICATION", label: "Driver Qualification Files" },
+  { value: "VEHICLE_MAINTENANCE", label: "Vehicle Maintenance Records" },
+  { value: "DRUG_ALCOHOL", label: "Drug & Alcohol Testing" },
+  { value: "HAZMAT", label: "Hazmat Transportation" },
+  { value: "GENERAL", label: "General DOT Compliance" },
+];
 
 export default function ConsultantMarketplace() {
-  const [consultants, setConsultants] = useState<Consultant[]>(mockConsultants)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterSpecialization, setFilterSpecialization] = useState<string>('')
-  const [sortBy, setSortBy] = useState<string>('rating')
+  const [consultants, setConsultants] = useState<Consultant[]>(mockConsultants);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterSpecialization, setFilterSpecialization] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("rating");
 
   const formatSpecialization = (spec: string) => {
-    return spec.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+    return spec.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   const filteredConsultants = consultants
-    .filter(consultant => {
-      const matchesSearch = searchTerm === '' || 
+    .filter((consultant) => {
+      const matchesSearch =
+        searchTerm === "" ||
         consultant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        consultant.bio.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesSpecialization = filterSpecialization === '' ||
-        consultant.specializations.includes(filterSpecialization)
-      
-      return matchesSearch && matchesSpecialization
+        consultant.bio.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesSpecialization =
+        filterSpecialization === "" || consultant.specializations.includes(filterSpecialization);
+
+      return matchesSearch && matchesSpecialization;
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case 'rating':
-          return (b.rating || 0) - (a.rating || 0)
-        case 'experience':
-          return b.yearsExperience - a.yearsExperience
-        case 'rate':
-          return a.hourlyRate - b.hourlyRate
+        case "rating":
+          return (b.rating || 0) - (a.rating || 0);
+        case "experience":
+          return b.yearsExperience - a.yearsExperience;
+        case "rate":
+          return a.hourlyRate - b.hourlyRate;
         default:
-          return 0
+          return 0;
       }
-    })
+    });
 
   const handleConsultationRequest = (consultantId: string) => {
     // This will open a modal or navigate to consultation request form
-    alert(`Consultation request feature coming soon! Consultant ID: ${consultantId}`)
-  }
+    alert(`Consultation request feature coming soon! Consultant ID: ${consultantId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -118,7 +125,8 @@ export default function ConsultantMarketplace() {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Find DOT Compliance Experts</h1>
             <p className="text-lg text-muted-foreground">
-              Connect with verified consultants who can help you navigate DOT regulations and prepare for audits
+              Connect with verified consultants who can help you navigate DOT regulations and
+              prepare for audits
             </p>
           </div>
 
@@ -137,7 +145,7 @@ export default function ConsultantMarketplace() {
                     />
                   </div>
                 </div>
-                
+
                 <Select value={filterSpecialization} onValueChange={setFilterSpecialization}>
                   <SelectTrigger>
                     <SelectValue placeholder="Filter by specialization" />
@@ -151,7 +159,7 @@ export default function ConsultantMarketplace() {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sort by" />
@@ -169,7 +177,8 @@ export default function ConsultantMarketplace() {
           {/* Results Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">
-              {filteredConsultants.length} consultant{filteredConsultants.length !== 1 ? 's' : ''} available
+              {filteredConsultants.length} consultant{filteredConsultants.length !== 1 ? "s" : ""}{" "}
+              available
             </h2>
             <p className="text-sm text-muted-foreground">
               All consultants are reviewed for quality and expertise
@@ -186,7 +195,10 @@ export default function ConsultantMarketplace() {
                       <CardTitle className="flex items-center gap-2">
                         {consultant.name}
                         {consultant.isVerified && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-green-50 text-green-700 border-green-200"
+                          >
                             <Shield className="h-3 w-3 mr-1" />
                             Verified
                           </Badge>
@@ -222,29 +234,33 @@ export default function ConsultantMarketplace() {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
                     {consultant.bio}
                   </p>
-                  
+
                   <div className="mb-4">
                     <p className="text-sm font-medium mb-2">Specializations:</p>
                     <div className="flex flex-wrap gap-2">
                       {consultant.specializations.map((spec) => (
-                        <Badge key={spec} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                        <Badge
+                          key={spec}
+                          variant="outline"
+                          className="bg-purple-50 text-purple-700 border-purple-200"
+                        >
                           {formatSpecialization(spec)}
                         </Badge>
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="flex-1">
                       View Profile
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="flex-2 bg-purple-600 hover:bg-purple-700"
                       onClick={() => handleConsultationRequest(consultant.id)}
                     >
@@ -272,15 +288,14 @@ export default function ConsultantMarketplace() {
               <Shield className="h-12 w-12 text-purple-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Are you a DOT compliance expert?</h3>
               <p className="text-muted-foreground mb-4">
-                Join our marketplace and help fleet operators stay compliant while growing your consulting practice.
+                Join our marketplace and help fleet operators stay compliant while growing your
+                consulting practice.
               </p>
-              <Button className="bg-purple-600 hover:bg-purple-700">
-                Become a Consultant
-              </Button>
+              <Button className="bg-purple-600 hover:bg-purple-700">Become a Consultant</Button>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

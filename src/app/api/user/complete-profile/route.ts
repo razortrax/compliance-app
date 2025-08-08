@@ -1,84 +1,74 @@
-import { auth } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
-import { db } from '@/db'
-import { createId } from '@paralleldrive/cuid2'
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { createId } from "@paralleldrive/cuid2";
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { firstName = 'User', lastName = 'User', role, organizationName } = await request.json()
+    const { firstName = "User", lastName = "User", role, organizationName } = await request.json();
 
     // Validate required fields - only role is required for auth flow
     if (!role) {
-      return NextResponse.json(
-        { error: 'Role is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Role is required" }, { status: 400 });
     }
 
     // Validate role
-    const validRoles = ['master', 'organization', 'location']
+    const validRoles = ["master", "organization", "location"];
     if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: 'Invalid role specified' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid role specified" }, { status: 400 });
     }
 
     // Organization/company name is now required for all roles
     if (!organizationName) {
-      return NextResponse.json(
-        { error: 'Company/Organization name is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Company/Organization name is required" }, { status: 400 });
     }
 
     // Check if user already has a profile
     const existingParty = await db.party.findFirst({
       where: { userId },
-      include: { 
+      include: {
         person: true,
-        organization: true
-      }
-    })
+        organization: true,
+      },
+    });
 
     // Also check if user has a master organization via role
     const existingRole = await db.role.findFirst({
-      where: { 
+      where: {
         partyId: existingParty?.id,
-        roleType: 'master'
-      }
-    })
+        roleType: "master",
+      },
+    });
 
     // Only block if user has BOTH person AND master organization
     if (existingParty && existingParty.person && existingRole && existingRole.organizationId) {
-      return NextResponse.json(
-        { error: 'Profile already completed' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Profile already completed" }, { status: 400 });
     }
 
-    console.log('🔍 Profile completion check:', {
+    console.log("🔍 Profile completion check:", {
       hasPerson: !!existingParty?.person,
       hasRole: !!existingRole,
       hasOrganization: !!existingRole?.organizationId,
-      allowCompletion: true
-    })
+      allowCompletion: true,
+    });
 
     const result = await db.$transaction(async (tx: any) => {
       // Create or use existing user party
-      const userParty = existingParty || await tx.party.create({
-        data: {
-          id: createId(),
-          userId,
-          status: 'active',
-          updatedAt: new Date()
-        }
-      })
+      const userParty =
+        existingParty ||
+        (await tx.party.create({
+          data: {
+            id: createId(),
+            userId,
+            status: "active",
+            updatedAt: new Date(),
+          },
+        }));
 
       // Create person record
       const person = await tx.person.create({
@@ -86,11 +76,11 @@ export async function POST(request: Request) {
           id: createId(),
           partyId: userParty.id,
           firstName,
-          lastName
-        }
-      })
+          lastName,
+        },
+      });
 
-      let organization = null
+      let organization = null;
 
       // Create organization if organizationName is provided
       if (organizationName) {
@@ -98,18 +88,18 @@ export async function POST(request: Request) {
           data: {
             id: createId(),
             userId, // Associate with user for ownership
-            status: 'active',
-            updatedAt: new Date()
-          }
-        })
+            status: "active",
+            updatedAt: new Date(),
+          },
+        });
 
         organization = await tx.organization.create({
           data: {
             id: createId(),
             partyId: organizationParty.id,
-            name: organizationName
-          }
-        })
+            name: organizationName,
+          },
+        });
       }
 
       // Create role
@@ -119,33 +109,29 @@ export async function POST(request: Request) {
           partyId: userParty.id,
           roleType: role,
           organizationId: organization?.id,
-          status: 'active',
-          isActive: true
-        }
-      })
+          status: "active",
+          isActive: true,
+        },
+      });
 
       return {
         userParty,
         person,
         organization,
-        userRole
-      }
-    })
+        userRole,
+      };
+    });
 
     return NextResponse.json({
-      message: 'Profile completed successfully',
+      message: "Profile completed successfully",
       data: {
         person: result.person,
         organization: result.organization,
-        role: result.userRole
-      }
-    })
-
+        role: result.userRole,
+      },
+    });
   } catch (error) {
-    console.error('Profile completion error:', error)
-    return NextResponse.json(
-      { error: 'Failed to complete profile' },
-      { status: 500 }
-    )
+    console.error("Profile completion error:", error);
+    return NextResponse.json({ error: "Failed to complete profile" }, { status: 500 });
   }
-} 
+}

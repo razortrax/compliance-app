@@ -1,233 +1,264 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { buildStandardNavigation, getUserRole } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ActivityLog } from '@/components/ui/activity-log'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { buildStandardNavigation, getUserRole } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ActivityLog } from "@/components/ui/activity-log";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
-  FileText, Plus, AlertCircle, CheckCircle, Clock, Shield, Truck, AlertTriangle
-} from 'lucide-react'
-import { format } from 'date-fns'
-import EnhancedRoadsideInspectionForm from '@/components/roadside_inspections/enhanced-roadside-inspection-form'
-import ViolationGroupsWithCAFGeneration from '@/components/cafs/violation-groups-with-caf-generation'
-import CAFDetailModal from '@/components/cafs/caf-detail-modal'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  FileText,
+  Plus,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Shield,
+  Truck,
+  AlertTriangle,
+} from "lucide-react";
+import { format } from "date-fns";
+import EnhancedRoadsideInspectionForm from "@/components/roadside_inspections/enhanced-roadside-inspection-form";
+import ViolationGroupsWithCAFGeneration from "@/components/cafs/violation-groups-with-caf-generation";
+import CAFDetailModal from "@/components/cafs/caf-detail-modal";
 
 interface RoadsideInspection {
-  id: string
-  reportNumber?: string
-  incidentDate: string
-  incidentTime?: string
-  officerName: string
-  agencyName?: string
-  officerBadge?: string
-  locationAddress?: string
-  locationCity?: string
-  locationState?: string
-  locationZip?: string
-  inspectionLevel?: string
-  overallResult?: string
-  dvirReceived: boolean
-  dvirSource?: string
-  entryMethod?: string
+  id: string;
+  reportNumber?: string;
+  incidentDate: string;
+  incidentTime?: string;
+  officerName: string;
+  agencyName?: string;
+  officerBadge?: string;
+  locationAddress?: string;
+  locationCity?: string;
+  locationState?: string;
+  locationZip?: string;
+  inspectionLevel?: string;
+  overallResult?: string;
+  dvirReceived: boolean;
+  dvirSource?: string;
+  entryMethod?: string;
   issue: {
-    id: string
-    title: string
-    description?: string
-    status: string
-    priority: string
+    id: string;
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
     party: {
-      id: string
+      id: string;
       equipment?: {
-        vehicleType: string
-        make?: string
-        model?: string
-        year?: number
-        vinNumber?: string
-        plateNumber?: string
-      }
-    }
-  }
+        vehicleType: string;
+        make?: string;
+        model?: string;
+        year?: number;
+        vinNumber?: string;
+        plateNumber?: string;
+      };
+    };
+  };
   equipment: Array<{
-    id: string
-    unitNumber: number
-    unitType?: string
-    make?: string
-    model?: string
-    year?: number
-    plateNumber?: string
-    plateState?: string
-    vin?: string
-    cvsaSticker?: string
-    oosSticker?: string
-  }>
+    id: string;
+    unitNumber: number;
+    unitType?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    plateNumber?: string;
+    plateState?: string;
+    vin?: string;
+    cvsaSticker?: string;
+    oosSticker?: string;
+  }>;
   violations: Array<{
-    id: string
-    violationCode: string
-    section?: string
-    unitNumber?: number
-    outOfService: boolean
-    outOfServiceDate?: string
-    backInServiceDate?: string
-    citationNumber?: string
-    severity?: string
-    description: string
-    inspectorComments?: string
-    violationType?: string
-    assignedPartyId?: string
-  }>
+    id: string;
+    violationCode: string;
+    section?: string;
+    unitNumber?: number;
+    outOfService: boolean;
+    outOfServiceDate?: string;
+    backInServiceDate?: string;
+    citationNumber?: string;
+    severity?: string;
+    description: string;
+    inspectorComments?: string;
+    violationType?: string;
+    assignedPartyId?: string;
+  }>;
 }
 
 interface Equipment {
-  id: string
-  vehicleType: string
-  make?: string
-  model?: string
-  year?: number
-  vinNumber?: string
-  plateNumber?: string
+  id: string;
+  vehicleType: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  vinNumber?: string;
+  plateNumber?: string;
   party?: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 interface Organization {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface MasterOrg {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface PageData {
-  masterOrg: MasterOrg
-  organization: Organization
-  equipment: Equipment
-  roadsideInspections: RoadsideInspection[]
+  masterOrg: MasterOrg;
+  organization: Organization;
+  equipment: Equipment;
+  roadsideInspections: RoadsideInspection[];
 }
 
 export default function EquipmentRoadsideInspectionsPage() {
-  const params = useParams()
-  const router = useRouter()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
-  const equipmentId = params.equipmentId as string
-  
-  const [data, setData] = useState<PageData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedRoadsideInspection, setSelectedRoadsideInspection] = useState<RoadsideInspection | null>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [userRole, setUserRole] = useState<string | null>(null)
-  
+  const params = useParams();
+  const router = useRouter();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
+  const equipmentId = params.equipmentId as string;
+
+  const [data, setData] = useState<PageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedRoadsideInspection, setSelectedRoadsideInspection] =
+    useState<RoadsideInspection | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   // CAF Generation State
-  const [createdCAFsInSession, setCreatedCAFsInSession] = useState<string[]>([])
-  const [selectedCAFId, setSelectedCAFId] = useState<string | null>(null)
+  const [createdCAFsInSession, setCreatedCAFsInSession] = useState<string[]>([]);
+  const [selectedCAFId, setSelectedCAFId] = useState<string | null>(null);
 
   // Smart expiration status function - Equipment Gold Standard (RSIN-specific)
   const getRoadsideInspectionStatus = (roadsideInspection: RoadsideInspection) => {
-    const hasViolations = roadsideInspection.violations.length > 0
-    const hasOOSViolations = roadsideInspection.violations.some(v => v.outOfService)
-    
+    const hasViolations = roadsideInspection.violations.length > 0;
+    const hasOOSViolations = roadsideInspection.violations.some((v) => v.outOfService);
+
     if (hasOOSViolations) {
       return {
-        status: 'out-of-service',
-        badge: <Badge variant="destructive" className="flex items-center gap-1">
-          <AlertTriangle className="h-3 w-3" />
-          Out of Service
-        </Badge>
-      }
+        status: "out-of-service",
+        badge: (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Out of Service
+          </Badge>
+        ),
+      };
     } else if (hasViolations) {
       return {
-        status: 'violations',
-        badge: <Badge variant="outline" className="flex items-center gap-1 border-orange-500 text-orange-600">
-          <AlertCircle className="h-3 w-3" />
-          Violations
-        </Badge>
-      }
+        status: "violations",
+        badge: (
+          <Badge
+            variant="outline"
+            className="flex items-center gap-1 border-orange-500 text-orange-600"
+          >
+            <AlertCircle className="h-3 w-3" />
+            Violations
+          </Badge>
+        ),
+      };
     } else {
       return {
-        status: 'clean',
-        badge: <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700">
-          <CheckCircle className="h-3 w-3" />
-          Clean Inspection
-        </Badge>
-      }
+        status: "clean",
+        badge: (
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1 bg-green-100 text-green-700"
+          >
+            <CheckCircle className="h-3 w-3" />
+            Clean Inspection
+          </Badge>
+        ),
+      };
     }
-  }
+  };
 
   useEffect(() => {
-    fetchData()
-  }, [masterOrgId, orgId, equipmentId])
+    fetchData();
+  }, [masterOrgId, orgId, equipmentId]);
 
   const fetchData = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await fetch(`/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`)
-      
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`,
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch roadside inspections')
+        throw new Error("Failed to fetch roadside inspections");
       }
-      
-      const pageData = await response.json()
-      setData(pageData)
-      
+
+      const pageData = await response.json();
+      setData(pageData);
+
       // Auto-select first roadside inspection if any
       if (pageData.roadsideInspections.length > 0) {
-        setSelectedRoadsideInspection(pageData.roadsideInspections[0])
+        setSelectedRoadsideInspection(pageData.roadsideInspections[0]);
       }
-      
     } catch (error) {
-      console.error('Error fetching roadside inspections:', error)
-      setError(error instanceof Error ? error.message : 'An unknown error occurred')
+      console.error("Error fetching roadside inspections:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleAddRoadsideInspection = async (formData: any) => {
     try {
-      const response = await fetch(`/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      })
+      );
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create roadside inspection')
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create roadside inspection");
       }
 
-      const newRoadsideInspection = await response.json()
-      
+      const newRoadsideInspection = await response.json();
+
       // Refresh data
-      await fetchData()
-      
+      await fetchData();
+
       // Select the new roadside inspection
-      setSelectedRoadsideInspection(newRoadsideInspection)
-      setIsAddDialogOpen(false)
-      
+      setSelectedRoadsideInspection(newRoadsideInspection);
+      setIsAddDialogOpen(false);
     } catch (error) {
-      console.error('Error creating roadside inspection:', error)
-      alert(`Failed to create roadside inspection: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error("Error creating roadside inspection:", error);
+      alert(
+        `Failed to create roadside inspection: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
-  }
+  };
 
   if (loading) {
     return (
       <AppLayout
-        name={data?.masterOrg?.name || 'Loading...'}
+        name={data?.masterOrg?.name || "Loading..."}
         sidebarMenu="equipment"
         className="p-6"
       >
@@ -238,16 +269,12 @@ export default function EquipmentRoadsideInspectionsPage() {
           </div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (error) {
     return (
-      <AppLayout
-        name={data?.masterOrg?.name || 'Error'}
-        sidebarMenu="equipment"
-        className="p-6"
-      >
+      <AppLayout name={data?.masterOrg?.name || "Error"} sidebarMenu="equipment" className="p-6">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-500" />
           <h3 className="text-lg font-semibold mb-2">Failed to Load Roadside Inspections</h3>
@@ -255,23 +282,19 @@ export default function EquipmentRoadsideInspectionsPage() {
           <Button onClick={fetchData}>Try Again</Button>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (!data) {
     return (
-      <AppLayout
-        name="Not Found"
-        sidebarMenu="equipment"
-        className="p-6"
-      >
+      <AppLayout name="Not Found" sidebarMenu="equipment" className="p-6">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-500" />
           <h3 className="text-lg font-semibold mb-2">Equipment Not Found</h3>
           <p className="text-gray-600">The requested equipment could not be found.</p>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   return (
@@ -289,7 +312,9 @@ export default function EquipmentRoadsideInspectionsPage() {
             <h1 className="text-2xl font-bold text-gray-900">
               {data.equipment.make} {data.equipment.model} - Roadside Inspections
             </h1>
-            <p className="text-sm text-gray-500">{data.equipment.vehicleType} • VIN: {data.equipment.vinNumber}</p>
+            <p className="text-sm text-gray-500">
+              {data.equipment.vehicleType} • VIN: {data.equipment.vinNumber}
+            </p>
           </div>
         </div>
 
@@ -304,7 +329,7 @@ export default function EquipmentRoadsideInspectionsPage() {
                   <h3 className="text-lg font-semibold">Roadside Inspections</h3>
                   <p className="text-sm text-gray-600">
                     <Badge variant="secondary">{data.roadsideInspections.length}</Badge>
-                    {data.roadsideInspections.length === 1 ? ' inspection' : ' inspections'}
+                    {data.roadsideInspections.length === 1 ? " inspection" : " inspections"}
                   </p>
                 </div>
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -332,14 +357,14 @@ export default function EquipmentRoadsideInspectionsPage() {
               <div className="space-y-2 overflow-y-auto">
                 {data.roadsideInspections.length > 0 ? (
                   data.roadsideInspections.map((roadsideInspection) => {
-                    const statusInfo = getRoadsideInspectionStatus(roadsideInspection)
+                    const statusInfo = getRoadsideInspectionStatus(roadsideInspection);
                     return (
                       <Card
                         key={roadsideInspection.id}
                         className={`cursor-pointer transition-colors ${
-                          selectedRoadsideInspection?.id === roadsideInspection.id 
-                            ? 'ring-2 ring-blue-500 bg-blue-50' 
-                            : 'hover:bg-gray-50'
+                          selectedRoadsideInspection?.id === roadsideInspection.id
+                            ? "ring-2 ring-blue-500 bg-blue-50"
+                            : "hover:bg-gray-50"
                         }`}
                         onClick={() => setSelectedRoadsideInspection(roadsideInspection)}
                       >
@@ -349,11 +374,13 @@ export default function EquipmentRoadsideInspectionsPage() {
                               <Shield className="h-4 w-4 mt-0.5 text-gray-500" />
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-sm truncate">
-                                  {roadsideInspection.reportNumber || `Inspection ${format(new Date(roadsideInspection.incidentDate), 'MMM d')}`}
+                                  {roadsideInspection.reportNumber ||
+                                    `Inspection ${format(new Date(roadsideInspection.incidentDate), "MMM d")}`}
                                 </h4>
                                 <p className="text-xs text-gray-600 mt-1">
-                                  {format(new Date(roadsideInspection.incidentDate), 'MMM d, yyyy')}
-                                  {roadsideInspection.incidentTime && ` at ${roadsideInspection.incidentTime}`}
+                                  {format(new Date(roadsideInspection.incidentDate), "MMM d, yyyy")}
+                                  {roadsideInspection.incidentTime &&
+                                    ` at ${roadsideInspection.incidentTime}`}
                                 </p>
                                 <p className="text-xs text-gray-600 mt-1">
                                   {roadsideInspection.officerName} - {roadsideInspection.agencyName}
@@ -362,7 +389,8 @@ export default function EquipmentRoadsideInspectionsPage() {
                                   {statusInfo.badge}
                                   {roadsideInspection.violations.length > 0 && (
                                     <Badge variant="outline" className="text-xs">
-                                      {roadsideInspection.violations.length} violation{roadsideInspection.violations.length !== 1 ? 's' : ''}
+                                      {roadsideInspection.violations.length} violation
+                                      {roadsideInspection.violations.length !== 1 ? "s" : ""}
                                     </Badge>
                                   )}
                                 </div>
@@ -371,7 +399,7 @@ export default function EquipmentRoadsideInspectionsPage() {
                           </div>
                         </CardContent>
                       </Card>
-                    )
+                    );
                   })
                 ) : (
                   <EmptyState
@@ -380,7 +408,7 @@ export default function EquipmentRoadsideInspectionsPage() {
                     description="This equipment has no recorded roadside inspections"
                     action={{
                       label: "Add First Inspection",
-                      onClick: () => setIsAddDialogOpen(true)
+                      onClick: () => setIsAddDialogOpen(true),
                     }}
                   />
                 )}
@@ -398,10 +426,12 @@ export default function EquipmentRoadsideInspectionsPage() {
                       <Shield className="h-6 w-6 mt-1 text-gray-500" />
                       <div>
                         <CardTitle className="text-xl">
-                          {selectedRoadsideInspection.reportNumber || `Roadside Inspection ${format(new Date(selectedRoadsideInspection.incidentDate), 'MMM d, yyyy')}`}
+                          {selectedRoadsideInspection.reportNumber ||
+                            `Roadside Inspection ${format(new Date(selectedRoadsideInspection.incidentDate), "MMM d, yyyy")}`}
                         </CardTitle>
                         <CardDescription className="mt-1">
-                          {selectedRoadsideInspection.officerName} - {selectedRoadsideInspection.agencyName}
+                          {selectedRoadsideInspection.officerName} -{" "}
+                          {selectedRoadsideInspection.agencyName}
                         </CardDescription>
                         <div className="flex items-center gap-2 mt-2">
                           {getRoadsideInspectionStatus(selectedRoadsideInspection).badge}
@@ -420,27 +450,30 @@ export default function EquipmentRoadsideInspectionsPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="font-medium text-gray-500">Date & Time:</span>
-                        <p>{format(new Date(selectedRoadsideInspection.incidentDate), 'MMM d, yyyy')}
-                          {selectedRoadsideInspection.incidentTime && ` at ${selectedRoadsideInspection.incidentTime}`}
+                        <p>
+                          {format(new Date(selectedRoadsideInspection.incidentDate), "MMM d, yyyy")}
+                          {selectedRoadsideInspection.incidentTime &&
+                            ` at ${selectedRoadsideInspection.incidentTime}`}
                         </p>
                       </div>
                       <div>
                         <span className="font-medium text-gray-500">Inspection Level:</span>
-                        <p>{selectedRoadsideInspection.inspectionLevel || 'Not specified'}</p>
+                        <p>{selectedRoadsideInspection.inspectionLevel || "Not specified"}</p>
                       </div>
                       <div>
                         <span className="font-medium text-gray-500">Overall Result:</span>
-                        <p>{selectedRoadsideInspection.overallResult || 'Not specified'}</p>
+                        <p>{selectedRoadsideInspection.overallResult || "Not specified"}</p>
                       </div>
                       <div>
                         <span className="font-medium text-gray-500">DVIR Received:</span>
-                        <p>{selectedRoadsideInspection.dvirReceived ? 'Yes' : 'No'}</p>
+                        <p>{selectedRoadsideInspection.dvirReceived ? "Yes" : "No"}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Location */}
-                  {(selectedRoadsideInspection.locationAddress || selectedRoadsideInspection.locationCity) && (
+                  {(selectedRoadsideInspection.locationAddress ||
+                    selectedRoadsideInspection.locationCity) && (
                     <div>
                       <h4 className="font-medium mb-3">Location</h4>
                       <p className="text-sm">
@@ -448,8 +481,10 @@ export default function EquipmentRoadsideInspectionsPage() {
                           selectedRoadsideInspection.locationAddress,
                           selectedRoadsideInspection.locationCity,
                           selectedRoadsideInspection.locationState,
-                          selectedRoadsideInspection.locationZip
-                        ].filter(Boolean).join(', ')}
+                          selectedRoadsideInspection.locationZip,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
                       </p>
                     </div>
                   )}
@@ -470,11 +505,18 @@ export default function EquipmentRoadsideInspectionsPage() {
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="font-medium text-gray-500">Vehicle:</span>
-                              <p>{[equipment.year, equipment.make, equipment.model].filter(Boolean).join(' ')}</p>
+                              <p>
+                                {[equipment.year, equipment.make, equipment.model]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                              </p>
                             </div>
                             <div>
                               <span className="font-medium text-gray-500">Plate:</span>
-                              <p>{equipment.plateNumber} {equipment.plateState && `(${equipment.plateState})`}</p>
+                              <p>
+                                {equipment.plateNumber}{" "}
+                                {equipment.plateState && `(${equipment.plateState})`}
+                              </p>
                             </div>
                             {equipment.vin && (
                               <div className="col-span-2">
@@ -491,14 +533,18 @@ export default function EquipmentRoadsideInspectionsPage() {
                   {/* Violations */}
                   {selectedRoadsideInspection.violations.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-3">Violations ({selectedRoadsideInspection.violations.length})</h4>
+                      <h4 className="font-medium mb-3">
+                        Violations ({selectedRoadsideInspection.violations.length})
+                      </h4>
                       <div className="space-y-3">
                         {selectedRoadsideInspection.violations.map((violation) => (
                           <div key={violation.id} className="p-3 border rounded-lg">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Badge variant={violation.outOfService ? "destructive" : "outline"}>
+                                  <Badge
+                                    variant={violation.outOfService ? "destructive" : "outline"}
+                                  >
                                     {violation.violationCode}
                                   </Badge>
                                   {violation.severity && (
@@ -531,26 +577,25 @@ export default function EquipmentRoadsideInspectionsPage() {
                   )}
 
                   {/* CAF Generation and Management */}
-                  {selectedRoadsideInspection.violations && selectedRoadsideInspection.violations.length > 0 && (
-                    <div>
-                      <ViolationGroupsWithCAFGeneration
-                        incident={{ id: selectedRoadsideInspection.id }}
-                        violations={selectedRoadsideInspection.violations}
-                        organizationId={orgId}
-                        onCAFCreated={(caf) => {
-                          if (caf?.id) setCreatedCAFsInSession(prev => [...prev, caf.id])
-                        }}
-                        onCAFClick={(caf) => setSelectedCAFId(caf.id)}
-                      />
-                    </div>
-                  )}
+                  {selectedRoadsideInspection.violations &&
+                    selectedRoadsideInspection.violations.length > 0 && (
+                      <div>
+                        <ViolationGroupsWithCAFGeneration
+                          incident={{ id: selectedRoadsideInspection.id }}
+                          violations={selectedRoadsideInspection.violations}
+                          organizationId={orgId}
+                          onCAFCreated={(caf) => {
+                            if (caf?.id) setCreatedCAFsInSession((prev) => [...prev, caf.id]);
+                          }}
+                          onCAFClick={(caf) => setSelectedCAFId(caf.id)}
+                        />
+                      </div>
+                    )}
 
                   {/* Activity Log */}
                   <div>
                     <h4 className="font-medium mb-3">Activity Log</h4>
-                    <ActivityLog 
-                      issueId={selectedRoadsideInspection.id}
-                    />
+                    <ActivityLog issueId={selectedRoadsideInspection.id} />
                   </div>
                 </CardContent>
               </Card>
@@ -580,12 +625,9 @@ export default function EquipmentRoadsideInspectionsPage() {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* CAF Detail Modal */}
-      <CAFDetailModal
-        cafId={selectedCAFId ?? undefined}
-        onClose={() => setSelectedCAFId(null)}
-      />
+      <CAFDetailModal cafId={selectedCAFId ?? undefined} onClose={() => setSelectedCAFId(null)} />
     </AppLayout>
-  )
-} 
+  );
+}

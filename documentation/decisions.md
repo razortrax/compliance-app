@@ -20,13 +20,13 @@ This file captures important decisions made during ComplianceApp development, wi
 
 ## 🛑 Rejected Alternatives
 
-| Alternative | Rejected Because |
-|-------------|------------------|
-| SQLite      | Not production-safe, causes Prisma issues |
-| Supabase    | Caused repeated sync issues in early dev |
-| NextAuth.js | Less scalable auth, less polished UI |
-| Plain Tailwind | Too verbose and repetitive |
-| Local PostgreSQL | Inconsistent with team setup |
+| Alternative      | Rejected Because                          |
+| ---------------- | ----------------------------------------- |
+| SQLite           | Not production-safe, causes Prisma issues |
+| Supabase         | Caused repeated sync issues in early dev  |
+| NextAuth.js      | Less scalable auth, less polished UI      |
+| Plain Tailwind   | Too verbose and repetitive                |
+| Local PostgreSQL | Inconsistent with team setup              |
 
 ---
 

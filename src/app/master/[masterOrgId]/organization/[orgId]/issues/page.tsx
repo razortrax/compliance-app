@@ -1,71 +1,63 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useUser } from '@clerk/nextjs'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  AlertTriangle,
-  ArrowLeft,
-  Calendar,
-  User,
-  Truck,
-  Clock,
-  CheckCircle
-} from "lucide-react"
-import { EmptyState } from "@/components/ui/empty-state"
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { useMasterOrg } from "@/hooks/use-master-org";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle, ArrowLeft, Calendar, User, Truck, Clock, CheckCircle } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
+  id: string;
+  name: string;
+  dotNumber?: string | null;
 }
 
 interface ExpiringIssue {
-  id: string
-  issueType: 'license' | 'mvr' | 'physical' | 'training' | 'drug_alcohol'
-  title: string
-  expiryDate: string
-  daysUntilExpiry: number
-  status: 'expiring_soon' | 'expired' | 'grace_period'
-  driverName?: string
-  driverId?: string
-  equipmentName?: string
-  equipmentId?: string
+  id: string;
+  issueType: "license" | "mvr" | "physical" | "training" | "drug_alcohol";
+  title: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  status: "expiring_soon" | "expired" | "grace_period";
+  driverName?: string;
+  driverId?: string;
+  equipmentName?: string;
+  equipmentId?: string;
 }
 
 export default function OrganizationIssuesPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { user } = useUser()
-  const { masterOrg } = useMasterOrg()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useUser();
+  const { masterOrg } = useMasterOrg();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
 
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [issues60d, setIssues60d] = useState<ExpiringIssue[]>([])
-  const [issues30d, setIssues30d] = useState<ExpiringIssue[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('60d')
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [issues60d, setIssues60d] = useState<ExpiringIssue[]>([]);
+  const [issues30d, setIssues30d] = useState<ExpiringIssue[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("60d");
 
   // Fetch organization data and issues
   useEffect(() => {
     const fetchOrganization = async () => {
       try {
-        const response = await fetch(`/api/organizations/${orgId}`)
+        const response = await fetch(`/api/organizations/${orgId}`);
         if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
+          const data = await response.json();
+          setOrganization(data);
         }
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        console.error("Error fetching organization:", error);
       }
-    }
+    };
 
     const fetchExpiringIssues = async () => {
       try {
@@ -73,80 +65,92 @@ export default function OrganizationIssuesPage() {
         // For now, we'll use mock data structure
         const mockIssues60d: ExpiringIssue[] = [
           {
-            id: '1',
-            issueType: 'license',
-            title: 'CDL License Renewal',
-            expiryDate: '2025-03-15',
+            id: "1",
+            issueType: "license",
+            title: "CDL License Renewal",
+            expiryDate: "2025-03-15",
             daysUntilExpiry: 45,
-            status: 'expiring_soon',
-            driverName: 'John Smith',
-            driverId: 'driver1'
+            status: "expiring_soon",
+            driverName: "John Smith",
+            driverId: "driver1",
           },
           {
-            id: '2', 
-            issueType: 'physical',
-            title: 'DOT Physical Exam',
-            expiryDate: '2025-02-28',
+            id: "2",
+            issueType: "physical",
+            title: "DOT Physical Exam",
+            expiryDate: "2025-02-28",
             daysUntilExpiry: 30,
-            status: 'expiring_soon',
-            driverName: 'Jane Doe',
-            driverId: 'driver2'
-          }
-        ]
+            status: "expiring_soon",
+            driverName: "Jane Doe",
+            driverId: "driver2",
+          },
+        ];
 
         const mockIssues30d: ExpiringIssue[] = [
           {
-            id: '3',
-            issueType: 'mvr',
-            title: 'Motor Vehicle Record Check',
-            expiryDate: '2025-02-10',
+            id: "3",
+            issueType: "mvr",
+            title: "Motor Vehicle Record Check",
+            expiryDate: "2025-02-10",
             daysUntilExpiry: 12,
-            status: 'expiring_soon',
-            driverName: 'Bob Johnson',
-            driverId: 'driver3'
-          }
-        ]
+            status: "expiring_soon",
+            driverName: "Bob Johnson",
+            driverId: "driver3",
+          },
+        ];
 
-        setIssues60d(mockIssues60d)
-        setIssues30d(mockIssues30d)
+        setIssues60d(mockIssues60d);
+        setIssues30d(mockIssues30d);
       } catch (error) {
-        console.error('Error fetching expiring issues:', error)
+        console.error("Error fetching expiring issues:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
     if (orgId) {
-      fetchOrganization()
-      fetchExpiringIssues()
+      fetchOrganization();
+      fetchExpiringIssues();
     }
-  }, [orgId])
+  }, [orgId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'expired': return 'destructive'
-      case 'grace_period': return 'secondary'
-      case 'expiring_soon': return 'outline'
-      default: return 'outline'
+      case "expired":
+        return "destructive";
+      case "grace_period":
+        return "secondary";
+      case "expiring_soon":
+        return "outline";
+      default:
+        return "outline";
     }
-  }
+  };
 
   const getIssueTypeIcon = (issueType: string) => {
     switch (issueType) {
-      case 'license': return <User className="h-4 w-4" />
-      case 'mvr': return <Truck className="h-4 w-4" />
-      case 'physical': return <CheckCircle className="h-4 w-4" />
-      case 'training': return <Calendar className="h-4 w-4" />
-      case 'drug_alcohol': return <AlertTriangle className="h-4 w-4" />
-      default: return <Clock className="h-4 w-4" />
+      case "license":
+        return <User className="h-4 w-4" />;
+      case "mvr":
+        return <Truck className="h-4 w-4" />;
+      case "physical":
+        return <CheckCircle className="h-4 w-4" />;
+      case "training":
+        return <Calendar className="h-4 w-4" />;
+      case "drug_alcohol":
+        return <AlertTriangle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
     }
-  }
+  };
 
   const handleIssueClick = (issue: ExpiringIssue) => {
     if (issue.driverId) {
-      router.push(`/master/${masterOrgId}/organization/${orgId}/driver/${issue.driverId}/${issue.issueType}`)
+      router.push(
+        `/master/${masterOrgId}/organization/${orgId}/driver/${issue.driverId}/${issue.issueType}`,
+      );
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -157,38 +161,38 @@ export default function OrganizationIssuesPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Correct static top navigation - NEVER make these dynamic!
   const topNav = [
-    { 
-      label: 'Master', 
-      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
-      isActive: false
+    {
+      label: "Master",
+      href: masterOrg?.id ? `/master/${masterOrg.id}` : "/dashboard",
+      isActive: false,
     },
-    { 
-      label: 'Organization', 
+    {
+      label: "Organization",
       href: `/organizations/${orgId}`,
-      isActive: true
+      isActive: true,
     },
-    { 
-      label: 'Drivers', 
+    {
+      label: "Drivers",
       href: `/organizations/${orgId}/drivers`,
-      isActive: false
+      isActive: false,
     },
-    { 
-      label: 'Equipment', 
+    {
+      label: "Equipment",
       href: `/organizations/${orgId}/equipment`,
-      isActive: false
-    }
-  ]
+      isActive: false,
+    },
+  ];
 
-  const renderIssuesList = (issues: ExpiringIssue[]) => (
+  const renderIssuesList = (issues: ExpiringIssue[]) =>
     issues.length > 0 ? (
       <div className="space-y-3">
         {issues.map((issue) => (
-          <Card 
+          <Card
             key={issue.id}
             className="cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => handleIssueClick(issue)}
@@ -196,9 +200,7 @@ export default function OrganizationIssuesPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
-                    {getIssueTypeIcon(issue.issueType)}
-                  </div>
+                  <div className="flex-shrink-0">{getIssueTypeIcon(issue.issueType)}</div>
                   <div>
                     <h4 className="font-medium text-gray-900">{issue.title}</h4>
                     <p className="text-sm text-gray-600">
@@ -207,11 +209,9 @@ export default function OrganizationIssuesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={getStatusColor(issue.status)}>
-                    {issue.daysUntilExpiry} days
-                  </Badge>
+                  <Badge variant={getStatusColor(issue.status)}>{issue.daysUntilExpiry} days</Badge>
                   <Badge variant="secondary" className="text-xs">
-                    {issue.issueType.replace('_', ' ').toUpperCase()}
+                    {issue.issueType.replace("_", " ").toUpperCase()}
                   </Badge>
                 </div>
               </div>
@@ -225,21 +225,16 @@ export default function OrganizationIssuesPage() {
         title="No expiring issues"
         description="All compliance requirements are up to date"
       />
-    )
-  )
+    );
 
   return (
-    <AppLayout
-      name={masterOrg?.name || 'Master'}
-      topNav={topNav}
-      className="p-6"
-    >
+    <AppLayout name={masterOrg?.name || "Master"} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header with organization name */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => router.push(`/master/${masterOrgId}/organization/${orgId}`)}
             >
@@ -300,9 +295,7 @@ export default function OrganizationIssuesPage() {
                   Compliance requirements that need attention within the next 60 days
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {renderIssuesList(issues60d)}
-              </CardContent>
+              <CardContent>{renderIssuesList(issues60d)}</CardContent>
             </Card>
           </TabsContent>
 
@@ -314,9 +307,7 @@ export default function OrganizationIssuesPage() {
                   Urgent compliance requirements that need immediate attention
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {renderIssuesList(issues30d)}
-              </CardContent>
+              <CardContent>{renderIssuesList(issues30d)}</CardContent>
             </Card>
           </TabsContent>
         </Tabs>
@@ -329,8 +320,8 @@ export default function OrganizationIssuesPage() {
               <div>
                 <h4 className="font-medium text-blue-900">Stay Compliant</h4>
                 <p className="text-sm text-blue-700 mt-1">
-                  Click on any issue to view details and take action. Keeping up with expiring requirements 
-                  helps maintain compliance and avoid violations during inspections.
+                  Click on any issue to view details and take action. Keeping up with expiring
+                  requirements helps maintain compliance and avoid violations during inspections.
                 </p>
               </div>
             </div>
@@ -338,5 +329,5 @@ export default function OrganizationIssuesPage() {
         </Card>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

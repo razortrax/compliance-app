@@ -1,29 +1,29 @@
-import React from 'react'
-import { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import React from "react";
+import { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
-  title: string
-  description?: string
-  icon?: LucideIcon
+  title: string;
+  description?: string;
+  icon?: LucideIcon;
   badge?: {
-    label: string
-    variant?: 'default' | 'secondary' | 'destructive' | 'outline'
-    className?: string
-  }
-  actions?: React.ReactNode
-  className?: string
+    label: string;
+    variant?: "default" | "secondary" | "destructive" | "outline";
+    className?: string;
+  };
+  actions?: React.ReactNode;
+  className?: string;
 }
 
-export function PageHeader({ 
-  title, 
-  description, 
+export function PageHeader({
+  title,
+  description,
   icon: Icon,
   badge,
   actions,
-  className 
+  className,
 }: PageHeaderProps) {
   return (
     <div className={cn("flex items-center justify-between", className)}>
@@ -38,16 +38,10 @@ export function PageHeader({
               </Badge>
             )}
           </div>
-          {description && (
-            <p className="text-sm text-gray-500 mt-1">{description}</p>
-          )}
+          {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
         </div>
       </div>
-      {actions && (
-        <div className="flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
-  )
-} 
+  );
+}

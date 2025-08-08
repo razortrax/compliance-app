@@ -1,92 +1,103 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useAuth } from '@clerk/nextjs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Shield, Users, Clock, DollarSign, CheckCircle, AlertCircle, Building } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, Users, Clock, DollarSign, CheckCircle, AlertCircle, Building } from "lucide-react";
 
 interface Consultant {
-  id: string
-  licenseNumber?: string
-  yearsExperience: number
-  hourlyRate: number
-  bio: string
-  specializations: string[]
-  isActive: boolean
-  isVerified: boolean
-  consultations: Consultation[]
+  id: string;
+  licenseNumber?: string;
+  yearsExperience: number;
+  hourlyRate: number;
+  bio: string;
+  specializations: string[];
+  isActive: boolean;
+  isVerified: boolean;
+  consultations: Consultation[];
 }
 
 interface Consultation {
-  id: string
-  title: string
-  consultationType: string
-  status: string
-  urgency: string
-  requestedAt: string
+  id: string;
+  title: string;
+  consultationType: string;
+  status: string;
+  urgency: string;
+  requestedAt: string;
   clientOrg: {
-    name: string
-  }
-  agreedRate?: number
-  estimatedHours?: number
+    name: string;
+  };
+  agreedRate?: number;
+  estimatedHours?: number;
 }
 
 export default function ConsultantDashboard() {
-  const router = useRouter()
-  const { isSignedIn } = useAuth()
-  const [consultant, setConsultant] = useState<Consultant | null>(null)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const [consultant, setConsultant] = useState<Consultant | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isSignedIn) {
-      fetchConsultantProfile()
+      fetchConsultantProfile();
     }
-  }, [isSignedIn])
+  }, [isSignedIn]);
 
   const fetchConsultantProfile = async () => {
     try {
-      const response = await fetch('/api/consultants/register')
+      const response = await fetch("/api/consultants/register");
       if (response.ok) {
-        const data = await response.json()
-        setConsultant(data.consultant)
+        const data = await response.json();
+        setConsultant(data.consultant);
       } else {
-        console.error('Failed to fetch consultant profile')
+        console.error("Failed to fetch consultant profile");
       }
     } catch (error) {
-      console.error('Error fetching consultant profile:', error)
+      console.error("Error fetching consultant profile:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'REQUESTED': return 'bg-yellow-100 text-yellow-800'
-      case 'ACCEPTED': return 'bg-blue-100 text-blue-800'
-      case 'ACTIVE': return 'bg-green-100 text-green-800'
-      case 'COMPLETED': return 'bg-gray-100 text-gray-800'
-      case 'CANCELLED': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case "REQUESTED":
+        return "bg-yellow-100 text-yellow-800";
+      case "ACCEPTED":
+        return "bg-blue-100 text-blue-800";
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "COMPLETED":
+        return "bg-gray-100 text-gray-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case 'LOW': return 'bg-green-100 text-green-800'
-      case 'NORMAL': return 'bg-blue-100 text-blue-800'
-      case 'HIGH': return 'bg-orange-100 text-orange-800'
-      case 'URGENT': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case "LOW":
+        return "bg-green-100 text-green-800";
+      case "NORMAL":
+        return "bg-blue-100 text-blue-800";
+      case "HIGH":
+        return "bg-orange-100 text-orange-800";
+      case "URGENT":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const formatSpecialization = (spec: string) => {
-    return spec.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+    return spec.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   if (loading) {
     return (
@@ -96,7 +107,7 @@ export default function ConsultantDashboard() {
           <p className="text-muted-foreground">Loading consultant dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!consultant) {
@@ -111,18 +122,18 @@ export default function ConsultantDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => router.push('/consultant/register')}>
+            <Button className="w-full" onClick={() => router.push("/consultant/register")}>
               Complete Registration
             </Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  const pendingRequests = consultant.consultations.filter(c => c.status === 'REQUESTED')
-  const activeConsultations = consultant.consultations.filter(c => c.status === 'ACTIVE')
-  const completedConsultations = consultant.consultations.filter(c => c.status === 'COMPLETED')
+  const pendingRequests = consultant.consultations.filter((c) => c.status === "REQUESTED");
+  const activeConsultations = consultant.consultations.filter((c) => c.status === "ACTIVE");
+  const completedConsultations = consultant.consultations.filter((c) => c.status === "COMPLETED");
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -168,7 +179,7 @@ export default function ConsultantDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -180,7 +191,7 @@ export default function ConsultantDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -192,7 +203,7 @@ export default function ConsultantDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -235,7 +246,10 @@ export default function ConsultantDashboard() {
                   ) : (
                     <div className="space-y-4">
                       {pendingRequests.map((consultation) => (
-                        <div key={consultation.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div
+                          key={consultation.id}
+                          className="border rounded-lg p-4 hover:bg-gray-50"
+                        >
                           <div className="flex items-start justify-between mb-3">
                             <div>
                               <h3 className="font-semibold">{consultation.title}</h3>
@@ -245,21 +259,31 @@ export default function ConsultantDashboard() {
                               </p>
                             </div>
                             <div className="flex gap-2">
-                              <Badge className={getUrgencyColor(consultation.urgency)} variant="outline">
+                              <Badge
+                                className={getUrgencyColor(consultation.urgency)}
+                                variant="outline"
+                              >
                                 {consultation.urgency}
                               </Badge>
-                              <Badge className={getStatusColor(consultation.status)} variant="outline">
+                              <Badge
+                                className={getStatusColor(consultation.status)}
+                                variant="outline"
+                              >
                                 {consultation.status}
                               </Badge>
                             </div>
                           </div>
-                          <p className="text-sm mb-3">Type: {formatSpecialization(consultation.consultationType)}</p>
+                          <p className="text-sm mb-3">
+                            Type: {formatSpecialization(consultation.consultationType)}
+                          </p>
                           <div className="flex items-center justify-between">
                             <p className="text-xs text-muted-foreground">
                               Requested {new Date(consultation.requestedAt).toLocaleDateString()}
                             </p>
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm">Decline</Button>
+                              <Button variant="outline" size="sm">
+                                Decline
+                              </Button>
                               <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
                                 Accept Request
                               </Button>
@@ -303,14 +327,18 @@ export default function ConsultantDashboard() {
                                 {consultation.clientOrg.name}
                               </p>
                             </div>
-                            <Badge className={getStatusColor(consultation.status)} variant="outline">
+                            <Badge
+                              className={getStatusColor(consultation.status)}
+                              variant="outline"
+                            >
                               {consultation.status}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm">
                               Rate: ${consultation.agreedRate || consultant.hourlyRate}/hr
-                              {consultation.estimatedHours && ` • Est. ${consultation.estimatedHours}h`}
+                              {consultation.estimatedHours &&
+                                ` • Est. ${consultation.estimatedHours}h`}
                             </p>
                             <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
                               Access Client Data
@@ -338,30 +366,40 @@ export default function ConsultantDashboard() {
                         <Label className="text-sm font-medium">Professional Bio</Label>
                         <p className="text-sm text-muted-foreground mt-1">{consultant.bio}</p>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label className="text-sm font-medium">Years of Experience</Label>
-                          <p className="text-sm text-muted-foreground mt-1">{consultant.yearsExperience} years</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {consultant.yearsExperience} years
+                          </p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium">Hourly Rate</Label>
-                          <p className="text-sm text-muted-foreground mt-1">${consultant.hourlyRate}/hour</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            ${consultant.hourlyRate}/hour
+                          </p>
                         </div>
                       </div>
 
                       {consultant.licenseNumber && (
                         <div>
                           <Label className="text-sm font-medium">License Number</Label>
-                          <p className="text-sm text-muted-foreground mt-1">{consultant.licenseNumber}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {consultant.licenseNumber}
+                          </p>
                         </div>
                       )}
-                      
+
                       <div>
                         <Label className="text-sm font-medium">Specializations</Label>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {consultant.specializations.map((spec) => (
-                            <Badge key={spec} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            <Badge
+                              key={spec}
+                              variant="outline"
+                              className="bg-purple-50 text-purple-700 border-purple-200"
+                            >
                               {formatSpecialization(spec)}
                             </Badge>
                           ))}
@@ -370,7 +408,7 @@ export default function ConsultantDashboard() {
                     </CardContent>
                   </Card>
                 </div>
-                
+
                 <div>
                   <Card>
                     <CardHeader>
@@ -383,14 +421,14 @@ export default function ConsultantDashboard() {
                           {consultant.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Verification</span>
                         <Badge variant={consultant.isVerified ? "default" : "outline"}>
                           {consultant.isVerified ? "Verified" : "Pending"}
                         </Badge>
                       </div>
-                      
+
                       <div className="pt-4">
                         <Button variant="outline" className="w-full">
                           Edit Profile
@@ -405,9 +443,9 @@ export default function ConsultantDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`text-sm font-medium ${className}`}>{children}</div>
-} 
+  return <div className={`text-sm font-medium ${className}`}>{children}</div>;
+}

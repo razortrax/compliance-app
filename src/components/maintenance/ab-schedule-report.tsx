@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { 
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
   Printer,
   Download,
   Calendar,
@@ -12,355 +12,371 @@ import {
   Clock,
   DollarSign,
   AlertTriangle,
-  CheckCircle
-} from 'lucide-react'
+  CheckCircle,
+} from "lucide-react";
 
 interface ABScheduleItem {
-  itemCode: string
-  itemDescription: string
-  intervalDays?: number
-  intervalMiles?: number
-  intervalType: 'TIME_BASED' | 'MILEAGE_BASED' | 'BOTH'
-  category: string
-  component: string
-  taskType: string
-  estimatedHours?: number
-  estimatedCost?: number
-  dotRequired: boolean
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
-  safetyRelated: boolean
-  sortOrder: number
+  itemCode: string;
+  itemDescription: string;
+  intervalDays?: number;
+  intervalMiles?: number;
+  intervalType: "TIME_BASED" | "MILEAGE_BASED" | "BOTH";
+  category: string;
+  component: string;
+  taskType: string;
+  estimatedHours?: number;
+  estimatedCost?: number;
+  dotRequired: boolean;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  safetyRelated: boolean;
+  sortOrder: number;
 }
 
 interface Equipment {
-  id: string
-  make?: string | null
-  model?: string | null
-  year?: number | null
-  vin?: string | null
+  id: string;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
+  vin?: string | null;
   category?: {
-    label: string
-  }
+    label: string;
+  };
 }
 
 interface ABScheduleReportProps {
-  equipment: Equipment
-  organizationName: string
-  onClose: () => void
+  equipment: Equipment;
+  organizationName: string;
+  onClose: () => void;
 }
 
 export function ABScheduleReport({ equipment, organizationName, onClose }: ABScheduleReportProps) {
-  const [scheduleItems, setScheduleItems] = useState<ABScheduleItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isPrinting, setIsPrinting] = useState(false)
+  const [scheduleItems, setScheduleItems] = useState<ABScheduleItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  const equipmentCategory = equipment.category?.label || 'Unknown'
-  const isPowerUnit = equipmentCategory.toLowerCase().includes('power')
-  const scheduleType = isPowerUnit ? 'Power Unit' : 'Trailer'
+  const equipmentCategory = equipment.category?.label || "Unknown";
+  const isPowerUnit = equipmentCategory.toLowerCase().includes("power");
+  const scheduleType = isPowerUnit ? "Power Unit" : "Trailer";
 
   useEffect(() => {
-    fetchABSchedule()
-  }, [equipment.id])
+    fetchABSchedule();
+  }, [equipment.id]);
 
   const fetchABSchedule = async () => {
     try {
-      setIsLoading(true)
-      
-      // For now, using the same mock data structure as our seeded A&B schedules
-      const mockScheduleItems: ABScheduleItem[] = isPowerUnit ? [
-        // A Schedule Items for Power Units
-        {
-          itemCode: 'A1',
-          itemDescription: 'Engine Oil & Filter Change',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'ENGINE',
-          component: 'Oil System',
-          taskType: 'REPLACE',
-          estimatedHours: 1.5,
-          estimatedCost: 150.00,
-          dotRequired: false,
-          priority: 'MEDIUM',
-          safetyRelated: false,
-          sortOrder: 1
-        },
-        {
-          itemCode: 'A2',
-          itemDescription: 'Air Filter Inspection/Replacement',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'ENGINE',
-          component: 'Air Intake',
-          taskType: 'INSPECT',
-          estimatedHours: 0.5,
-          estimatedCost: 75.00,
-          dotRequired: false,
-          priority: 'MEDIUM',
-          safetyRelated: false,
-          sortOrder: 2
-        },
-        {
-          itemCode: 'A3',
-          itemDescription: 'Brake System Inspection',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'BRAKE',
-          component: 'Brake System',
-          taskType: 'INSPECT',
-          estimatedHours: 2.0,
-          estimatedCost: 100.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 3
-        },
-        {
-          itemCode: 'A4',
-          itemDescription: 'Tire Pressure & Tread Inspection',
-          intervalDays: 30,
-          intervalMiles: 10000,
-          intervalType: 'BOTH',
-          category: 'TIRE',
-          component: 'Tires',
-          taskType: 'INSPECT',
-          estimatedHours: 0.5,
-          estimatedCost: 25.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 4
-        },
-        {
-          itemCode: 'A5',
-          itemDescription: 'Lights & Electrical System Check',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'ELECTRICAL',
-          component: 'Lighting',
-          taskType: 'INSPECT',
-          estimatedHours: 1.0,
-          estimatedCost: 50.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 5
-        },
-        // B Schedule Items for Power Units
-        {
-          itemCode: 'B1',
-          itemDescription: 'Transmission Service',
-          intervalDays: 180,
-          intervalMiles: 50000,
-          intervalType: 'BOTH',
-          category: 'TRANSMISSION',
-          component: 'Transmission',
-          taskType: 'SERVICE',
-          estimatedHours: 3.0,
-          estimatedCost: 400.00,
-          dotRequired: false,
-          priority: 'MEDIUM',
-          safetyRelated: false,
-          sortOrder: 6
-        },
-        {
-          itemCode: 'B2',
-          itemDescription: 'Differential Service',
-          intervalDays: 180,
-          intervalMiles: 50000,
-          intervalType: 'BOTH',
-          category: 'DRIVETRAIN',
-          component: 'Differential',
-          taskType: 'SERVICE',
-          estimatedHours: 2.0,
-          estimatedCost: 250.00,
-          dotRequired: false,
-          priority: 'MEDIUM',
-          safetyRelated: false,
-          sortOrder: 7
-        },
-        {
-          itemCode: 'B3',
-          itemDescription: 'Fuel System Inspection',
-          intervalDays: 180,
-          intervalMiles: 50000,
-          intervalType: 'BOTH',
-          category: 'FUEL',
-          component: 'Fuel System',
-          taskType: 'INSPECT',
-          estimatedHours: 1.5,
-          estimatedCost: 100.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 8
-        },
-        {
-          itemCode: 'B4',
-          itemDescription: 'Exhaust System Inspection',
-          intervalDays: 180,
-          intervalMiles: 50000,
-          intervalType: 'BOTH',
-          category: 'EXHAUST',
-          component: 'Exhaust System',
-          taskType: 'INSPECT',
-          estimatedHours: 1.0,
-          estimatedCost: 75.00,
-          dotRequired: true,
-          priority: 'MEDIUM',
-          safetyRelated: true,
-          sortOrder: 9
-        }
-      ] : [
-        // A Schedule Items for Trailers
-        {
-          itemCode: 'TA1',
-          itemDescription: 'Brake System Inspection',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'BRAKE',
-          component: 'Brake System',
-          taskType: 'INSPECT',
-          estimatedHours: 1.5,
-          estimatedCost: 100.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 1
-        },
-        {
-          itemCode: 'TA2',
-          itemDescription: 'Tire Pressure & Tread Inspection',
-          intervalDays: 30,
-          intervalMiles: 10000,
-          intervalType: 'BOTH',
-          category: 'TIRE',
-          component: 'Tires',
-          taskType: 'INSPECT',
-          estimatedHours: 0.5,
-          estimatedCost: 25.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 2
-        },
-        {
-          itemCode: 'TA3',
-          itemDescription: 'Lights & Electrical System Check',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'ELECTRICAL',
-          component: 'Lighting',
-          taskType: 'INSPECT',
-          estimatedHours: 0.5,
-          estimatedCost: 50.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 3
-        },
-        {
-          itemCode: 'TA4',
-          itemDescription: 'Suspension System Inspection',
-          intervalDays: 90,
-          intervalMiles: 25000,
-          intervalType: 'BOTH',
-          category: 'SUSPENSION',
-          component: 'Suspension',
-          taskType: 'INSPECT',
-          estimatedHours: 1.0,
-          estimatedCost: 75.00,
-          dotRequired: true,
-          priority: 'HIGH',
-          safetyRelated: true,
-          sortOrder: 4
-        },
-        // B Schedule Items for Trailers
-        {
-          itemCode: 'TB1',
-          itemDescription: 'Wheel Bearing Service',
-          intervalDays: 180,
-          intervalMiles: 50000,
-          intervalType: 'BOTH',
-          category: 'BEARING',
-          component: 'Wheel Bearings',
-          taskType: 'SERVICE',
-          estimatedHours: 2.5,
-          estimatedCost: 300.00,
-          dotRequired: false,
-          priority: 'MEDIUM',
-          safetyRelated: false,
-          sortOrder: 5
-        },
-        {
-          itemCode: 'TB2',
-          itemDescription: 'Landing Gear Inspection',
-          intervalDays: 180,
-          intervalMiles: 50000,
-          intervalType: 'BOTH',
-          category: 'LANDING_GEAR',
-          component: 'Landing Gear',
-          taskType: 'INSPECT',
-          estimatedHours: 1.0,
-          estimatedCost: 50.00,
-          dotRequired: true,
-          priority: 'MEDIUM',
-          safetyRelated: true,
-          sortOrder: 6
-        }
-      ]
+      setIsLoading(true);
 
-      setScheduleItems(mockScheduleItems)
+      // For now, using the same mock data structure as our seeded A&B schedules
+      const mockScheduleItems: ABScheduleItem[] = isPowerUnit
+        ? [
+            // A Schedule Items for Power Units
+            {
+              itemCode: "A1",
+              itemDescription: "Engine Oil & Filter Change",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "ENGINE",
+              component: "Oil System",
+              taskType: "REPLACE",
+              estimatedHours: 1.5,
+              estimatedCost: 150.0,
+              dotRequired: false,
+              priority: "MEDIUM",
+              safetyRelated: false,
+              sortOrder: 1,
+            },
+            {
+              itemCode: "A2",
+              itemDescription: "Air Filter Inspection/Replacement",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "ENGINE",
+              component: "Air Intake",
+              taskType: "INSPECT",
+              estimatedHours: 0.5,
+              estimatedCost: 75.0,
+              dotRequired: false,
+              priority: "MEDIUM",
+              safetyRelated: false,
+              sortOrder: 2,
+            },
+            {
+              itemCode: "A3",
+              itemDescription: "Brake System Inspection",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "BRAKE",
+              component: "Brake System",
+              taskType: "INSPECT",
+              estimatedHours: 2.0,
+              estimatedCost: 100.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 3,
+            },
+            {
+              itemCode: "A4",
+              itemDescription: "Tire Pressure & Tread Inspection",
+              intervalDays: 30,
+              intervalMiles: 10000,
+              intervalType: "BOTH",
+              category: "TIRE",
+              component: "Tires",
+              taskType: "INSPECT",
+              estimatedHours: 0.5,
+              estimatedCost: 25.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 4,
+            },
+            {
+              itemCode: "A5",
+              itemDescription: "Lights & Electrical System Check",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "ELECTRICAL",
+              component: "Lighting",
+              taskType: "INSPECT",
+              estimatedHours: 1.0,
+              estimatedCost: 50.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 5,
+            },
+            // B Schedule Items for Power Units
+            {
+              itemCode: "B1",
+              itemDescription: "Transmission Service",
+              intervalDays: 180,
+              intervalMiles: 50000,
+              intervalType: "BOTH",
+              category: "TRANSMISSION",
+              component: "Transmission",
+              taskType: "SERVICE",
+              estimatedHours: 3.0,
+              estimatedCost: 400.0,
+              dotRequired: false,
+              priority: "MEDIUM",
+              safetyRelated: false,
+              sortOrder: 6,
+            },
+            {
+              itemCode: "B2",
+              itemDescription: "Differential Service",
+              intervalDays: 180,
+              intervalMiles: 50000,
+              intervalType: "BOTH",
+              category: "DRIVETRAIN",
+              component: "Differential",
+              taskType: "SERVICE",
+              estimatedHours: 2.0,
+              estimatedCost: 250.0,
+              dotRequired: false,
+              priority: "MEDIUM",
+              safetyRelated: false,
+              sortOrder: 7,
+            },
+            {
+              itemCode: "B3",
+              itemDescription: "Fuel System Inspection",
+              intervalDays: 180,
+              intervalMiles: 50000,
+              intervalType: "BOTH",
+              category: "FUEL",
+              component: "Fuel System",
+              taskType: "INSPECT",
+              estimatedHours: 1.5,
+              estimatedCost: 100.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 8,
+            },
+            {
+              itemCode: "B4",
+              itemDescription: "Exhaust System Inspection",
+              intervalDays: 180,
+              intervalMiles: 50000,
+              intervalType: "BOTH",
+              category: "EXHAUST",
+              component: "Exhaust System",
+              taskType: "INSPECT",
+              estimatedHours: 1.0,
+              estimatedCost: 75.0,
+              dotRequired: true,
+              priority: "MEDIUM",
+              safetyRelated: true,
+              sortOrder: 9,
+            },
+          ]
+        : [
+            // A Schedule Items for Trailers
+            {
+              itemCode: "TA1",
+              itemDescription: "Brake System Inspection",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "BRAKE",
+              component: "Brake System",
+              taskType: "INSPECT",
+              estimatedHours: 1.5,
+              estimatedCost: 100.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 1,
+            },
+            {
+              itemCode: "TA2",
+              itemDescription: "Tire Pressure & Tread Inspection",
+              intervalDays: 30,
+              intervalMiles: 10000,
+              intervalType: "BOTH",
+              category: "TIRE",
+              component: "Tires",
+              taskType: "INSPECT",
+              estimatedHours: 0.5,
+              estimatedCost: 25.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 2,
+            },
+            {
+              itemCode: "TA3",
+              itemDescription: "Lights & Electrical System Check",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "ELECTRICAL",
+              component: "Lighting",
+              taskType: "INSPECT",
+              estimatedHours: 0.5,
+              estimatedCost: 50.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 3,
+            },
+            {
+              itemCode: "TA4",
+              itemDescription: "Suspension System Inspection",
+              intervalDays: 90,
+              intervalMiles: 25000,
+              intervalType: "BOTH",
+              category: "SUSPENSION",
+              component: "Suspension",
+              taskType: "INSPECT",
+              estimatedHours: 1.0,
+              estimatedCost: 75.0,
+              dotRequired: true,
+              priority: "HIGH",
+              safetyRelated: true,
+              sortOrder: 4,
+            },
+            // B Schedule Items for Trailers
+            {
+              itemCode: "TB1",
+              itemDescription: "Wheel Bearing Service",
+              intervalDays: 180,
+              intervalMiles: 50000,
+              intervalType: "BOTH",
+              category: "BEARING",
+              component: "Wheel Bearings",
+              taskType: "SERVICE",
+              estimatedHours: 2.5,
+              estimatedCost: 300.0,
+              dotRequired: false,
+              priority: "MEDIUM",
+              safetyRelated: false,
+              sortOrder: 5,
+            },
+            {
+              itemCode: "TB2",
+              itemDescription: "Landing Gear Inspection",
+              intervalDays: 180,
+              intervalMiles: 50000,
+              intervalType: "BOTH",
+              category: "LANDING_GEAR",
+              component: "Landing Gear",
+              taskType: "INSPECT",
+              estimatedHours: 1.0,
+              estimatedCost: 50.0,
+              dotRequired: true,
+              priority: "MEDIUM",
+              safetyRelated: true,
+              sortOrder: 6,
+            },
+          ];
+
+      setScheduleItems(mockScheduleItems);
     } catch (error) {
-      console.error('Error fetching A&B schedule:', error)
+      console.error("Error fetching A&B schedule:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handlePrint = () => {
-    setIsPrinting(true)
+    setIsPrinting(true);
     setTimeout(() => {
-      window.print()
-      setIsPrinting(false)
-    }, 100)
-  }
+      window.print();
+      setIsPrinting(false);
+    }, 100);
+  };
 
   const handleDownload = () => {
     // Future enhancement: Generate and download PDF
-    alert('PDF download feature coming soon!')
-  }
+    alert("PDF download feature coming soon!");
+  };
 
   const getScheduleCategory = (items: ABScheduleItem[]) => {
-    const aSchedule = items.filter(item => item.itemCode.includes('A') || item.itemCode.startsWith('TA'))
-    const bSchedule = items.filter(item => item.itemCode.includes('B') || item.itemCode.startsWith('TB'))
-    return { aSchedule, bSchedule }
-  }
+    const aSchedule = items.filter(
+      (item) => item.itemCode.includes("A") || item.itemCode.startsWith("TA"),
+    );
+    const bSchedule = items.filter(
+      (item) => item.itemCode.includes("B") || item.itemCode.startsWith("TB"),
+    );
+    return { aSchedule, bSchedule };
+  };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'CRITICAL': return AlertTriangle
-      case 'HIGH': return AlertTriangle
-      case 'MEDIUM': return Clock
-      case 'LOW': return CheckCircle
-      default: return Clock
+      case "CRITICAL":
+        return AlertTriangle;
+      case "HIGH":
+        return AlertTriangle;
+      case "MEDIUM":
+        return Clock;
+      case "LOW":
+        return CheckCircle;
+      default:
+        return Clock;
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'CRITICAL': return 'text-red-600'
-      case 'HIGH': return 'text-orange-600'
-      case 'MEDIUM': return 'text-yellow-600'
-      case 'LOW': return 'text-green-600'
-      default: return 'text-gray-600'
+      case "CRITICAL":
+        return "text-red-600";
+      case "HIGH":
+        return "text-orange-600";
+      case "MEDIUM":
+        return "text-yellow-600";
+      case "LOW":
+        return "text-green-600";
+      default:
+        return "text-gray-600";
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -370,12 +386,13 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
           <p className="text-gray-600">Generating A&B Schedule...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  const { aSchedule, bSchedule } = getScheduleCategory(scheduleItems)
-  const currentDate = new Date().toLocaleDateString()
-  const equipmentInfo = `${equipment.make || ''} ${equipment.model || ''} ${equipment.year || ''}`.trim()
+  const { aSchedule, bSchedule } = getScheduleCategory(scheduleItems);
+  const currentDate = new Date().toLocaleDateString();
+  const equipmentInfo =
+    `${equipment.make || ""} ${equipment.model || ""} ${equipment.year || ""}`.trim();
 
   return (
     <div className="space-y-6">
@@ -385,10 +402,18 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
           <h1 className="text-2xl font-bold">A&B MAINTENANCE SCHEDULE</h1>
           <h2 className="text-lg font-semibold">{scheduleType}</h2>
           <div className="mt-2 text-sm">
-            <p><strong>Organization:</strong> {organizationName}</p>
-            <p><strong>Equipment:</strong> {equipmentInfo}</p>
-            <p><strong>VIN:</strong> {equipment.vin || 'N/A'}</p>
-            <p><strong>Generated:</strong> {currentDate}</p>
+            <p>
+              <strong>Organization:</strong> {organizationName}
+            </p>
+            <p>
+              <strong>Equipment:</strong> {equipmentInfo}
+            </p>
+            <p>
+              <strong>VIN:</strong> {equipment.vin || "N/A"}
+            </p>
+            <p>
+              <strong>Generated:</strong> {currentDate}
+            </p>
           </div>
         </div>
       </div>
@@ -398,7 +423,9 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold">A&B Maintenance Schedule</h2>
-            <p className="text-gray-600">{scheduleType} - {equipmentInfo}</p>
+            <p className="text-gray-600">
+              {scheduleType} - {equipmentInfo}
+            </p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={handleDownload}>
@@ -407,7 +434,7 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
             </Button>
             <Button onClick={handlePrint} disabled={isPrinting}>
               <Printer className="h-4 w-4 mr-2" />
-              {isPrinting ? 'Preparing...' : 'Print'}
+              {isPrinting ? "Preparing..." : "Print"}
             </Button>
           </div>
         </div>
@@ -417,14 +444,14 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            A Schedule - Routine Maintenance ({aSchedule.length} items)
+            <Calendar className="h-5 w-5 text-blue-600" />A Schedule - Routine Maintenance (
+            {aSchedule.length} items)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {aSchedule.map((item, index) => {
-              const PriorityIcon = getPriorityIcon(item.priority)
+              const PriorityIcon = getPriorityIcon(item.priority);
               return (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between">
@@ -436,11 +463,11 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
                         <h4 className="font-semibold">{item.itemDescription}</h4>
                         <PriorityIcon className={`h-4 w-4 ${getPriorityColor(item.priority)}`} />
                       </div>
-                      
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <span className="font-medium">Category:</span>
-                          <p className="text-gray-600">{item.category.replace('_', ' ')}</p>
+                          <p className="text-gray-600">{item.category.replace("_", " ")}</p>
                         </div>
                         <div>
                           <span className="font-medium">Component:</span>
@@ -454,37 +481,37 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
                           <span className="font-medium">Interval:</span>
                           <p className="text-gray-600">
                             {item.intervalDays && `${item.intervalDays} days`}
-                            {item.intervalDays && item.intervalMiles && ' / '}
+                            {item.intervalDays && item.intervalMiles && " / "}
                             {item.intervalMiles && `${item.intervalMiles.toLocaleString()} miles`}
                           </p>
                         </div>
                         <div>
                           <span className="font-medium">Est. Hours:</span>
-                          <p className="text-gray-600">{item.estimatedHours || 'N/A'}</p>
+                          <p className="text-gray-600">{item.estimatedHours || "N/A"}</p>
                         </div>
                         <div>
                           <span className="font-medium">Est. Cost:</span>
                           <p className="text-gray-600">
-                            {item.estimatedCost ? `$${item.estimatedCost.toFixed(2)}` : 'N/A'}
+                            {item.estimatedCost ? `$${item.estimatedCost.toFixed(2)}` : "N/A"}
                           </p>
                         </div>
                         <div>
                           <span className="font-medium">DOT Required:</span>
-                          <Badge variant={item.dotRequired ? 'default' : 'secondary'}>
-                            {item.dotRequired ? 'Yes' : 'No'}
+                          <Badge variant={item.dotRequired ? "default" : "secondary"}>
+                            {item.dotRequired ? "Yes" : "No"}
                           </Badge>
                         </div>
                         <div>
                           <span className="font-medium">Safety Related:</span>
-                          <Badge variant={item.safetyRelated ? 'destructive' : 'secondary'}>
-                            {item.safetyRelated ? 'Yes' : 'No'}
+                          <Badge variant={item.safetyRelated ? "destructive" : "secondary"}>
+                            {item.safetyRelated ? "Yes" : "No"}
                           </Badge>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </CardContent>
@@ -497,14 +524,14 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Wrench className="h-5 w-5 text-orange-600" />
-                B Schedule - Comprehensive Maintenance ({bSchedule.length} items)
+                <Wrench className="h-5 w-5 text-orange-600" />B Schedule - Comprehensive Maintenance
+                ({bSchedule.length} items)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {bSchedule.map((item, index) => {
-                  const PriorityIcon = getPriorityIcon(item.priority)
+                  const PriorityIcon = getPriorityIcon(item.priority);
                   return (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
@@ -514,13 +541,15 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
                               {item.itemCode}
                             </Badge>
                             <h4 className="font-semibold">{item.itemDescription}</h4>
-                            <PriorityIcon className={`h-4 w-4 ${getPriorityColor(item.priority)}`} />
+                            <PriorityIcon
+                              className={`h-4 w-4 ${getPriorityColor(item.priority)}`}
+                            />
                           </div>
-                          
+
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <span className="font-medium">Category:</span>
-                              <p className="text-gray-600">{item.category.replace('_', ' ')}</p>
+                              <p className="text-gray-600">{item.category.replace("_", " ")}</p>
                             </div>
                             <div>
                               <span className="font-medium">Component:</span>
@@ -534,37 +563,38 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
                               <span className="font-medium">Interval:</span>
                               <p className="text-gray-600">
                                 {item.intervalDays && `${item.intervalDays} days`}
-                                {item.intervalDays && item.intervalMiles && ' / '}
-                                {item.intervalMiles && `${item.intervalMiles.toLocaleString()} miles`}
+                                {item.intervalDays && item.intervalMiles && " / "}
+                                {item.intervalMiles &&
+                                  `${item.intervalMiles.toLocaleString()} miles`}
                               </p>
                             </div>
                             <div>
                               <span className="font-medium">Est. Hours:</span>
-                              <p className="text-gray-600">{item.estimatedHours || 'N/A'}</p>
+                              <p className="text-gray-600">{item.estimatedHours || "N/A"}</p>
                             </div>
                             <div>
                               <span className="font-medium">Est. Cost:</span>
                               <p className="text-gray-600">
-                                {item.estimatedCost ? `$${item.estimatedCost.toFixed(2)}` : 'N/A'}
+                                {item.estimatedCost ? `$${item.estimatedCost.toFixed(2)}` : "N/A"}
                               </p>
                             </div>
                             <div>
                               <span className="font-medium">DOT Required:</span>
-                              <Badge variant={item.dotRequired ? 'default' : 'secondary'}>
-                                {item.dotRequired ? 'Yes' : 'No'}
+                              <Badge variant={item.dotRequired ? "default" : "secondary"}>
+                                {item.dotRequired ? "Yes" : "No"}
                               </Badge>
                             </div>
                             <div>
                               <span className="font-medium">Safety Related:</span>
-                              <Badge variant={item.safetyRelated ? 'destructive' : 'secondary'}>
-                                {item.safetyRelated ? 'Yes' : 'No'}
+                              <Badge variant={item.safetyRelated ? "destructive" : "secondary"}>
+                                {item.safetyRelated ? "Yes" : "No"}
                               </Badge>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </CardContent>
@@ -575,7 +605,10 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
       {/* Print Footer */}
       <div className="print:block hidden mt-8 pt-4 border-t border-gray-300">
         <div className="text-xs text-gray-600 text-center">
-          <p>This A&B Maintenance Schedule should be kept with the vehicle and in the equipment file in the office.</p>
+          <p>
+            This A&B Maintenance Schedule should be kept with the vehicle and in the equipment file
+            in the office.
+          </p>
           <p>Generated by Fleetrax Compliance Management System • {currentDate}</p>
         </div>
       </div>
@@ -587,5 +620,5 @@ export function ABScheduleReport({ equipment, organizationName, onClose }: ABSch
         </p>
       </div>
     </div>
-  )
-} 
+  );
+}

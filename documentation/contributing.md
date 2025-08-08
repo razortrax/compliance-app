@@ -9,6 +9,7 @@ Thank you for considering contributing to ComplianceApp! This guide outlines the
 ComplianceApp uses a cloud-native PostgreSQL database hosted on DigitalOcean. No local Postgres installation is required.
 
 ### Steps:
+
 1. Clone the repo.
 2. Copy `.env.local.example` to `.env.local` and fill in credentials.
 3. Run:
@@ -39,6 +40,7 @@ ComplianceApp uses a cloud-native PostgreSQL database hosted on DigitalOcean. No
   /lib
   /types
 ```
+
 Organized by feature (e.g., drivers, equipment, issues) for modular scaling.
 
 ---
@@ -46,6 +48,7 @@ Organized by feature (e.g., drivers, equipment, issues) for modular scaling.
 ## 🔍 Environment Files
 
 Refer to `.env.local.example` for required environment variables:
+
 - PostgreSQL connection string
 - Clerk authentication keys
 - DO Spaces credentials for file storage
@@ -53,7 +56,9 @@ Refer to `.env.local.example` for required environment variables:
 ---
 
 ## ✅ Pre-Push Checklist
+
 Before pushing code:
+
 ```bash
 pnpm lint && pnpm test
 ```
@@ -61,6 +66,7 @@ pnpm lint && pnpm test
 ---
 
 ## 🧪 Tooling
+
 - **Prisma Studio**: Live DB view/edit
 - **MSW**: Frontend mocking
 - **Vitest/Jest**: Unit tests
@@ -75,17 +81,21 @@ pnpm lint && pnpm test
 - Feature branches: `feature/xyz-description`
 
 ### Pull Requests
+
 - Required for all merges into `main` or `develop`
 - Review for scope, security, and UI consistency
 
 ### Commit Format
+
 Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+
 - `feat:` for new features
 - `fix:` for bug fixes
 - `docs:` for docs-only changes
 - `chore:` for tooling/infra updates
 
 ### Example:
+
 ```
 feat(driver): add license expiration color coding
 ```
@@ -93,6 +103,7 @@ feat(driver): add license expiration color coding
 ---
 
 ## 🚫 Common Pitfalls
+
 - Always use real cloud DB for development
 - Don’t use SQLite in dev or prod
 - Don’t skip access control logic when testing
@@ -100,6 +111,7 @@ feat(driver): add license expiration color coding
 ---
 
 ## 🆘 Need Help?
+
 If you have questions about contributing, please contact:
 
 **Patrick Lensing**  

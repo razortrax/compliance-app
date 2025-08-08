@@ -9,16 +9,18 @@
 ## 🎯 **Business Logic Overview**
 
 ### **Critical Validation Rules**
+
 - **Driver Records**: MUST exist before DVIR processing (compliance requirement)
-- **Equipment Records**: MUST exist before DVIR processing (fleet management requirement)  
+- **Equipment Records**: MUST exist before DVIR processing (fleet management requirement)
 - **Inspector Records**: AUTO-CREATED as external staff (safe to generate)
 - **Agency Records**: AUTO-CREATED as external organizations (safe to generate)
 
 ### **Workflow Decision Tree**
+
 ```
 DVIR Upload → OCR Extract → Validate Required Records
 ├── Missing Driver? → Block + Notify User → User Adds Driver → Retry
-├── Missing Equipment? → Block + Notify User → User Adds Equipment → Retry  
+├── Missing Equipment? → Block + Notify User → User Adds Equipment → Retry
 └── All Found? → Auto-Create Inspector/Agency → Pre-populate RSIN Form
 ```
 
@@ -29,6 +31,7 @@ DVIR Upload → OCR Extract → Validate Required Records
 ### **DVIR Document Structure → Database Fields**
 
 #### **Inspector Information** (Auto-Create as Staff)
+
 ```typescript
 DVIR Field                    → Database Field (staff table)
 Inspector: "Officer Sarah Martinez" → person.firstName: "Officer Sarah", lastName: "Martinez"
@@ -37,6 +40,7 @@ Agency: "FMCSA"              → staff.department: "FMCSA"
 ```
 
 #### **Driver Information** (Must Exist - Validate Only)
+
 ```typescript
 DVIR Field                    → Database Lookup (person table)
 Driver: "Moran Alva Ray"     → person.firstName: "Moran", lastName: "Alva Ray"
@@ -46,6 +50,7 @@ Date of Birth: "10/23/1965"  → person.dateOfBirth: "1965-10-23"
 ```
 
 #### **Equipment Information** (Must Exist - Validate Only)
+
 ```typescript
 DVIR Field                    → Database Lookup (equipment table)
 Unit 1 VIN: "1XKDD903P5S486670" → equipment.vinNumber: "1XKDD903P5S486670"
@@ -56,6 +61,7 @@ Plate: "2264406"             → equipment.plateNumber: "2264406"
 ```
 
 #### **Incident Information** (Create New RSIN)
+
 ```typescript
 DVIR Field                    → Database Field (incident table)
 Report Number: "US1974906108" → incident.reportNumber: "US1974906108"
@@ -65,6 +71,7 @@ Location: "NEWBERRY SC"       → incident.locationCity: "NEWBERRY", locationSta
 ```
 
 #### **Violation Information** (Create Incident Violations)
+
 ```typescript
 DVIR Field                    → Database Field (incident_violation table)
 Code: "393.5(A1-B4LAC)"      → incident_violation.violationCode: "393.5(A1-B4LAC)"
@@ -82,6 +89,7 @@ OOS: "No"                    → incident_violation.outOfService: false
 ### **Core Functions** (`src/lib/dvir-automation.ts`)
 
 #### **1. OCR Processing**
+
 ```typescript
 // Current: Mock data for testing
 // Production: AWS Textract integration
@@ -89,12 +97,14 @@ DVIRProcessor.extractWithTextract(file: File) → Promise<string>
 ```
 
 #### **2. Data Extraction & Parsing**
+
 ```typescript
 DVIRProcessor.parseDVIRText(rawText: string) → DVIRDocument
 // Extracts structured data from OCR text
 ```
 
 #### **3. Record Validation & Creation**
+
 ```typescript
 checkAndCreateExternalRecordsFromDVIR(
   dvir: DVIRDocument,
@@ -108,6 +118,7 @@ checkAndCreateExternalRecordsFromDVIR(
 ```
 
 #### **4. Incident Pre-Population**
+
 ```typescript
 createIncidentFromDVIR(
   dvir: DVIRDocument,
@@ -120,6 +131,7 @@ createIncidentFromDVIR(
 ### **API Integration Points**
 
 #### **Upload Endpoint** (New)
+
 ```typescript
 POST /api/incidents/upload-dvir
 Body: FormData with DVIR file
@@ -132,6 +144,7 @@ Response: {
 ```
 
 #### **Existing Endpoints** (Use As-Is)
+
 ```typescript
 POST /api/incidents                    // Create RSIN from pre-populated data
 GET /api/violations/search             // Violation code lookup
@@ -144,24 +157,28 @@ GET /api/persons?organizationId=X      // Driver validation
 ## 🚀 **Implementation Steps**
 
 ### **Phase 1: UI Integration** (1-2 hours)
+
 1. **Add Upload Button**: Next to "New RSIN" button on Roadside Inspections page
 2. **Upload Modal**: File picker with progress indicator
 3. **Missing Records Modal**: Display required Driver/Equipment with "Add" links
 4. **Success Flow**: Auto-open RSIN form with pre-populated data
 
 ### **Phase 2: Backend Integration** (2-3 hours)
+
 1. **Create Upload API**: `/api/incidents/upload-dvir` endpoint
 2. **Integrate Validation**: Use existing `checkAndCreateExternalRecordsFromDVIR`
 3. **File Storage**: Save DVIR to DigitalOcean Spaces
 4. **Error Handling**: Comprehensive error responses
 
 ### **Phase 3: OCR Production Setup** (1 hour)
+
 1. **AWS Credentials**: Add to `.env.local` (see `scripts/setup-aws-textract.md`)
 2. **Update OCR Call**: Replace mock data with actual AWS Textract
 3. **Fallback Logic**: Google Vision API if Textract fails
 4. **Cost Monitoring**: Track usage for billing
 
 ### **Phase 4: Testing & Validation** (1 hour)
+
 1. **Test Data**: Run `scripts/create-test-dvir-data.ts`
 2. **Mock Testing**: Upload any file (mock data used)
 3. **Real Testing**: Upload actual DVIR with OCR
@@ -172,6 +189,7 @@ GET /api/persons?organizationId=X      // Driver validation
 ## 🧪 **Testing Procedures**
 
 ### **Setup Test Environment**
+
 ```bash
 # 1. Create test data (matches mock DVIR)
 npm run ts-node scripts/create-test-dvir-data.ts
@@ -186,18 +204,22 @@ npm run ts-node scripts/create-test-dvir-data.ts
 ### **Test Scenarios**
 
 #### **Scenario 1: Perfect Match** (Expected: Success)
+
 - Upload DVIR with existing Driver + Equipment
 - Result: Auto-create Inspector, pre-populate RSIN form
 
 #### **Scenario 2: Missing Driver** (Expected: Block)
+
 - Upload DVIR with unknown driver license
 - Result: Show missing driver notification, block processing
 
-#### **Scenario 3: Missing Equipment** (Expected: Block)  
+#### **Scenario 3: Missing Equipment** (Expected: Block)
+
 - Upload DVIR with unknown VIN
 - Result: Show missing equipment notification, block processing
 
 #### **Scenario 4: New Inspector** (Expected: Auto-Create)
+
 - Upload DVIR with new inspector name
 - Result: Auto-create inspector as staff, continue processing
 
@@ -206,6 +228,7 @@ npm run ts-node scripts/create-test-dvir-data.ts
 ## 💰 **Cost Analysis**
 
 ### **OCR Service Costs**
+
 ```
 AWS Textract (Recommended):
 - Free Tier: 1,000 pages/month
@@ -213,7 +236,7 @@ AWS Textract (Recommended):
 - Monthly Estimate: 100 DVIRs = $0.15
 
 Google Vision API (Fallback):
-- Free Tier: 1,000 pages/month  
+- Free Tier: 1,000 pages/month
 - Paid: $1.50 per 1,000 pages
 - Same cost structure as AWS
 
@@ -224,6 +247,7 @@ Projected Monthly Cost:
 ```
 
 ### **Storage Costs** (DigitalOcean Spaces)
+
 ```
 DVIR Document Storage:
 - Average DVIR size: 2MB (scanned PDF)
@@ -236,12 +260,14 @@ DVIR Document Storage:
 ## 🔒 **Security & Compliance**
 
 ### **Data Privacy**
+
 - **OCR Processing**: Documents processed and discarded (not stored by AWS)
 - **File Storage**: Encrypted at rest in DigitalOcean Spaces
 - **Access Control**: Role-based access to DVIR documents
 - **Audit Trail**: Complete logging of document processing
 
 ### **Business Continuity**
+
 - **Fallback Methods**: Manual RSIN entry always available
 - **Offline Processing**: Queue uploads when internet unavailable
 - **Error Recovery**: Retry failed OCR with different service
@@ -252,6 +278,7 @@ DVIR Document Storage:
 ## 📖 **Quick Reference**
 
 ### **Key Files**
+
 ```
 src/lib/dvir-automation.ts              // Core processing logic
 scripts/create-test-dvir-data.ts        // Test data generation
@@ -260,10 +287,11 @@ documentation/integration-roadmap.md    // High-level planning
 ```
 
 ### **Database Tables Involved**
+
 ```
 party                    // Base entity for all records
 person                   // Driver records (must exist)
-equipment               // Vehicle records (must exist)  
+equipment               // Vehicle records (must exist)
 staff                   // Inspector records (auto-created)
 incident                // RSIN records (created from DVIR)
 incident_violation      // Violation records (extracted from DVIR)
@@ -272,6 +300,7 @@ violation_code          // DOT violation lookup (existing)
 ```
 
 ### **Environment Variables**
+
 ```
 AWS_ACCESS_KEY_ID=your_key_here
 AWS_SECRET_ACCESS_KEY=your_secret_here
@@ -285,10 +314,10 @@ AWS_REGION=us-east-1
 This system is architecturally complete and ready for UI integration. The core business logic, data validation, and error handling are implemented. The primary implementation work involves:
 
 1. **Frontend**: Upload button and missing records modal
-2. **API**: Upload endpoint integration  
+2. **API**: Upload endpoint integration
 3. **OCR**: Production credentials setup
 4. **Testing**: Validate with real DVIR documents
 
 **Estimated Implementation Time**: 4-6 hours total
 **Business Impact**: Eliminates 10-15 minutes of manual data entry per RSIN
-**ROI**: Positive after ~20 DVIR uploads per month 
+**ROI**: Positive after ~20 DVIR uploads per month

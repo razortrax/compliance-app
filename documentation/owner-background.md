@@ -17,4 +17,3 @@ The product owner for ComplianceApp comes from a FileMaker development backgroun
 - Offer code examples when introducing unfamiliar concepts
 - Encourage regular backups and simplified local setup
 - Avoid tech churn unless justified
-

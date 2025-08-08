@@ -1,99 +1,106 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { FileText, Upload, Plus } from 'lucide-react'
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { FileText, Upload, Plus } from "lucide-react";
 
 interface AddAddonModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess: () => void
-  issueId: string
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  issueId: string;
 }
 
 export function AddAddonModal({ isOpen, onClose, onSuccess, issueId }: AddAddonModalProps) {
-  const [title, setTitle] = useState('')
-  const [noteText, setNoteText] = useState('')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [title, setTitle] = useState("");
+  const [noteText, setNoteText] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file)
+      setSelectedFile(file);
       if (!title) {
-        setTitle(file.name.split('.').slice(0, -1).join('.'))
+        setTitle(file.name.split(".").slice(0, -1).join("."));
       }
     }
-  }
+  };
 
   const handleSubmit = async () => {
     // Must have at least a title or note (file uploads disabled)
     if (!title.trim() && !noteText.trim()) {
-      alert('Please provide a title or note')
-      return
+      alert("Please provide a title or note");
+      return;
     }
 
-    setIsUploading(true)
+    setIsUploading(true);
 
     try {
       // Only handle notes for now (file uploads disabled)
-      const response = await fetch('/api/attachments', {
-        method: 'POST',
+      const response = await fetch("/api/attachments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           issueId,
-          attachmentType: 'note',
+          attachmentType: "note",
           title: title.trim() || `Note - ${new Date().toLocaleDateString()}`,
-          description: '',
-          noteContent: noteText.trim()
-        })
-      })
+          description: "",
+          noteContent: noteText.trim(),
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to save note')
+        throw new Error("Failed to save note");
       }
 
       // Reset form
-      setTitle('')
-      setNoteText('')
-      setSelectedFile(null)
-      
-      onSuccess()
-      onClose()
+      setTitle("");
+      setNoteText("");
+      setSelectedFile(null);
+
+      onSuccess();
+      onClose();
     } catch (error) {
-      console.error('Error adding addon:', error)
-      alert('Failed to add addon. Please try again.')
+      console.error("Error adding addon:", error);
+      alert("Failed to add addon. Please try again.");
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   const resetForm = () => {
-    setTitle('')
-    setNoteText('')
-    setSelectedFile(null)
-  }
+    setTitle("");
+    setNoteText("");
+    setSelectedFile(null);
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        resetForm()
-        onClose()
-      }
-    }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          resetForm();
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Addon</DialogTitle>
-          <DialogDescription>
-            Add a note, file, or both to this license
-          </DialogDescription>
+          <DialogDescription>Add a note, file, or both to this license</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -136,18 +143,18 @@ export function AddAddonModal({ isOpen, onClose, onSuccess, issueId }: AddAddonM
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
-                resetForm()
-                onClose()
-              }} 
+                resetForm();
+                onClose();
+              }}
               disabled={isUploading}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={isUploading || (!title.trim() && !noteText.trim())}
             >
               {isUploading ? (
@@ -166,5 +173,5 @@ export function AddAddonModal({ isOpen, onClose, onSuccess, issueId }: AddAddonM
         </div>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

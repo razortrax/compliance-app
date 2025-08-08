@@ -1,0 +1,11 @@
+node_modules
+.next
+coverage
+.turbo
+dist
+build
+.vercel
+playwright-report
+test-results
+*.svg
+

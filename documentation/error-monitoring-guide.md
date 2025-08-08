@@ -1,19 +1,47 @@
+## Error monitoring (Sentry)
+
+### Environment variables
+
+- `NEXT_PUBLIC_SENTRY_DSN` (client)
+- `SENTRY_DSN` (server)
+- `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (e.g. `development`, `production`)
+
+Define these locally in `.env.local` and in your hosting provider’s environment configuration for production.
+
+### How to test locally
+
+1. Ensure DSNs are set in `.env.local`.
+2. Start the app: `npm run dev`.
+3. Visit `/test-sentry`.
+   - Click “Capture UI Error” to send a handled exception.
+   - Click “Call API Test Route” to trigger a server-side error capture.
+
+### Notes
+
+- Sensitive values must not be committed; use `.env.local` which is git-ignored.
+- We set Sentry tags for context (role, `masterOrgId`, `orgId`, `driverId`, `equipmentId`, `locationId`) from layout and header components for better triage.
+- Backend routes use a standardized wrapper to capture errors consistently.
+
 # Error Monitoring & Implementation Guide
 
-*Created: January 31, 2025*
+_Created: January 31, 2025_
 
 ## What Error Monitoring Does for You
 
 ### **The Problem: Silent Failures** 😱
+
 Without error monitoring, you're **flying blind**:
+
 - **Users encounter errors**: But you never know about them
-- **Production issues**: Go undetected until someone complains  
+- **Production issues**: Go undetected until someone complains
 - **Performance problems**: Gradually degrade without warning
 - **Data loss risks**: Errors may cause incomplete operations
 - **Customer dissatisfaction**: Users abandon your app due to broken features
 
 ### **The Solution: Real-Time Awareness** 🚨
+
 Error monitoring provides:
+
 - **Instant notifications**: Know about errors seconds after they happen
 - **Stack traces**: Exact line of code where errors occur
 - **User context**: What the user was doing when it failed
@@ -24,19 +52,22 @@ Error monitoring provides:
 
 ## Why Error Monitoring is CRITICAL for Solo Developers
 
-### **1. You Can't Be Everywhere** 
+### **1. You Can't Be Everywhere**
+
 - **Multiple Organizations**: 120+ organizations using your app
 - **Different Workflows**: Users doing things you never tested
 - **Browser Variations**: Different browsers, screen sizes, network conditions
 - **Data Edge Cases**: Real data is messier than test data
 
 ### **2. Production is Different**
+
 - **Real Load**: Actual user traffic reveals hidden issues
-- **Real Data**: Production data combinations you never anticipated  
+- **Real Data**: Production data combinations you never anticipated
 - **Network Issues**: Timeouts, slow connections, intermittent failures
 - **Third-party Services**: APIs fail, services go down
 
 ### **3. Silent Failures are Revenue Killers**
+
 - **Users don't report errors**: They just leave
 - **Word of mouth**: Bad experiences spread faster than good ones
 - **Professional credibility**: Critical for DOT compliance where trust is essential
@@ -46,12 +77,14 @@ Error monitoring provides:
 ## Sentry: The Industry Standard
 
 ### **Why Sentry?**
+
 - **Free for small volumes**: Up to 5,000 errors/month
 - **Next.js Integration**: Built-in support, 5-minute setup
 - **Powerful Features**: Error grouping, release tracking, performance monitoring
 - **Solo-Developer Friendly**: Minimal configuration, maximum value
 
 ### **What Sentry Captures**
+
 1. **JavaScript Errors**: Frontend crashes, failed API calls, React errors
 2. **API Errors**: Backend crashes, database failures, authentication issues
 3. **Performance Issues**: Slow API responses, large bundle sizes
@@ -65,12 +98,14 @@ Error monitoring provides:
 ### **Step 1: Quick Setup (5 minutes)**
 
 #### **Install Sentry**
+
 ```bash
 npm install @sentry/nextjs
 npx @sentry/wizard@latest -i nextjs
 ```
 
-#### **Environment Variables** 
+#### **Environment Variables**
+
 ```env
 # Add to .env.local
 SENTRY_DSN="your_sentry_dsn_here"
@@ -80,90 +115,94 @@ NEXT_PUBLIC_SENTRY_DSN="your_sentry_dsn_here"
 ### **Step 2: Basic Configuration**
 
 #### **Create `sentry.client.config.ts`**
+
 ```typescript
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  
+
   // Performance monitoring (free tier: 10k transactions/month)
   tracesSampleRate: 0.1, // 10% of requests
-  
+
   // Session tracking
   replaysSessionSampleRate: 0.0, // Disabled for privacy
   replaysOnErrorSampleRate: 1.0, // 100% of error sessions
-  
+
   // Filter out noise
   beforeSend(event) {
     // Don't send 404s or auth errors in development
-    if (process.env.NODE_ENV === 'development') {
-      return null
+    if (process.env.NODE_ENV === "development") {
+      return null;
     }
-    return event
-  }
-})
+    return event;
+  },
+});
 ```
 
 #### **Create `sentry.server.config.ts`**
+
 ```typescript
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0.1,
-  
+
   // Add organization context to all errors
   beforeSend(event) {
     // Add custom tags for easier filtering
     if (event.tags) {
-      event.tags.component = 'api'
+      event.tags.component = "api";
     }
-    return event
-  }
-})
+    return event;
+  },
+});
 ```
 
 ### **Step 3: Enhanced Error Handling**
 
 #### **API Route Enhancement**
+
 ```typescript
 // Before: Basic error handling
 export async function GET(request: NextRequest) {
   try {
-    const result = await someOperation()
-    return Response.json(result)
+    const result = await someOperation();
+    return Response.json(result);
   } catch (error) {
-    console.error('Error:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 // After: Sentry-enhanced error handling
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from "@sentry/nextjs";
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await someOperation()
-    return Response.json(result)
+    const result = await someOperation();
+    return Response.json(result);
   } catch (error) {
     // Add context to help debug
-    Sentry.setTag('api_endpoint', '/api/licenses')
-    Sentry.setContext('request', {
+    Sentry.setTag("api_endpoint", "/api/licenses");
+    Sentry.setContext("request", {
       url: request.url,
       method: request.method,
-      headers: Object.fromEntries(request.headers.entries())
-    })
-    
+      headers: Object.fromEntries(request.headers.entries()),
+    });
+
     // Capture the error with context
-    Sentry.captureException(error)
-    
-    console.error('Error in /api/licenses:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    Sentry.captureException(error);
+
+    console.error("Error in /api/licenses:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 ```
 
 #### **Frontend Error Boundaries**
+
 ```typescript
 // components/error-boundary.tsx
 'use client'
@@ -202,39 +241,40 @@ export default function ErrorBoundary({
 ### **Step 4: Custom Monitoring for Compliance**
 
 #### **Track Critical Operations**
+
 ```typescript
 // Monitor license creation/renewal
 export async function createLicense(licenseData: any) {
   const transaction = Sentry.startTransaction({
-    name: 'license.create',
-    op: 'compliance'
-  })
-  
+    name: "license.create",
+    op: "compliance",
+  });
+
   try {
     // Add context about the operation
-    Sentry.setContext('license', {
+    Sentry.setContext("license", {
       type: licenseData.licenseType,
       state: licenseData.licenseState,
-      organizationId: licenseData.organizationId
-    })
-    
+      organizationId: licenseData.organizationId,
+    });
+
     const result = await db.license_issue.create({
-      data: licenseData
-    })
-    
+      data: licenseData,
+    });
+
     // Track successful compliance action
     Sentry.addBreadcrumb({
-      message: 'License created successfully',
-      category: 'compliance',
-      data: { licenseId: result.id }
-    })
-    
-    return result
+      message: "License created successfully",
+      category: "compliance",
+      data: { licenseId: result.id },
+    });
+
+    return result;
   } catch (error) {
-    Sentry.captureException(error)
-    throw error
+    Sentry.captureException(error);
+    throw error;
   } finally {
-    transaction.finish()
+    transaction.finish();
   }
 }
 ```
@@ -244,6 +284,7 @@ export async function createLicense(licenseData: any) {
 ## Alerts & Notifications
 
 ### **Critical Alerts Setup**
+
 ```typescript
 // Sentry dashboard configuration
 // 1. Go to Sentry Project Settings > Alerts
@@ -266,6 +307,7 @@ export async function createLicense(licenseData: any) {
 ```
 
 ### **Dashboard Monitoring**
+
 - **Daily Check**: 5 minutes each morning reviewing overnight errors
 - **Weekly Review**: Trends, performance issues, most common errors
 - **Pre-Release**: Check error rates before deploying updates
@@ -277,30 +319,35 @@ export async function createLicense(licenseData: any) {
 ### **Priority Error Categories**
 
 #### **1. Compliance Critical** 🚨
+
 - License/training/MVR operations failing
 - File upload failures (lost documentation)
 - Data corruption or incomplete saves
 - **Alert**: Immediate notification
 
 #### **2. User Experience** ⚠️
+
 - Page load failures
-- Form submission errors  
+- Form submission errors
 - Navigation issues
 - **Alert**: Daily digest
 
 #### **3. Performance** 📊
+
 - Slow API responses (>1000ms)
 - Database query timeouts
 - Large bundle sizes
 - **Alert**: Weekly review
 
 #### **4. Integration Issues** 🔗
+
 - Third-party API failures
 - Authentication problems
 - Data sync issues
 - **Alert**: Immediate for production
 
 ### **Expected Error Volume (Year 1)**
+
 - **Normal Operations**: 50-100 errors/month
 - **During Rollout**: 200-500 errors/month
 - **Post-Launch Steady State**: <50 errors/month
@@ -310,11 +357,13 @@ export async function createLicense(licenseData: any) {
 ## ROI for Solo Developer
 
 ### **Time Investment**
+
 - **Setup**: 1 hour one-time setup
 - **Daily Monitoring**: 5 minutes/day
 - **Issue Resolution**: 2-4 hours/week (preventing 8-16 hours of debugging)
 
 ### **Benefits**
+
 - **Faster Bug Resolution**: Find and fix issues in minutes, not days
 - **Proactive Maintenance**: Fix problems before users complain
 - **Professional Credibility**: Demonstrate reliability to DOT-focused customers
@@ -322,6 +371,7 @@ export async function createLicense(licenseData: any) {
 - **Peace of Mind**: Sleep better knowing you'll be notified of issues
 
 ### **Cost**
+
 - **Free Tier**: Sufficient for Year 1 operations
 - **Paid Plan**: $26/month if you exceed limits (worth it for peace of mind)
 
@@ -330,16 +380,19 @@ export async function createLicense(licenseData: any) {
 ## Next Steps
 
 ### **Week 1: Basic Setup**
+
 1. Install Sentry (30 minutes)
 2. Add to 3 critical API routes (1 hour)
 3. Test error capturing (30 minutes)
 
 ### **Week 2: Enhancement**
+
 1. Add error boundaries to forms (1 hour)
 2. Set up alerts (30 minutes)
 3. Create monitoring dashboard routine (15 minutes)
 
 ### **Ongoing**
+
 1. Daily error review (5 minutes)
 2. Weekly performance review (15 minutes)
 3. Monthly alert rule tuning (30 minutes)
@@ -348,4 +401,4 @@ export async function createLicense(licenseData: any) {
 
 **Bottom Line**: Error monitoring is like insurance - you hope you never need it, but when you do, it's absolutely invaluable. For a solo developer managing compliance software, it's not optional - it's essential for maintaining professional credibility and user trust.
 
-*Implement Sentry this week. Your future self will thank you when you catch that critical bug at 2 AM before any users are affected.* 
+_Implement Sentry this week. Your future self will thank you when you catch that critical bug at 2 AM before any users are affected._

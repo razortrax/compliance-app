@@ -1,17 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { buildStandardNavigation, getUserRole } from '@/lib/utils'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { RegistrationForm } from '@/components/registrations/registration-form'
-import { EmptyState } from '@/components/ui/empty-state'
-import { ActivityLog } from '@/components/ui/activity-log'
-import { 
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { buildStandardNavigation, getUserRole } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RegistrationForm } from "@/components/registrations/registration-form";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ActivityLog } from "@/components/ui/activity-log";
+import {
   Clipboard,
   Plus,
   Calendar,
@@ -20,153 +27,172 @@ import {
   CheckCircle,
   Clock,
   Edit,
-  RotateCcw
-} from 'lucide-react'
-import { format } from 'date-fns'
+  RotateCcw,
+} from "lucide-react";
+import { format } from "date-fns";
 
 interface Registration {
-  id: string
-  plateNumber: string
-  state: string
-  startDate: string
-  expirationDate: string
-  renewalDate?: string | null
-  status: 'Active' | 'Expired'
-  notes?: string | null
+  id: string;
+  plateNumber: string;
+  state: string;
+  startDate: string;
+  expirationDate: string;
+  renewalDate?: string | null;
+  status: "Active" | "Expired";
+  notes?: string | null;
   issue: {
-    id: string
-    title: string
-    description?: string | null
-    status: string
-    priority: string
-  }
+    id: string;
+    title: string;
+    description?: string | null;
+    status: string;
+    priority: string;
+  };
 }
 
 interface Equipment {
-  id: string
-  make?: string | null
-  model?: string | null
-  year?: number | null
+  id: string;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
   party: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 interface Organization {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface MasterOrg {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface PageData {
-  masterOrg: MasterOrg
-  organization: Organization
-  equipment: Equipment
-  registrations: Registration[]
+  masterOrg: MasterOrg;
+  organization: Organization;
+  equipment: Equipment;
+  registrations: Registration[];
 }
 
 export default function EquipmentRegistrationsPage() {
-  const params = useParams()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
-  const equipmentId = params.equipmentId as string
+  const params = useParams();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
+  const equipmentId = params.equipmentId as string;
 
-  const [data, setData] = useState<PageData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<string | null>(null)
-  
+  const [data, setData] = useState<PageData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   // Modal states
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [showEditForm, setShowEditForm] = useState(false)
-  const [showRenewalForm, setShowRenewalForm] = useState(false)
-  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showRenewalForm, setShowRenewalForm] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
 
   useEffect(() => {
     if (equipmentId) {
-      fetchData()
-      fetchUserRole()
+      fetchData();
+      fetchUserRole();
     }
-  }, [equipmentId, masterOrgId, orgId])
+  }, [equipmentId, masterOrgId, orgId]);
 
   const fetchUserRole = async () => {
     try {
-      const role = await getUserRole()
-      setUserRole(role)
+      const role = await getUserRole();
+      setUserRole(role);
     } catch (error) {
-      console.error('Error fetching user role:', error)
+      console.error("Error fetching user role:", error);
     }
-  }
+  };
 
   const fetchData = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      const response = await fetch(`/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/registrations`)
-      
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/registrations`,
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch registration data')
+        throw new Error("Failed to fetch registration data");
       }
-      
-      const pageData = await response.json()
-      setData(pageData)
-      
+
+      const pageData = await response.json();
+      setData(pageData);
     } catch (error) {
-      console.error('Error fetching registrations:', error)
-      setError(error instanceof Error ? error.message : 'An unknown error occurred')
+      console.error("Error fetching registrations:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleFormSuccess = (registration: any) => {
     // Refresh data after successful create/update
-    fetchData()
-    
+    fetchData();
+
     // Auto-select the new/updated registration in the detail view
     setTimeout(() => {
-      setSelectedRegistration(registration)
-    }, 100) // Small delay to ensure data is refreshed
-    
+      setSelectedRegistration(registration);
+    }, 100); // Small delay to ensure data is refreshed
+
     // Close all modals
-    setShowAddForm(false)
-    setShowEditForm(false)
-    setShowRenewalForm(false)
-  }
+    setShowAddForm(false);
+    setShowEditForm(false);
+    setShowRenewalForm(false);
+  };
 
   const handleEditRegistration = (registration: Registration) => {
-    setSelectedRegistration(registration)
-    setShowEditForm(true)
-  }
+    setSelectedRegistration(registration);
+    setShowEditForm(true);
+  };
 
   const handleRenewRegistration = (registration: Registration) => {
-    setSelectedRegistration(registration)
-    setShowRenewalForm(true)
-  }
+    setSelectedRegistration(registration);
+    setShowRenewalForm(true);
+  };
 
   const getExpirationStatus = (expirationDate: string) => {
-    const expiry = new Date(expirationDate)
-    const today = new Date()
-    const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    
+    const expiry = new Date(expirationDate);
+    const today = new Date();
+    const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
     if (daysUntil < 0) {
-      return { status: 'expired', daysUntil, color: 'text-red-600', bgColor: 'bg-red-50', badgeColor: 'destructive' }
+      return {
+        status: "expired",
+        daysUntil,
+        color: "text-red-600",
+        bgColor: "bg-red-50",
+        badgeColor: "destructive",
+      };
     } else if (daysUntil <= 30) {
-      return { status: 'expiring', daysUntil, color: 'text-orange-600', bgColor: 'bg-orange-50', badgeColor: 'secondary' }
+      return {
+        status: "expiring",
+        daysUntil,
+        color: "text-orange-600",
+        bgColor: "bg-orange-50",
+        badgeColor: "secondary",
+      };
     } else {
-      return { status: 'current', daysUntil, color: 'text-green-600', bgColor: 'bg-green-50', badgeColor: 'default' }
+      return {
+        status: "current",
+        daysUntil,
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+        badgeColor: "default",
+      };
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <AppLayout
-        name={data?.masterOrg?.name || 'Loading...'}
+        name={data?.masterOrg?.name || "Loading..."}
         topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
         sidebarMenu="equipment"
         equipmentId={equipmentId}
@@ -181,7 +207,7 @@ export default function EquipmentRegistrationsPage() {
           </div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (error || !data) {
@@ -202,14 +228,15 @@ export default function EquipmentRegistrationsPage() {
           <Button onClick={fetchData}>Try Again</Button>
         </div>
       </AppLayout>
-    )
+    );
   }
 
-  const equipmentName = `${data.equipment.make || 'Equipment'} ${data.equipment.model || ''} ${data.equipment.year || ''}`.trim()
+  const equipmentName =
+    `${data.equipment.make || "Equipment"} ${data.equipment.model || ""} ${data.equipment.year || ""}`.trim();
 
   return (
     <AppLayout
-      name={data?.masterOrg.name || 'Fleetrax'}
+      name={data?.masterOrg.name || "Fleetrax"}
       topNav={buildStandardNavigation(masterOrgId, orgId, userRole || undefined)}
       sidebarMenu="equipment"
       equipmentId={equipmentId}
@@ -220,7 +247,6 @@ export default function EquipmentRegistrationsPage() {
       {/* ⚠️ CRITICAL: EXACT GOLD STANDARD LAYOUT STRUCTURE */}
       <div className="max-w-7xl mx-auto h-full">
         <div className="space-y-6">
-          
           {/* Header Section - EXACT STRUCTURE */}
           <div className="flex items-center justify-between mb-6">
             <div className="space-y-1">
@@ -230,7 +256,7 @@ export default function EquipmentRegistrationsPage() {
               </h1>
               <p className="text-sm text-gray-500">Equipment registration records</p>
             </div>
-            
+
             {/* Button Group - RIGHT ALIGNED */}
             <div className="flex items-center gap-3">
               <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
@@ -261,7 +287,6 @@ export default function EquipmentRegistrationsPage() {
 
           {/* Split Pane Layout - EXACT STRUCTURE */}
           <div className="flex gap-6 h-[calc(100vh-200px)]">
-            
             {/* Left Pane - EXACT STRUCTURE */}
             <div className="w-[300px] flex-shrink-0">
               <Card className="h-full">
@@ -270,9 +295,7 @@ export default function EquipmentRegistrationsPage() {
                     <Clipboard className="h-5 w-5" />
                     Registrations ({data?.registrations.length || 0})
                   </CardTitle>
-                  <CardDescription>
-                    Vehicle registration records
-                  </CardDescription>
+                  <CardDescription>Vehicle registration records</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-auto">
                   {data?.registrations && data.registrations.length > 0 ? (
@@ -282,8 +305,8 @@ export default function EquipmentRegistrationsPage() {
                           key={registration.id}
                           className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                             selectedRegistration?.id === registration.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                           }`}
                           onClick={() => setSelectedRegistration(registration)}
                         >
@@ -293,11 +316,17 @@ export default function EquipmentRegistrationsPage() {
                                 {registration.plateNumber} - {registration.state}
                               </div>
                               <div className="text-xs text-gray-600 mt-1">
-                                Expires: {format(new Date(registration.expirationDate), 'MMM dd, yyyy')}
+                                Expires:{" "}
+                                {format(new Date(registration.expirationDate), "MMM dd, yyyy")}
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-1">
-                              <Badge variant={registration.status === 'Active' ? 'default' : 'destructive'} className="text-xs">
+                              <Badge
+                                variant={
+                                  registration.status === "Active" ? "default" : "destructive"
+                                }
+                                className="text-xs"
+                              >
                                 {registration.status}
                               </Badge>
                             </div>
@@ -335,7 +364,7 @@ export default function EquipmentRegistrationsPage() {
                             {selectedRegistration.plateNumber}
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                             State
@@ -344,24 +373,31 @@ export default function EquipmentRegistrationsPage() {
                             {selectedRegistration.state}
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                             Start Date
                           </label>
                           <div className="mt-1 flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>{format(new Date(selectedRegistration.startDate), 'MMMM dd, yyyy')}</span>
+                            <span>
+                              {format(new Date(selectedRegistration.startDate), "MMMM dd, yyyy")}
+                            </span>
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                             Expiration Date
                           </label>
                           <div className="mt-1 flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>{format(new Date(selectedRegistration.expirationDate), 'MMMM dd, yyyy')}</span>
+                            <span>
+                              {format(
+                                new Date(selectedRegistration.expirationDate),
+                                "MMMM dd, yyyy",
+                              )}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -372,11 +408,19 @@ export default function EquipmentRegistrationsPage() {
                           Status
                         </label>
                         <div className="mt-2">
-                          <Badge variant={selectedRegistration.status === 'Active' ? 'default' : 'destructive'}>
-                            {selectedRegistration.status === 'Active' ? (
-                              <><CheckCircle className="h-3 w-3 mr-1" /> Active</>
+                          <Badge
+                            variant={
+                              selectedRegistration.status === "Active" ? "default" : "destructive"
+                            }
+                          >
+                            {selectedRegistration.status === "Active" ? (
+                              <>
+                                <CheckCircle className="h-3 w-3 mr-1" /> Active
+                              </>
                             ) : (
-                              <><AlertCircle className="h-3 w-3 mr-1" /> Expired</>
+                              <>
+                                <AlertCircle className="h-3 w-3 mr-1" /> Expired
+                              </>
                             )}
                           </Badge>
                         </div>
@@ -390,7 +434,9 @@ export default function EquipmentRegistrationsPage() {
                           </label>
                           <div className="mt-1 flex items-center gap-2">
                             <RotateCcw className="h-4 w-4 text-gray-400" />
-                            <span>{format(new Date(selectedRegistration.renewalDate), 'MMMM dd, yyyy')}</span>
+                            <span>
+                              {format(new Date(selectedRegistration.renewalDate), "MMMM dd, yyyy")}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -409,7 +455,7 @@ export default function EquipmentRegistrationsPage() {
 
                       {/* Gold Standard Add Ons Section */}
                       <div className="border-t pt-4">
-                        <ActivityLog 
+                        <ActivityLog
                           issueId={selectedRegistration.issue.id}
                           title="Add Ons Log"
                           showAddButton={true}
@@ -440,7 +486,7 @@ export default function EquipmentRegistrationsPage() {
                           </DialogContent>
                         </Dialog>
 
-                        {selectedRegistration.status === 'Active' && (
+                        {selectedRegistration.status === "Active" && (
                           <Dialog open={showRenewalForm} onOpenChange={setShowRenewalForm}>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm">
@@ -480,5 +526,5 @@ export default function EquipmentRegistrationsPage() {
       </div>
       {/* Add Addon Modal - REMOVED since using ActivityLog's built-in add functionality */}
     </AppLayout>
-  )
-} 
+  );
+}

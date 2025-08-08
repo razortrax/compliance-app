@@ -1,46 +1,43 @@
-import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
+import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
 interface Endorsement {
-  code: string
-  name: string
-  expirationDate?: string | null
-  renewalRequired?: boolean
-  certificationNumber?: string
+  code: string;
+  name: string;
+  expirationDate?: string | null;
+  renewalRequired?: boolean;
+  certificationNumber?: string;
 }
 
 interface Restriction {
-  code: string
-  description: string
+  code: string;
+  description: string;
 }
 
 interface LicenseUpdateData {
-  licenseType?: string
-  licenseState?: string
-  licenseNumber?: string
-  certification?: string
-  startDate?: string
-  expirationDate?: string
-  renewalDate?: string
-  endorsements?: Endorsement[]
-  restrictions?: Restriction[]
-  notes?: string
-  title?: string
-  description?: string
-  priority?: string
-  status?: string
+  licenseType?: string;
+  licenseState?: string;
+  licenseNumber?: string;
+  certification?: string;
+  startDate?: string;
+  expirationDate?: string;
+  renewalDate?: string;
+  endorsements?: Endorsement[];
+  restrictions?: Restriction[];
+  notes?: string;
+  title?: string;
+  description?: string;
+  priority?: string;
+  status?: string;
 }
 
 // GET /api/licenses/[id] - Get specific license
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const license = await db.license_issue.findUnique({
@@ -56,72 +53,71 @@ export async function GET(
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!license) {
-      return Response.json({ error: 'License not found' }, { status: 404 })
+      return Response.json({ error: "License not found" }, { status: 404 });
     }
 
     // Access control check
-    const party = license.issue.party
-    const hasAccess = party.userId === userId || 
-                     party.organization?.partyId === userId ||
-                     party.role.some(role => 
-                       role.organizationId && 
-                       role.party?.organization?.partyId === userId
-                     )
+    const party = license.issue.party;
+    const hasAccess =
+      party.userId === userId ||
+      party.organization?.partyId === userId ||
+      party.role.some(
+        (role) => role.organizationId && role.party?.organization?.partyId === userId,
+      );
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Add calculated status
-    const today = new Date()
-    const expirationDate = new Date(license.expirationDate)
-    const daysUntilExpiry = Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    
-    let calculatedStatus = 'current'
+    const today = new Date();
+    const expirationDate = new Date(license.expirationDate);
+    const daysUntilExpiry = Math.ceil(
+      (expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    let calculatedStatus = "current";
     if (daysUntilExpiry < 0) {
-      calculatedStatus = 'expired'
+      calculatedStatus = "expired";
     } else if (daysUntilExpiry <= 15) {
-      calculatedStatus = 'critical'
+      calculatedStatus = "critical";
     } else if (daysUntilExpiry <= 30) {
-      calculatedStatus = 'warning'
+      calculatedStatus = "warning";
     }
 
     return Response.json({
       ...license,
       calculatedStatus,
-      daysUntilExpiry
-    })
+      daysUntilExpiry,
+    });
   } catch (error) {
-    console.error('Error fetching license:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error fetching license:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 // PUT /api/licenses/[id] - Update license
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: LicenseUpdateData = await request.json()
+    const body: LicenseUpdateData = await request.json();
 
     // First get the existing license to check access
     const existingLicense = await db.license_issue.findUnique({
@@ -137,29 +133,29 @@ export async function PUT(
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!existingLicense) {
-      return Response.json({ error: 'License not found' }, { status: 404 })
+      return Response.json({ error: "License not found" }, { status: 404 });
     }
 
     // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    const party = existingLicense.issue.party
-    
+    let hasAccess = false;
+    const party = existingLicense.issue.party;
+
     // 1. Check direct ownership first
     if (party.userId === userId) {
-      hasAccess = true
+      hasAccess = true;
     }
 
     if (!hasAccess) {
@@ -167,31 +163,31 @@ export async function PUT(
       const driverRole = await db.role.findFirst({
         where: {
           partyId: party.id,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (driverRole) {
         // 2. Check if user is a Master consultant who manages this organization
         const userMasterOrg = await db.organization.findFirst({
           where: {
-            party: { userId: userId }
-          }
-        })
+            party: { userId: userId },
+          },
+        });
 
         if (userMasterOrg) {
           // Check if master org manages the driver's organization
           const masterRole = await db.role.findFirst({
             where: {
-              roleType: 'master',
+              roleType: "master",
               partyId: userMasterOrg.partyId,
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (masterRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -201,13 +197,13 @@ export async function PUT(
             where: {
               party: { userId: userId },
               organizationId: driverRole.organizationId,
-              roleType: { in: ['organization_manager', 'owner', 'consultant'] },
-              isActive: true
-            }
-          })
+              roleType: { in: ["organization_manager", "owner", "consultant"] },
+              isActive: true,
+            },
+          });
 
           if (orgManagerRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -217,55 +213,61 @@ export async function PUT(
             where: {
               party: { userId: userId },
               locationId: driverRole.locationId,
-              roleType: 'location_manager',
-              isActive: true
-            }
-          })
+              roleType: "location_manager",
+              isActive: true,
+            },
+          });
 
           if (locationManagerRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
       }
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Update license in transaction
     const result = await db.$transaction(async (tx) => {
       // Update base issue if needed
-      const issueUpdateData: any = {}
-      if (body.title !== undefined) issueUpdateData.title = body.title
-      if (body.description !== undefined) issueUpdateData.description = body.description
-      if (body.priority !== undefined) issueUpdateData.priority = body.priority
-      if (body.status !== undefined) issueUpdateData.status = body.status
-      if (body.expirationDate !== undefined) issueUpdateData.dueDate = new Date(body.expirationDate)
-      
+      const issueUpdateData: any = {};
+      if (body.title !== undefined) issueUpdateData.title = body.title;
+      if (body.description !== undefined) issueUpdateData.description = body.description;
+      if (body.priority !== undefined) issueUpdateData.priority = body.priority;
+      if (body.status !== undefined) issueUpdateData.status = body.status;
+      if (body.expirationDate !== undefined)
+        issueUpdateData.dueDate = new Date(body.expirationDate);
+
       if (Object.keys(issueUpdateData).length > 0) {
-        issueUpdateData.updatedAt = new Date()
+        issueUpdateData.updatedAt = new Date();
         await tx.issue.update({
           where: { id: existingLicense.issueId },
-          data: issueUpdateData
-        })
+          data: issueUpdateData,
+        });
       }
 
       // Update license issue
-      const licenseUpdateData: any = {}
-      if (body.licenseType !== undefined) licenseUpdateData.licenseType = body.licenseType
-      if (body.licenseState !== undefined) licenseUpdateData.licenseState = body.licenseState
-      if (body.licenseNumber !== undefined) licenseUpdateData.licenseNumber = body.licenseNumber
-      if (body.certification !== undefined) licenseUpdateData.certification = body.certification
-      if (body.startDate !== undefined) licenseUpdateData.startDate = body.startDate ? new Date(body.startDate) : null
-      if (body.expirationDate !== undefined) licenseUpdateData.expirationDate = new Date(body.expirationDate)
-      if (body.renewalDate !== undefined) licenseUpdateData.renewalDate = body.renewalDate ? new Date(body.renewalDate) : null
-      if (body.endorsements !== undefined) licenseUpdateData.endorsements = body.endorsements as any
-      if (body.restrictions !== undefined) licenseUpdateData.restrictions = body.restrictions as any
-      if (body.notes !== undefined) licenseUpdateData.notes = body.notes
-      
+      const licenseUpdateData: any = {};
+      if (body.licenseType !== undefined) licenseUpdateData.licenseType = body.licenseType;
+      if (body.licenseState !== undefined) licenseUpdateData.licenseState = body.licenseState;
+      if (body.licenseNumber !== undefined) licenseUpdateData.licenseNumber = body.licenseNumber;
+      if (body.certification !== undefined) licenseUpdateData.certification = body.certification;
+      if (body.startDate !== undefined)
+        licenseUpdateData.startDate = body.startDate ? new Date(body.startDate) : null;
+      if (body.expirationDate !== undefined)
+        licenseUpdateData.expirationDate = new Date(body.expirationDate);
+      if (body.renewalDate !== undefined)
+        licenseUpdateData.renewalDate = body.renewalDate ? new Date(body.renewalDate) : null;
+      if (body.endorsements !== undefined)
+        licenseUpdateData.endorsements = body.endorsements as any;
+      if (body.restrictions !== undefined)
+        licenseUpdateData.restrictions = body.restrictions as any;
+      if (body.notes !== undefined) licenseUpdateData.notes = body.notes;
+
       if (Object.keys(licenseUpdateData).length > 0) {
-        licenseUpdateData.updatedAt = new Date()
+        licenseUpdateData.updatedAt = new Date();
       }
 
       const updatedLicense = await tx.license_issue.update({
@@ -277,33 +279,30 @@ export async function PUT(
               party: {
                 include: {
                   person: true,
-                  organization: true
-                }
-              }
-            }
-          }
-        }
-      })
+                  organization: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-      return updatedLicense
-    })
+      return updatedLicense;
+    });
 
-    return Response.json(result)
+    return Response.json(result);
   } catch (error) {
-    console.error('Error updating license:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error updating license:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 // DELETE /api/licenses/[id] - Soft delete license (mark as resolved/inactive)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // First get the existing license to check access
@@ -320,48 +319,48 @@ export async function DELETE(
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!existingLicense) {
-      return Response.json({ error: 'License not found' }, { status: 404 })
+      return Response.json({ error: "License not found" }, { status: 404 });
     }
 
     // Access control check
-    const party = existingLicense.issue.party
-    const hasAccess = party.userId === userId || 
-                     party.organization?.partyId === userId ||
-                     party.role.some(role => 
-                       role.organizationId && 
-                       role.party?.organization?.partyId === userId
-                     )
+    const party = existingLicense.issue.party;
+    const hasAccess =
+      party.userId === userId ||
+      party.organization?.partyId === userId ||
+      party.role.some(
+        (role) => role.organizationId && role.party?.organization?.partyId === userId,
+      );
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Soft delete by updating status
     await db.issue.update({
       where: { id: existingLicense.issueId },
       data: {
-        status: 'resolved',
+        status: "resolved",
         resolvedAt: new Date(),
-        updatedAt: new Date()
-      }
-    })
+        updatedAt: new Date(),
+      },
+    });
 
-    return Response.json({ message: 'License deactivated successfully' })
+    return Response.json({ message: "License deactivated successfully" });
   } catch (error) {
-    console.error('Error deleting license:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error deleting license:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

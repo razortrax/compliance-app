@@ -7,13 +7,16 @@
 ## Core Principles
 
 ### 1. **ACTIVE CODE ONLY**
+
 - ❌ **NEVER** keep deprecated files "just in case"
 - ❌ **NEVER** rename files to `.old`, `.backup`, `.broken`
 - ✅ **DELETE** unused code immediately
 - ✅ **USE GIT** for file recovery if needed
 
 ### 2. **CLEAR INTENT**
+
 Every file should have clear purpose:
+
 - **Active** - Currently used in application
 - **Deprecated** - Marked for removal with timeline
 - **Deleted** - Removed completely
@@ -21,6 +24,7 @@ Every file should have clear purpose:
 ## File Cleanup Protocols
 
 ### 1. **Immediate Deletion Candidates**
+
 ```bash
 # Find files with suspicious naming
 find src/ -name "*.old" -o -name "*.backup" -o -name "*.disabled" -o -name "*.broken"
@@ -32,6 +36,7 @@ rm -f [suspicious-files]
 ```
 
 ### 2. **Duplicate Component Detection**
+
 ```bash
 # Find potential duplicates
 find src/components/ -name "*-2.*" -o -name "*-copy.*" -o -name "*-new.*"
@@ -42,6 +47,7 @@ find src/components/ -name "*form.tsx" | sort
 ```
 
 ### 3. **Unused Import Detection**
+
 ```bash
 # Find potentially unused components
 grep -r "import.*from.*components" src/ --include="*.tsx" --include="*.ts" | \
@@ -53,6 +59,7 @@ grep -r "import.*from.*components" src/ --include="*.tsx" --include="*.ts" | \
 ## Systematic Cleanup Workflow
 
 ### Phase 1: Assessment
+
 ```bash
 # 1. List all suspicious files
 find src/ -name "*.old" -o -name "*-backup*" -o -name "*-copy*" > cleanup-candidates.txt
@@ -67,6 +74,7 @@ find src/ -name "*dialog*" | sort
 ```
 
 ### Phase 2: Safe Deletion
+
 ```bash
 # 1. Verify file is not imported anywhere
 file_to_check="src/components/old-component.tsx"
@@ -80,6 +88,7 @@ git commit -m "cleanup: remove unused old-component.tsx"
 ```
 
 ### Phase 3: Consolidation
+
 ```typescript
 // Consolidate similar components
 // Instead of: UserForm.tsx, UserFormNew.tsx, user-form-v2.tsx
@@ -94,6 +103,7 @@ git commit -m "cleanup: remove unused old-component.tsx"
 ## Regular Maintenance Schedule
 
 ### Weekly Cleanup (Every Friday)
+
 ```bash
 # 1. Find new suspicious files
 find src/ -name "*-old*" -o -name "*-copy*" -o -name "*-backup*"
@@ -106,6 +116,7 @@ git log --name-status --since="1 week ago" | grep "^A" | grep -E "\.(tsx|ts)$"
 ```
 
 ### Monthly Deep Clean (First Friday)
+
 ```bash
 # 1. Comprehensive duplicate search
 find src/ -name "*.tsx" -exec basename {} \; | sort | uniq -d
@@ -118,6 +129,7 @@ npx ts-unused-exports tsconfig.json
 ```
 
 ### Quarterly Architecture Review
+
 1. **Review component organization**
 2. **Consolidate similar functionality**
 3. **Update documentation**
@@ -140,32 +152,36 @@ Is this file imported anywhere?
 ## Documentation Standards
 
 ### 1. **Component Documentation**
+
 ```typescript
 /**
  * UserForm - Active form component for user creation and editing
- * 
+ *
  * @status ACTIVE
  * @created 2024-01-15
  * @last_updated 2024-01-20
  * @usage Used in: UserModal, SettingsPage, AdminPanel
- * 
- * @deprecated_alternatives 
+ *
+ * @deprecated_alternatives
  * - UserFormOld.tsx (removed 2024-01-18)
  * - user-form-v2.tsx (removed 2024-01-19)
  */
 ```
 
 ### 2. **Deletion Log**
+
 ```markdown
 # Component Deletion Log
 
 ## 2024-01-20
+
 - Removed: `src/components/old-user-form.tsx`
 - Reason: Consolidated into UserForm.tsx
 - Last used: Never (was experimental)
 - Git commit: abc123
 
-## 2024-01-19  
+## 2024-01-19
+
 - Removed: `src/app/roadside_inspections/page.tsx.broken`
 - Reason: Fixed version exists at same path
 - Last used: N/A (was broken backup)
@@ -175,6 +191,7 @@ Is this file imported anywhere?
 ## Automation Tools
 
 ### 1. **Cleanup Script**
+
 ```bash
 #!/bin/bash
 # scripts/cleanup-check.sh
@@ -196,6 +213,7 @@ npx ts-unused-exports tsconfig.json --silent
 ```
 
 ### 2. **Pre-commit Hook**
+
 ```bash
 #!/bin/sh
 # .git/hooks/pre-commit
@@ -219,4 +237,4 @@ fi
 
 ---
 
-**Remember: Clean code is easier to maintain, debug, and extend. Delete aggressively, git preserves history.** 
+**Remember: Clean code is easier to maintain, debug, and extend. Delete aggressively, git preserves history.**

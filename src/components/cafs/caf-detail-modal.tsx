@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { ActivityLog } from '@/components/ui/activity-log'
-import DigitalSignature from '@/components/cafs/digital-signature'
-import CAFAttachments from '@/components/cafs/caf-attachments'
-import { downloadPDF } from '@/lib/pdf-generator'
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { ActivityLog } from "@/components/ui/activity-log";
+import DigitalSignature from "@/components/cafs/digital-signature";
+import CAFAttachments from "@/components/cafs/caf-attachments";
+import { downloadPDF } from "@/lib/pdf-generator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  XCircle, 
-  User, 
+} from "@/components/ui/dropdown-menu";
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  User,
   Calendar,
   Edit,
   Download,
@@ -35,377 +35,430 @@ import {
   Play,
   Check,
   ThumbsUp,
-  ChevronDown
-} from 'lucide-react'
+  ChevronDown,
+} from "lucide-react";
 
 interface CAF {
-  id: string
-  cafNumber: string
-  incidentId: string
-  violationType: string
-  violationCodes: string[]
-  violationSummary: string
-  title?: string
-  description?: string
-  priority: string
-  category: string
-  status: string
-  assignedStaffId?: string
-  assignedBy?: string
-  organizationId: string
-  dueDate?: string
-  completionNotes?: string
-  completedAt?: string
-  approvedAt?: string
-  approvedBy?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  cafNumber: string;
+  incidentId: string;
+  violationType: string;
+  violationCodes: string[];
+  violationSummary: string;
+  title?: string;
+  description?: string;
+  priority: string;
+  category: string;
+  status: string;
+  assignedStaffId?: string;
+  assignedBy?: string;
+  organizationId: string;
+  dueDate?: string;
+  completionNotes?: string;
+  completedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
   assigned_staff?: {
-    id: string
-    position: string
-    canSignCAFs?: boolean
-    canApproveCAFs?: boolean
+    id: string;
+    position: string;
+    canSignCAFs?: boolean;
+    canApproveCAFs?: boolean;
     party: {
       person: {
-        firstName: string
-        lastName: string
-      }
-    }
-  }
+        firstName: string;
+        lastName: string;
+      };
+    };
+  };
   created_by_staff?: {
-    id: string
-    canApproveCAFs?: boolean
+    id: string;
+    canApproveCAFs?: boolean;
     party: {
       person: {
-        firstName: string
-        lastName: string
-      }
-    }
-  }
+        firstName: string;
+        lastName: string;
+      };
+    };
+  };
   approved_by_staff?: {
     party: {
       person: {
-        firstName: string
-        lastName: string
-      }
-    }
-  }
+        firstName: string;
+        lastName: string;
+      };
+    };
+  };
   organization?: {
-    id: string
-    name: string
-  }
+    id: string;
+    name: string;
+  };
   signatures?: Array<{
-    id: string
-    signatureType: string
-    signedAt: string
+    id: string;
+    signatureType: string;
+    signedAt: string;
     staff: {
       party: {
         person: {
-          firstName: string
-          lastName: string
-        }
-      }
-    }
-  }>
-  maintenanceIssueId?: string // Added for maintenance work order integration
+          firstName: string;
+          lastName: string;
+        };
+      };
+    };
+  }>;
+  maintenanceIssueId?: string; // Added for maintenance work order integration
 }
 
 interface CAFDetailModalProps {
-  cafId?: string
-  onClose: () => void
+  cafId?: string;
+  onClose: () => void;
 }
 
 export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) {
-  const [caf, setCAF] = useState<CAF | null>(null)
-  const [activeTab, setActiveTab] = useState('details')
-  const [isEditing, setIsEditing] = useState(false)
-  const [editNotes, setEditNotes] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [completionNotes, setCompletionNotes] = useState('')
-  const [showSignatureModal, setShowSignatureModal] = useState(false)
-  const [signatureType, setSignatureType] = useState<'COMPLETION' | 'APPROVAL'>('COMPLETION')
+  const [caf, setCAF] = useState<CAF | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editNotes, setEditNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [completionNotes, setCompletionNotes] = useState("");
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureType, setSignatureType] = useState<"COMPLETION" | "APPROVAL">("COMPLETION");
 
   // Fetch CAF data
   useEffect(() => {
     if (cafId) {
-      fetchCAF()
-      fetchCurrentUser()
+      fetchCAF();
+      fetchCurrentUser();
     }
-  }, [cafId])
+  }, [cafId]);
 
   const fetchCAF = async () => {
     try {
-      const response = await fetch(`/api/corrective-action-forms/${cafId}`)
+      const response = await fetch(`/api/corrective-action-forms/${cafId}`);
       if (response.ok) {
-        const data = await response.json()
-        setCAF(data)
-        setCompletionNotes(data.completionNotes || '')
+        const data = await response.json();
+        setCAF(data);
+        setCompletionNotes(data.completionNotes || "");
       }
     } catch (error) {
-      console.error('Error fetching CAF:', error)
+      console.error("Error fetching CAF:", error);
     }
-  }
+  };
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('/api/user/caf-permissions')
+      const response = await fetch("/api/user/caf-permissions");
       if (response.ok) {
-        const data = await response.json()
-        setCurrentUser(data)
+        const data = await response.json();
+        setCurrentUser(data);
       }
     } catch (error) {
-      console.error('Error fetching user permissions:', error)
+      console.error("Error fetching user permissions:", error);
     }
-  }
+  };
 
   // Handle status transitions
   const handleStatusChange = async (newStatus: string, notes?: string) => {
-    if (!caf || !currentUser) return
+    if (!caf || !currentUser) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const payload: any = {
-        status: newStatus
+        status: newStatus,
+      };
+
+      if (newStatus === "COMPLETED" && notes) {
+        payload.completionNotes = notes;
+        payload.completedAt = new Date().toISOString();
       }
 
-      if (newStatus === 'COMPLETED' && notes) {
-        payload.completionNotes = notes
-        payload.completedAt = new Date().toISOString()
-      }
-
-      if (newStatus === 'APPROVED') {
-        payload.approvedAt = new Date().toISOString()
-        payload.approvedBy = currentUser.staff?.id || currentUser.id
+      if (newStatus === "APPROVED") {
+        payload.approvedAt = new Date().toISOString();
+        payload.approvedBy = currentUser.staff?.id || currentUser.id;
       }
 
       const response = await fetch(`/api/corrective-action-forms/${caf.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (response.ok) {
-        await fetchCAF() // Refresh data
+        await fetchCAF(); // Refresh data
       } else {
-        console.error('Failed to update CAF status')
+        console.error("Failed to update CAF status");
       }
     } catch (error) {
-      console.error('Error updating CAF status:', error)
+      console.error("Error updating CAF status:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Open signature modal
-  const openSignatureModal = (type: 'COMPLETION' | 'APPROVAL') => {
-    setSignatureType(type)
-    setShowSignatureModal(true)
-  }
+  const openSignatureModal = (type: "COMPLETION" | "APPROVAL") => {
+    setSignatureType(type);
+    setShowSignatureModal(true);
+  };
 
   // Handle digital signature completion
   const handleSignatureComplete = async (signatureData: {
-    digitalSignature: string
-    signedBy: string
-    notes?: string
+    digitalSignature: string;
+    signedBy: string;
+    notes?: string;
   }) => {
-    if (!caf || !currentUser) return
+    if (!caf || !currentUser) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const response = await fetch(`/api/corrective-action-forms/${caf.id}/sign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           signatureType,
           staffId: currentUser.staff?.id || currentUser.id,
           digitalSignature: signatureData.digitalSignature,
-          notes: signatureData.notes
-        })
-      })
+          notes: signatureData.notes,
+        }),
+      });
 
       if (response.ok) {
-        await fetchCAF() // Refresh data
-        setShowSignatureModal(false)
-        
+        await fetchCAF(); // Refresh data
+        setShowSignatureModal(false);
+
         // Auto-advance status if appropriate
-        if (signatureType === 'COMPLETION' && caf.status === 'IN_PROGRESS') {
-          await handleStatusChange('COMPLETED')
+        if (signatureType === "COMPLETION" && caf.status === "IN_PROGRESS") {
+          await handleStatusChange("COMPLETED");
         }
       } else {
-        console.error('Failed to sign CAF')
+        console.error("Failed to sign CAF");
       }
     } catch (error) {
-      console.error('Error signing CAF:', error)
+      console.error("Error signing CAF:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle PDF export
-  const handleExportPDF = async (format: 'fillable' | 'completed' = 'fillable') => {
-    if (!caf) return
+  const handleExportPDF = async (format: "fillable" | "completed" = "fillable") => {
+    if (!caf) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/corrective-action-forms/${caf.id}/pdf?format=${format}&download=true`)
-      
+      const response = await fetch(
+        `/api/corrective-action-forms/${caf.id}/pdf?format=${format}&download=true`,
+      );
+
       if (response.ok) {
-        const blob = await response.blob()
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+
         // Get filename from Content-Disposition header
-        const contentDisposition = response.headers.get('Content-Disposition')
-        const filename = contentDisposition 
-          ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-          : `CAF_${caf.cafNumber}_${format}_${new Date().toISOString().split('T')[0]}.pdf`
-        
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
+        const contentDisposition = response.headers.get("Content-Disposition");
+        const filename = contentDisposition
+          ? contentDisposition.split("filename=")[1]?.replace(/"/g, "")
+          : `CAF_${caf.cafNumber}_${format}_${new Date().toISOString().split("T")[0]}.pdf`;
+
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       } else {
-        console.error('Failed to generate PDF')
-        alert('Failed to generate PDF. Please try again.')
+        console.error("Failed to generate PDF");
+        alert("Failed to generate PDF. Please try again.");
       }
     } catch (error) {
-      console.error('Error exporting PDF:', error)
-      alert('Error generating PDF. Please try again.')
+      console.error("Error exporting PDF:", error);
+      alert("Error generating PDF. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle maintenance work order creation
   const handleCreateMaintenanceWorkOrder = async () => {
-    if (!caf) return
+    if (!caf) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       // Create maintenance work order linked to this CAF
       const workOrderData = {
         cafId: caf.id,
         equipmentId: caf.incidentId, // Assuming incidentId contains equipment reference
-        issueType: 'CORRECTIVE_ACTION',
+        issueType: "CORRECTIVE_ACTION",
         priority: caf.priority,
         description: `Maintenance required for CAF ${caf.cafNumber}: ${caf.violationSummary}`,
         violationCodes: caf.violationCodes,
         dueDate: caf.dueDate,
-        assignedStaffId: caf.assignedStaffId
-      }
+        assignedStaffId: caf.assignedStaffId,
+      };
 
-      const response = await fetch('/api/maintenance-issues', {
-        method: 'POST',
+      const response = await fetch("/api/maintenance-issues", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(workOrderData)
-      })
+        body: JSON.stringify(workOrderData),
+      });
 
       if (response.ok) {
-        const maintenanceIssue = await response.json()
-        
+        const maintenanceIssue = await response.json();
+
         // Update CAF to link to maintenance issue
         const updateResponse = await fetch(`/api/corrective-action-forms/${caf.id}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             maintenanceIssueId: maintenanceIssue.id,
-            requiresMaintenance: true
-          })
-        })
+            requiresMaintenance: true,
+          }),
+        });
 
         if (updateResponse.ok) {
           // Refresh CAF data
-          await fetchCAF()
-          alert('Maintenance work order created successfully!')
+          await fetchCAF();
+          alert("Maintenance work order created successfully!");
         } else {
-          console.error('Failed to link CAF to maintenance issue')
-          alert('Work order created but failed to link to CAF.')
+          console.error("Failed to link CAF to maintenance issue");
+          alert("Work order created but failed to link to CAF.");
         }
       } else {
-        const error = await response.json()
-        console.error('Failed to create maintenance work order:', error)
-        alert(`Failed to create work order: ${error.message || 'Unknown error'}`)
+        const error = await response.json();
+        console.error("Failed to create maintenance work order:", error);
+        alert(`Failed to create work order: ${error.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error('Error creating maintenance work order:', error)
-      alert('Error creating work order. Please try again.')
+      console.error("Error creating maintenance work order:", error);
+      alert("Error creating work order. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Check user permissions
   const canStartWork = () => {
-    if (!caf || !currentUser) return false
-    return caf.assignedStaffId === (currentUser.staff?.id || currentUser.id) && caf.status === 'ASSIGNED'
-  }
+    if (!caf || !currentUser) return false;
+    return (
+      caf.assignedStaffId === (currentUser.staff?.id || currentUser.id) && caf.status === "ASSIGNED"
+    );
+  };
 
   const canComplete = () => {
-    if (!caf || !currentUser) return false
-    return caf.assignedStaffId === (currentUser.staff?.id || currentUser.id) && caf.status === 'IN_PROGRESS'
-  }
+    if (!caf || !currentUser) return false;
+    return (
+      caf.assignedStaffId === (currentUser.staff?.id || currentUser.id) &&
+      caf.status === "IN_PROGRESS"
+    );
+  };
 
   const canSign = () => {
-    if (!caf || !currentUser) return false
-    const hasSignature = caf.signatures?.some(sig => 
-      sig.signatureType === 'COMPLETION' && sig.staff.party.person.firstName === currentUser.staff?.party?.person?.firstName
-    )
-    return caf.status === 'COMPLETED' && !hasSignature && 
-           (currentUser.staff?.canSignCAFs || currentUser.canSignCAFs)
-  }
+    if (!caf || !currentUser) return false;
+    const hasSignature = caf.signatures?.some(
+      (sig) =>
+        sig.signatureType === "COMPLETION" &&
+        sig.staff.party.person.firstName === currentUser.staff?.party?.person?.firstName,
+    );
+    return (
+      caf.status === "COMPLETED" &&
+      !hasSignature &&
+      (currentUser.staff?.canSignCAFs || currentUser.canSignCAFs)
+    );
+  };
 
   const canApprove = () => {
-    if (!caf || !currentUser) return false
-    const hasCompletionSignature = caf.signatures?.some(sig => sig.signatureType === 'COMPLETION')
-    return caf.status === 'COMPLETED' && hasCompletionSignature && 
-           (currentUser.staff?.canApproveCAFs || currentUser.canApproveCAFs || currentUser.userType === 'master')
-  }
+    if (!caf || !currentUser) return false;
+    const hasCompletionSignature = caf.signatures?.some(
+      (sig) => sig.signatureType === "COMPLETION",
+    );
+    return (
+      caf.status === "COMPLETED" &&
+      hasCompletionSignature &&
+      (currentUser.staff?.canApproveCAFs ||
+        currentUser.canApproveCAFs ||
+        currentUser.userType === "master")
+    );
+  };
 
   // Get status info for styling
   function getStatusInfo(status: string) {
     switch (status) {
-      case 'ASSIGNED':
-        return { variant: 'secondary' as const, icon: Clock, label: 'Assigned', color: 'text-yellow-600' }
-      case 'IN_PROGRESS':
-        return { variant: 'default' as const, icon: AlertTriangle, label: 'In Progress', color: 'text-orange-600' }
-      case 'COMPLETED':
-        return { variant: 'default' as const, icon: CheckCircle, label: 'Completed', color: 'text-green-600' }
-      case 'APPROVED':
-        return { variant: 'default' as const, icon: CheckCircle, label: 'Approved', color: 'text-green-600' }
-      case 'REJECTED':
-        return { variant: 'destructive' as const, icon: XCircle, label: 'Rejected', color: 'text-red-600' }
+      case "ASSIGNED":
+        return {
+          variant: "secondary" as const,
+          icon: Clock,
+          label: "Assigned",
+          color: "text-yellow-600",
+        };
+      case "IN_PROGRESS":
+        return {
+          variant: "default" as const,
+          icon: AlertTriangle,
+          label: "In Progress",
+          color: "text-orange-600",
+        };
+      case "COMPLETED":
+        return {
+          variant: "default" as const,
+          icon: CheckCircle,
+          label: "Completed",
+          color: "text-green-600",
+        };
+      case "APPROVED":
+        return {
+          variant: "default" as const,
+          icon: CheckCircle,
+          label: "Approved",
+          color: "text-green-600",
+        };
+      case "REJECTED":
+        return {
+          variant: "destructive" as const,
+          icon: XCircle,
+          label: "Rejected",
+          color: "text-red-600",
+        };
       default:
-        return { variant: 'secondary' as const, icon: Clock, label: status, color: 'text-gray-600' }
+        return {
+          variant: "secondary" as const,
+          icon: Clock,
+          label: status,
+          color: "text-gray-600",
+        };
     }
   }
 
   // Get priority styling
   function getPriorityColor(priority: string) {
     switch (priority) {
-      case 'HIGH': return 'text-red-600 bg-red-50 border-red-200'
-      case 'MEDIUM': return 'text-orange-600 bg-orange-50 border-orange-200'
-      case 'LOW': return 'text-green-600 bg-green-50 border-green-200'
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+      case "HIGH":
+        return "text-red-600 bg-red-50 border-red-200";
+      case "MEDIUM":
+        return "text-orange-600 bg-orange-50 border-orange-200";
+      case "LOW":
+        return "text-green-600 bg-green-50 border-green-200";
+      default:
+        return "text-gray-600 bg-gray-50 border-gray-200";
     }
   }
 
   // Get staff display name
   const getStaffDisplayName = () => {
-    if (!currentUser?.staff?.party?.person) return 'Unknown User'
-    return `${currentUser.staff.party.person.firstName} ${currentUser.staff.party.person.lastName}`
-  }
+    if (!currentUser?.staff?.party?.person) return "Unknown User";
+    return `${currentUser.staff.party.person.firstName} ${currentUser.staff.party.person.lastName}`;
+  };
 
-  if (!caf) return null
+  if (!caf) return null;
 
-  const statusInfo = getStatusInfo(caf.status)
-  const StatusIcon = statusInfo.icon
+  const statusInfo = getStatusInfo(caf.status);
+  const StatusIcon = statusInfo.icon;
 
   return (
     <>
@@ -414,9 +467,7 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
           <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between pr-10">
               <div className="flex items-center gap-4">
-                <DialogTitle className="text-xl font-semibold">
-                  {caf.cafNumber}
-                </DialogTitle>
+                <DialogTitle className="text-xl font-semibold">{caf.cafNumber}</DialogTitle>
                 <Badge variant={statusInfo.variant} className="flex items-center gap-1">
                   <StatusIcon className="h-3 w-3" />
                   {statusInfo.label}
@@ -435,11 +486,11 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleExportPDF('fillable')}>
+                    <DropdownMenuItem onClick={() => handleExportPDF("fillable")}>
                       <Download className="h-4 w-4 mr-2" />
                       Export Fillable PDF
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportPDF('completed')}>
+                    <DropdownMenuItem onClick={() => handleExportPDF("completed")}>
                       <Download className="h-4 w-4 mr-2" />
                       Export Completed PDF
                     </DropdownMenuItem>
@@ -447,7 +498,7 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                 </DropdownMenu>
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                   <Edit className="h-4 w-4 mr-1" />
-                  {isEditing ? 'Cancel' : 'Edit'}
+                  {isEditing ? "Cancel" : "Edit"}
                 </Button>
               </div>
             </div>
@@ -475,12 +526,15 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                           <div className="flex justify-between">
                             <span className="text-gray-600">Assigned To:</span>
                             <span className="font-medium">
-                              {caf.assigned_staff?.party?.person?.firstName} {caf.assigned_staff?.party?.person?.lastName}
+                              {caf.assigned_staff?.party?.person?.firstName}{" "}
+                              {caf.assigned_staff?.party?.person?.lastName}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Position:</span>
-                            <span className="font-medium">{caf.assigned_staff?.position || 'N/A'}</span>
+                            <span className="font-medium">
+                              {caf.assigned_staff?.position || "N/A"}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Organization:</span>
@@ -489,7 +543,8 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                           <div className="flex justify-between">
                             <span className="text-gray-600">Created By:</span>
                             <span className="font-medium">
-                              {caf.created_by_staff?.party?.person?.firstName} {caf.created_by_staff?.party?.person?.lastName}
+                              {caf.created_by_staff?.party?.person?.firstName}{" "}
+                              {caf.created_by_staff?.party?.person?.lastName}
                             </span>
                           </div>
                         </div>
@@ -504,17 +559,21 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-gray-600">Created:</span>
-                            <span className="font-medium">{new Date(caf.createdAt).toLocaleDateString()}</span>
+                            <span className="font-medium">
+                              {new Date(caf.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Due Date:</span>
                             <span className="font-medium">
-                              {caf.dueDate ? new Date(caf.dueDate).toLocaleDateString() : 'Not set'}
+                              {caf.dueDate ? new Date(caf.dueDate).toLocaleDateString() : "Not set"}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Last Updated:</span>
-                            <span className="font-medium">{new Date(caf.updatedAt).toLocaleDateString()}</span>
+                            <span className="font-medium">
+                              {new Date(caf.updatedAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </CardContent>
@@ -532,7 +591,9 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                     <h4 className="font-medium text-gray-900 mb-2">Violation Codes</h4>
                     <div className="flex flex-wrap gap-2">
                       {caf.violationCodes.map((code, index) => (
-                        <Badge key={index} variant="outline">{code}</Badge>
+                        <Badge key={index} variant="outline">
+                          {code}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -555,32 +616,41 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between mb-6">
-                        {['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'APPROVED'].map((status, index) => {
-                          const isActive = caf.status === status
-                          const isCompleted = ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'APPROVED'].indexOf(caf.status) > index
-                          
-                          return (
-                            <div key={status} className="flex items-center">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                                isActive 
-                                  ? 'bg-blue-600 text-white' 
-                                  : isCompleted 
-                                    ? 'bg-green-600 text-white' 
-                                    : 'bg-gray-200 text-gray-600'
-                              }`}>
-                                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+                        {["ASSIGNED", "IN_PROGRESS", "COMPLETED", "APPROVED"].map(
+                          (status, index) => {
+                            const isActive = caf.status === status;
+                            const isCompleted =
+                              ["ASSIGNED", "IN_PROGRESS", "COMPLETED", "APPROVED"].indexOf(
+                                caf.status,
+                              ) > index;
+
+                            return (
+                              <div key={status} className="flex items-center">
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                    isActive
+                                      ? "bg-blue-600 text-white"
+                                      : isCompleted
+                                        ? "bg-green-600 text-white"
+                                        : "bg-gray-200 text-gray-600"
+                                  }`}
+                                >
+                                  {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+                                </div>
+                                <span className={`ml-2 text-sm ${isActive ? "font-medium" : ""}`}>
+                                  {status.replace("_", " ")}
+                                </span>
+                                {index < 3 && (
+                                  <ArrowRight
+                                    className={`mx-4 h-4 w-4 ${
+                                      isCompleted ? "text-green-600" : "text-gray-300"
+                                    }`}
+                                  />
+                                )}
                               </div>
-                              <span className={`ml-2 text-sm ${isActive ? 'font-medium' : ''}`}>
-                                {status.replace('_', ' ')}
-                              </span>
-                              {index < 3 && (
-                                <ArrowRight className={`mx-4 h-4 w-4 ${
-                                  isCompleted ? 'text-green-600' : 'text-gray-300'
-                                }`} />
-                              )}
-                            </div>
-                          )
-                        })}
+                            );
+                          },
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -597,10 +667,12 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                             <div className="flex items-center justify-between">
                               <div>
                                 <h4 className="font-medium text-blue-900">Ready to Start Work</h4>
-                                <p className="text-sm text-blue-700">Begin working on this corrective action.</p>
+                                <p className="text-sm text-blue-700">
+                                  Begin working on this corrective action.
+                                </p>
                               </div>
-                              <Button 
-                                onClick={() => handleStatusChange('IN_PROGRESS')}
+                              <Button
+                                onClick={() => handleStatusChange("IN_PROGRESS")}
                                 disabled={isSubmitting}
                                 className="bg-blue-600 hover:bg-blue-700"
                               >
@@ -616,7 +688,9 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                             <div className="space-y-3">
                               <div>
                                 <h4 className="font-medium text-orange-900">Mark as Completed</h4>
-                                <p className="text-sm text-orange-700">Add completion notes and mark work as done.</p>
+                                <p className="text-sm text-orange-700">
+                                  Add completion notes and mark work as done.
+                                </p>
                               </div>
                               <Textarea
                                 placeholder="Describe what was completed and any relevant details..."
@@ -624,8 +698,8 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                                 onChange={(e) => setCompletionNotes(e.target.value)}
                                 className="min-h-[80px]"
                               />
-                              <Button 
-                                onClick={() => handleStatusChange('COMPLETED', completionNotes)}
+                              <Button
+                                onClick={() => handleStatusChange("COMPLETED", completionNotes)}
                                 disabled={isSubmitting || !completionNotes.trim()}
                                 className="bg-orange-600 hover:bg-orange-700"
                               >
@@ -640,11 +714,15 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                             <div className="flex items-center justify-between">
                               <div>
-                                <h4 className="font-medium text-green-900">Supervisor Signature Required</h4>
-                                <p className="text-sm text-green-700">Review and digitally sign to confirm completion.</p>
+                                <h4 className="font-medium text-green-900">
+                                  Supervisor Signature Required
+                                </h4>
+                                <p className="text-sm text-green-700">
+                                  Review and digitally sign to confirm completion.
+                                </p>
                               </div>
-                              <Button 
-                                onClick={() => openSignatureModal('COMPLETION')}
+                              <Button
+                                onClick={() => openSignatureModal("COMPLETION")}
                                 disabled={isSubmitting}
                                 className="bg-green-600 hover:bg-green-700"
                               >
@@ -660,10 +738,12 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                             <div className="flex items-center justify-between">
                               <div>
                                 <h4 className="font-medium text-purple-900">Final Approval</h4>
-                                <p className="text-sm text-purple-700">Review signed CAF and give final approval.</p>
+                                <p className="text-sm text-purple-700">
+                                  Review signed CAF and give final approval.
+                                </p>
                               </div>
-                              <Button 
-                                onClick={() => handleStatusChange('APPROVED')}
+                              <Button
+                                onClick={() => handleStatusChange("APPROVED")}
                                 disabled={isSubmitting}
                                 className="bg-purple-600 hover:bg-purple-700"
                               >
@@ -674,7 +754,7 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                           </div>
                         )}
 
-                        {caf.status === 'APPROVED' && (
+                        {caf.status === "APPROVED" && (
                           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                             <div className="flex items-center">
                               <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
@@ -682,7 +762,8 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                                 <h4 className="font-medium text-green-900">CAF Completed</h4>
                                 <p className="text-sm text-green-700">
                                   This corrective action has been completed and approved.
-                                  {caf.approvedAt && ` Approved on ${new Date(caf.approvedAt).toLocaleDateString()}.`}
+                                  {caf.approvedAt &&
+                                    ` Approved on ${new Date(caf.approvedAt).toLocaleDateString()}.`}
                                 </p>
                               </div>
                             </div>
@@ -701,21 +782,31 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                       <CardContent>
                         <div className="space-y-3">
                           {caf.signatures.map((signature) => (
-                            <div key={signature.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                            <div
+                              key={signature.id}
+                              className="flex items-center justify-between p-3 bg-gray-50 rounded border"
+                            >
                               <div className="flex items-center gap-3">
                                 <PenTool className="h-4 w-4 text-gray-600" />
                                 <div>
                                   <p className="font-medium">
-                                    {signature.staff.party.person.firstName} {signature.staff.party.person.lastName}
+                                    {signature.staff.party.person.firstName}{" "}
+                                    {signature.staff.party.person.lastName}
                                   </p>
                                   <p className="text-sm text-gray-600">
-                                    {signature.signatureType === 'COMPLETION' ? 'Supervisor Signature' : 'Approval Signature'}
+                                    {signature.signatureType === "COMPLETION"
+                                      ? "Supervisor Signature"
+                                      : "Approval Signature"}
                                   </p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="text-sm font-medium">{new Date(signature.signedAt).toLocaleDateString()}</p>
-                                <p className="text-xs text-gray-600">{new Date(signature.signedAt).toLocaleTimeString()}</p>
+                                <p className="text-sm font-medium">
+                                  {new Date(signature.signedAt).toLocaleDateString()}
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  {new Date(signature.signedAt).toLocaleTimeString()}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -739,11 +830,12 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                   )}
 
                   {/* Maintenance Work Order Integration - Only for Equipment CAFs */}
-                  {(caf.category === 'EQUIPMENT_MAINTENANCE' || caf.violationType === 'Equipment') && (
+                  {(caf.category === "EQUIPMENT_MAINTENANCE" ||
+                    caf.violationType === "Equipment") && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-gray-900">Maintenance Work Orders</h4>
-                        {caf.status !== 'APPROVED' && caf.status !== 'CANCELLED' && (
+                        {caf.status !== "APPROVED" && caf.status !== "CANCELLED" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -764,10 +856,15 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                             </span>
                           </div>
                           <p className="text-xs text-blue-700">
-                            This CAF is linked to a maintenance work order. 
-                            <button 
+                            This CAF is linked to a maintenance work order.
+                            <button
                               className="ml-1 underline hover:no-underline"
-                              onClick={() => window.open(`/maintenance-issues/${caf.maintenanceIssueId}`, '_blank')}
+                              onClick={() =>
+                                window.open(
+                                  `/maintenance-issues/${caf.maintenanceIssueId}`,
+                                  "_blank",
+                                )
+                              }
                             >
                               View Work Order →
                             </button>
@@ -776,7 +873,8 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                       ) : (
                         <div className="bg-gray-50 p-3 rounded border">
                           <p className="text-sm text-gray-600">
-                            No maintenance work order created yet. Equipment-related violations typically require maintenance actions.
+                            No maintenance work order created yet. Equipment-related violations
+                            typically require maintenance actions.
                           </p>
                         </div>
                       )}
@@ -788,10 +886,10 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                   <CAFAttachments
                     cafId={caf.id}
                     cafStatus={caf.status}
-                    isReadOnly={caf.status === 'APPROVED' || caf.status === 'CANCELLED'}
+                    isReadOnly={caf.status === "APPROVED" || caf.status === "CANCELLED"}
                     onAttachmentAdded={() => {
                       // Refresh CAF data to update any counts or status
-                      fetchCAF()
+                      fetchCAF();
                     }}
                   />
                 </TabsContent>
@@ -802,9 +900,7 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                       <CardTitle>Activity Log</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ActivityLog 
-                        cafId={caf.id}
-                      />
+                      <ActivityLog cafId={caf.id} />
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -821,9 +917,9 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
             <DialogTitle>Digital Signature Required</DialogTitle>
           </DialogHeader>
           <DigitalSignature
-            cafId={caf?.id || ''}
+            cafId={caf?.id || ""}
             signatureType={signatureType}
-            staffId={currentUser?.staff?.id || currentUser?.id || ''}
+            staffId={currentUser?.staff?.id || currentUser?.id || ""}
             staffName={getStaffDisplayName()}
             onSignatureComplete={handleSignatureComplete}
             onCancel={() => setShowSignatureModal(false)}
@@ -832,5 +928,5 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
         </DialogContent>
       </Dialog>
     </>
-  )
-} 
+  );
+}

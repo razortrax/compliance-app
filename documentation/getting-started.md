@@ -29,5 +29,3 @@ Follow these steps to run the app locally:
 
 - **E2E (optional)**:
   - Set env vars (if needed) and run: `npx playwright test`
-
-

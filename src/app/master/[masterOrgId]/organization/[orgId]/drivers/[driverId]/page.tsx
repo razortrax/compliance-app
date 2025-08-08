@@ -1,102 +1,113 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { SectionHeader } from '@/components/ui/section-header'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { PersonForm } from '@/components/persons/person-form'
-import { 
-  MapPin, 
-  Phone, 
-  Mail, 
-  IdCard, 
-  Calendar,
-  Edit,
-  User
-} from 'lucide-react'
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { useMasterOrg } from "@/hooks/use-master-org";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { SectionHeader } from "@/components/ui/section-header";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { PersonForm } from "@/components/persons/person-form";
+import { MapPin, Phone, Mail, IdCard, Calendar, Edit, User } from "lucide-react";
 
 interface DriverPerson {
-  id: string
-  firstName: string
-  lastName: string
-  email?: string
-  phone?: string
-  dateOfBirth?: Date | null
-  address?: string
-  city?: string
-  state?: string
-  zipCode?: string
-  licenseNumber?: string
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: Date | null;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  licenseNumber?: string;
 }
 
 interface Organization {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 export default function DriverDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  
-  const masterOrgId = params.masterOrgId as string
-  const organizationId = params.orgId as string
-  const driverId = params.driverId as string
-  
-  const [person, setPerson] = useState<DriverPerson | null>(null)
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [editMode, setEditMode] = useState(false)
-  
+  const params = useParams();
+  const router = useRouter();
+
+  const masterOrgId = params.masterOrgId as string;
+  const organizationId = params.orgId as string;
+  const driverId = params.driverId as string;
+
+  const [person, setPerson] = useState<DriverPerson | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+
   // Get master organization data
-  const { masterOrg } = useMasterOrg()
+  const { masterOrg } = useMasterOrg();
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!driverId || !organizationId) return
+      if (!driverId || !organizationId) return;
 
       try {
         // Fetch person details
-        const personResponse = await fetch(`/api/persons/${driverId}`)
+        const personResponse = await fetch(`/api/persons/${driverId}`);
         if (personResponse.ok) {
-          const personData = await personResponse.json()
-          setPerson(personData)
+          const personData = await personResponse.json();
+          setPerson(personData);
         }
 
         // Fetch organization details
-        const orgResponse = await fetch(`/api/organizations/${organizationId}`)
+        const orgResponse = await fetch(`/api/organizations/${organizationId}`);
         if (orgResponse.ok) {
-          const orgData = await orgResponse.json()
-          setOrganization(orgData)
+          const orgData = await orgResponse.json();
+          setOrganization(orgData);
         }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error("Error fetching data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [driverId, organizationId])
+    fetchData();
+  }, [driverId, organizationId]);
 
   const handlePersonUpdate = () => {
     // Refresh person data without full reload
-    router.refresh()
-  }
+    router.refresh();
+  };
 
   if (loading) {
     return (
-      <AppLayout 
-        name={masterOrg?.name || 'Master'}
+      <AppLayout
+        name={masterOrg?.name || "Master"}
         topNav={[
-          { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
-          { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-          { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
-          { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
+          { label: "Master", href: `/master/${masterOrgId}`, isActive: false },
+          {
+            label: "Organization",
+            href: `/master/${masterOrgId}/organization/${organizationId}`,
+            isActive: false,
+          },
+          {
+            label: "Drivers",
+            href: `/master/${masterOrgId}/organization/${organizationId}/drivers`,
+            isActive: true,
+          },
+          {
+            label: "Equipment",
+            href: `/master/${masterOrgId}/organization/${organizationId}/equipment`,
+            isActive: false,
+          },
         ]}
         sidebarMenu="driver"
         masterOrgId={masterOrgId}
@@ -111,18 +122,30 @@ export default function DriverDetailPage() {
           </div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (!person) {
     return (
-      <AppLayout 
-        name={masterOrg?.name || 'Master'}
+      <AppLayout
+        name={masterOrg?.name || "Master"}
         topNav={[
-          { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
-          { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-          { label: 'Drivers', href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, isActive: true },
-          { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
+          { label: "Master", href: `/master/${masterOrgId}`, isActive: false },
+          {
+            label: "Organization",
+            href: `/master/${masterOrgId}/organization/${organizationId}`,
+            isActive: false,
+          },
+          {
+            label: "Drivers",
+            href: `/master/${masterOrgId}/organization/${organizationId}/drivers`,
+            isActive: true,
+          },
+          {
+            label: "Equipment",
+            href: `/master/${masterOrgId}/organization/${organizationId}/equipment`,
+            isActive: false,
+          },
         ]}
         sidebarMenu="driver"
         masterOrgId={masterOrgId}
@@ -135,17 +158,29 @@ export default function DriverDetailPage() {
           <p className="text-gray-600 mt-2">The requested driver could not be found.</p>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   return (
-    <AppLayout 
+    <AppLayout
       name={`${person.firstName} ${person.lastName}`}
       topNav={[
-        { label: 'Master', href: `/master/${masterOrgId}`, isActive: false },
-        { label: 'Organization', href: `/master/${masterOrgId}/organization/${organizationId}`, isActive: false },
-        { label: 'Driver', href: `/master/${masterOrgId}/organization/${organizationId}/driver/${driverId}`, isActive: true },
-        { label: 'Equipment', href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, isActive: false }
+        { label: "Master", href: `/master/${masterOrgId}`, isActive: false },
+        {
+          label: "Organization",
+          href: `/master/${masterOrgId}/organization/${organizationId}`,
+          isActive: false,
+        },
+        {
+          label: "Driver",
+          href: `/master/${masterOrgId}/organization/${organizationId}/driver/${driverId}`,
+          isActive: true,
+        },
+        {
+          label: "Equipment",
+          href: `/master/${masterOrgId}/organization/${organizationId}/equipment`,
+          isActive: false,
+        },
       ]}
       sidebarMenu="driver"
       masterOrgId={masterOrgId}
@@ -167,7 +202,7 @@ export default function DriverDetailPage() {
                 </Badge>
               )}
             </div>
-            
+
             <Dialog open={editMode} onOpenChange={setEditMode}>
               <DialogTrigger asChild>
                 <Button>
@@ -178,16 +213,14 @@ export default function DriverDetailPage() {
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Edit Driver</DialogTitle>
-                  <DialogDescription>
-                    Update driver information
-                  </DialogDescription>
+                  <DialogDescription>Update driver information</DialogDescription>
                 </DialogHeader>
                 <PersonForm
                   person={person as any}
                   organizationId={organizationId}
                   onSuccess={() => {
-                    setEditMode(false)
-                    handlePersonUpdate()
+                    setEditMode(false);
+                    handlePersonUpdate();
                   }}
                   onCancel={() => setEditMode(false)}
                 />
@@ -215,7 +248,7 @@ export default function DriverDetailPage() {
                   <p className="text-gray-900">{person.lastName}</p>
                 </div>
               </div>
-              
+
               {person.dateOfBirth && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Date of Birth</label>
@@ -225,7 +258,7 @@ export default function DriverDetailPage() {
                   </p>
                 </div>
               )}
-              
+
               {person.licenseNumber && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">License Number</label>
@@ -252,7 +285,7 @@ export default function DriverDetailPage() {
                   </p>
                 </div>
               )}
-              
+
               {person.email && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Email</label>
@@ -262,17 +295,23 @@ export default function DriverDetailPage() {
                   </p>
                 </div>
               )}
-              
+
               {(person.address || person.city || person.state || person.zipCode) && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Address</label>
                   <p className="text-gray-900 flex items-start">
                     <MapPin className="h-4 w-4 mr-2 mt-0.5" />
                     <span>
-                      {person.address && <>{person.address}<br /></>}
-                      {person.city && person.state && person.zipCode && 
-                        `${person.city}, ${person.state} ${person.zipCode}`
-                      }
+                      {person.address && (
+                        <>
+                          {person.address}
+                          <br />
+                        </>
+                      )}
+                      {person.city &&
+                        person.state &&
+                        person.zipCode &&
+                        `${person.city}, ${person.state} ${person.zipCode}`}
                     </span>
                   </p>
                 </div>
@@ -282,7 +321,7 @@ export default function DriverDetailPage() {
         </div>
 
         <div className="mt-8">
-          <SectionHeader 
+          <SectionHeader
             title="Driver Issues"
             description="View and manage driver compliance issues"
           />
@@ -293,5 +332,5 @@ export default function DriverDetailPage() {
         </div>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

@@ -1,54 +1,68 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { FileText, Image, Video, FileIcon, Search, Filter, Plus, Eye, Download } from 'lucide-react'
-import NextImage from 'next/image'
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  FileText,
+  Image,
+  Video,
+  FileIcon,
+  Search,
+  Filter,
+  Plus,
+  Eye,
+  Download,
+} from "lucide-react";
+import NextImage from "next/image";
 
 export interface AddonDisplayItem {
-  id: string
-  attachmentType: string // note, document, image, video, etc.
-  fileName?: string
-  description?: string
-  noteContent?: string
-  url?: string
-  fileType?: string
-  fileSize?: number
-  createdAt: string
-  updatedAt?: string
-  tags?: string[]
-  status?: string
+  id: string;
+  attachmentType: string; // note, document, image, video, etc.
+  fileName?: string;
+  description?: string;
+  noteContent?: string;
+  url?: string;
+  fileType?: string;
+  fileSize?: number;
+  createdAt: string;
+  updatedAt?: string;
+  tags?: string[];
+  status?: string;
 }
 
 export interface AddonDisplayConfig {
-  showSearch?: boolean
-  showTypeFilter?: boolean
-  showStatusFilter?: boolean
-  showTagFilter?: boolean
-  allowCreate?: boolean
-  allowView?: boolean
-  allowDownload?: boolean
-  allowEdit?: boolean
-  allowDelete?: boolean
-  createButtonText?: string
-  emptyStateText?: string
-  displayMode?: 'list' | 'grid' | 'compact'
+  showSearch?: boolean;
+  showTypeFilter?: boolean;
+  showStatusFilter?: boolean;
+  showTagFilter?: boolean;
+  allowCreate?: boolean;
+  allowView?: boolean;
+  allowDownload?: boolean;
+  allowEdit?: boolean;
+  allowDelete?: boolean;
+  createButtonText?: string;
+  emptyStateText?: string;
+  displayMode?: "list" | "grid" | "compact";
 }
 
 export interface UnifiedAddonDisplayProps {
-  items: AddonDisplayItem[]
-  availableTypes: { value: string; label: string; icon?: React.ComponentType<{ className?: string }> }[]
-  config?: AddonDisplayConfig
-  onCreateClick?: () => void
-  onViewClick?: (item: AddonDisplayItem) => void
-  onEditClick?: (item: AddonDisplayItem) => void
-  onDeleteClick?: (item: AddonDisplayItem) => void
-  onDownloadClick?: (item: AddonDisplayItem) => void
-  className?: string
+  items: AddonDisplayItem[];
+  availableTypes: {
+    value: string;
+    label: string;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
+  config?: AddonDisplayConfig;
+  onCreateClick?: () => void;
+  onViewClick?: (item: AddonDisplayItem) => void;
+  onEditClick?: (item: AddonDisplayItem) => void;
+  onDeleteClick?: (item: AddonDisplayItem) => void;
+  onDownloadClick?: (item: AddonDisplayItem) => void;
+  className?: string;
 }
 
 const DEFAULT_CONFIG: AddonDisplayConfig = {
@@ -61,10 +75,10 @@ const DEFAULT_CONFIG: AddonDisplayConfig = {
   allowDownload: true,
   allowEdit: false,
   allowDelete: false,
-  createButtonText: 'Add Addon',
-  emptyStateText: 'No addons yet',
-  displayMode: 'list'
-}
+  createButtonText: "Add Addon",
+  emptyStateText: "No addons yet",
+  displayMode: "list",
+};
 
 export function UnifiedAddonDisplay({
   items,
@@ -75,124 +89,127 @@ export function UnifiedAddonDisplay({
   onEditClick,
   onDeleteClick,
   onDownloadClick,
-  className = ''
+  className = "",
 }: UnifiedAddonDisplayProps) {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config }
-  
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+
   // Filter state
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Get unique tags from items
   const allTags = useMemo(() => {
-    const tags = items.flatMap(item => item.tags || [])
-    return Array.from(new Set(tags)).sort()
-  }, [items])
+    const tags = items.flatMap((item) => item.tags || []);
+    return Array.from(new Set(tags)).sort();
+  }, [items]);
 
   // Get unique statuses from items
   const allStatuses = useMemo(() => {
-    const statuses = items.map(item => item.status).filter(Boolean) as string[]
-    return Array.from(new Set(statuses)).sort()
-  }, [items])
+    const statuses = items.map((item) => item.status).filter(Boolean) as string[];
+    return Array.from(new Set(statuses)).sort();
+  }, [items]);
 
   // Filter items based on current filters
   const filteredItems = useMemo(() => {
-    let filtered = items
+    let filtered = items;
 
     // Search filter
     if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase()
-      filtered = filtered.filter(item =>
-        item.fileName?.toLowerCase().includes(search) ||
-        item.description?.toLowerCase().includes(search) ||
-        item.noteContent?.toLowerCase().includes(search) ||
-        item.tags?.some(tag => tag.toLowerCase().includes(search))
-      )
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.fileName?.toLowerCase().includes(search) ||
+          item.description?.toLowerCase().includes(search) ||
+          item.noteContent?.toLowerCase().includes(search) ||
+          item.tags?.some((tag) => tag.toLowerCase().includes(search)),
+      );
     }
 
     // Type filter
     if (selectedTypes.length > 0) {
-      filtered = filtered.filter(item => selectedTypes.includes(item.attachmentType))
+      filtered = filtered.filter((item) => selectedTypes.includes(item.attachmentType));
     }
 
     // Status filter
     if (selectedStatuses.length > 0) {
-      filtered = filtered.filter(item => item.status && selectedStatuses.includes(item.status))
+      filtered = filtered.filter((item) => item.status && selectedStatuses.includes(item.status));
     }
 
     // Tag filter
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(item =>
-        selectedTags.some(tag => item.tags?.includes(tag))
-      )
+      filtered = filtered.filter((item) => selectedTags.some((tag) => item.tags?.includes(tag)));
     }
 
-    return filtered
-  }, [items, searchTerm, selectedTypes, selectedStatuses, selectedTags])
+    return filtered;
+  }, [items, searchTerm, selectedTypes, selectedStatuses, selectedTags]);
 
   // Toggle filter functions
   const toggleTypeFilter = (type: string) => {
-    setSelectedTypes(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    )
-  }
+    setSelectedTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  };
 
   const toggleStatusFilter = (status: string) => {
-    setSelectedStatuses(prev =>
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    )
-  }
+    setSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+    );
+  };
 
   const toggleTagFilter = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    )
-  }
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  };
 
   // Get icon for attachment type
   const getTypeIcon = (item: AddonDisplayItem) => {
-    if (item.attachmentType === 'note' || item.noteContent) {
-      return <FileText className="h-5 w-5 text-blue-600" />
+    if (item.attachmentType === "note" || item.noteContent) {
+      return <FileText className="h-5 w-5 text-blue-600" />;
     }
-    if (item.fileType?.startsWith('image/')) {
-      return <Image className="h-5 w-5 text-green-600" />
+    if (item.fileType?.startsWith("image/")) {
+      return <Image className="h-5 w-5 text-green-600" />;
     }
-    if (item.fileType?.startsWith('video/')) {
-      return <Video className="h-5 w-5 text-purple-600" />
+    if (item.fileType?.startsWith("video/")) {
+      return <Video className="h-5 w-5 text-purple-600" />;
     }
-    return <FileIcon className="h-5 w-5 text-gray-600" />
-  }
+    return <FileIcon className="h-5 w-5 text-gray-600" />;
+  };
 
   // Get background color for type
   const getTypeBackground = (item: AddonDisplayItem) => {
-    if (item.attachmentType === 'note' || item.noteContent) return 'bg-blue-100'
-    if (item.fileType?.startsWith('image/')) return 'bg-green-100'
-    if (item.fileType?.startsWith('video/')) return 'bg-purple-100'
-    return 'bg-gray-100'
-  }
+    if (item.attachmentType === "note" || item.noteContent) return "bg-blue-100";
+    if (item.fileType?.startsWith("image/")) return "bg-green-100";
+    if (item.fileType?.startsWith("video/")) return "bg-purple-100";
+    return "bg-gray-100";
+  };
 
   // Get display label for attachment type
   const getTypeLabel = (item: AddonDisplayItem) => {
-    const typeConfig = availableTypes.find(t => t.value === item.attachmentType)
-    if (typeConfig) return typeConfig.label
-    
-    if (item.attachmentType === 'note') return 'Note'
-    if (item.noteContent && item.url) return 'File + Note'
-    if (item.url) return 'File'
-    return 'Unknown'
-  }
+    const typeConfig = availableTypes.find((t) => t.value === item.attachmentType);
+    if (typeConfig) return typeConfig.label;
+
+    if (item.attachmentType === "note") return "Note";
+    if (item.noteContent && item.url) return "File + Note";
+    if (item.url) return "File";
+    return "Unknown";
+  };
 
   // Clear all filters
   const clearFilters = () => {
-    setSearchTerm('')
-    setSelectedTypes([])
-    setSelectedStatuses([])
-    setSelectedTags([])
-  }
+    setSearchTerm("");
+    setSelectedTypes([]);
+    setSelectedStatuses([]);
+    setSelectedTags([]);
+  };
 
-  const hasActiveFilters = searchTerm || selectedTypes.length > 0 || selectedStatuses.length > 0 || selectedTags.length > 0
+  const hasActiveFilters =
+    searchTerm ||
+    selectedTypes.length > 0 ||
+    selectedStatuses.length > 0 ||
+    selectedTags.length > 0;
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -214,7 +231,9 @@ export function UnifiedAddonDisplay({
           )}
 
           {/* Filters */}
-          {(finalConfig.showTypeFilter || finalConfig.showStatusFilter || finalConfig.showTagFilter) && (
+          {(finalConfig.showTypeFilter ||
+            finalConfig.showStatusFilter ||
+            finalConfig.showTagFilter) && (
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -222,7 +241,7 @@ export function UnifiedAddonDisplay({
                   Filters
                   {hasActiveFilters && (
                     <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                      {(selectedTypes.length + selectedStatuses.length + selectedTags.length)}
+                      {selectedTypes.length + selectedStatuses.length + selectedTags.length}
                     </Badge>
                   )}
                 </Button>
@@ -234,7 +253,7 @@ export function UnifiedAddonDisplay({
                     <div>
                       <Label className="text-sm font-medium">Type</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {availableTypes.map(type => (
+                        {availableTypes.map((type) => (
                           <Badge
                             key={type.value}
                             variant={selectedTypes.includes(type.value) ? "default" : "outline"}
@@ -253,7 +272,7 @@ export function UnifiedAddonDisplay({
                     <div>
                       <Label className="text-sm font-medium">Status</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {allStatuses.map(status => (
+                        {allStatuses.map((status) => (
                           <Badge
                             key={status}
                             variant={selectedStatuses.includes(status) ? "default" : "outline"}
@@ -272,7 +291,7 @@ export function UnifiedAddonDisplay({
                     <div>
                       <Label className="text-sm font-medium">Tags</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {allTags.map(tag => (
+                        {allTags.map((tag) => (
                           <Badge
                             key={tag}
                             variant={selectedTags.includes(tag) ? "default" : "outline"}
@@ -309,21 +328,25 @@ export function UnifiedAddonDisplay({
 
       {/* Items Display */}
       {filteredItems.length > 0 ? (
-        <div className={`space-y-2 ${finalConfig.displayMode === 'grid' ? 'grid grid-cols-2 gap-4 space-y-0' : ''}`}>
+        <div
+          className={`space-y-2 ${finalConfig.displayMode === "grid" ? "grid grid-cols-2 gap-4 space-y-0" : ""}`}
+        >
           {filteredItems.map((item) => (
-            <div 
-              key={item.id} 
+            <div
+              key={item.id}
               className={`flex items-center gap-3 p-3 rounded-lg border ${
-                finalConfig.displayMode === 'compact' ? 'bg-gray-50 py-2' : 'bg-white hover:shadow-sm transition-shadow'
+                finalConfig.displayMode === "compact"
+                  ? "bg-gray-50 py-2"
+                  : "bg-white hover:shadow-sm transition-shadow"
               }`}
             >
               {/* Icon */}
               <div className="flex-shrink-0">
-                {item.fileType?.startsWith('image/') && item.url ? (
+                {item.fileType?.startsWith("image/") && item.url ? (
                   <div className="w-10 h-10 rounded border overflow-hidden">
-                    <NextImage 
-                      src={item.url} 
-                      alt={item.fileName || 'Attachment thumbnail'}
+                    <NextImage
+                      src={item.url}
+                      alt={item.fileName || "Attachment thumbnail"}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
@@ -331,16 +354,18 @@ export function UnifiedAddonDisplay({
                     />
                   </div>
                 ) : (
-                  <div className={`w-10 h-10 rounded flex items-center justify-center ${getTypeBackground(item)}`}>
+                  <div
+                    className={`w-10 h-10 rounded flex items-center justify-center ${getTypeBackground(item)}`}
+                  >
                     {getTypeIcon(item)}
                   </div>
                 )}
               </div>
-              
+
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {item.fileName || 'Untitled'}
+                  {item.fileName || "Untitled"}
                 </p>
                 {item.description && (
                   <p className="text-xs text-gray-600 truncate">{item.description}</p>
@@ -359,7 +384,7 @@ export function UnifiedAddonDisplay({
                       {item.status}
                     </Badge>
                   )}
-                  {item.tags?.map(tag => (
+                  {item.tags?.map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
@@ -373,41 +398,25 @@ export function UnifiedAddonDisplay({
               {/* Actions */}
               <div className="flex items-center gap-1">
                 {finalConfig.allowView && onViewClick && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => onViewClick(item)}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => onViewClick(item)}>
                     <Eye className="h-4 w-4" />
                   </Button>
                 )}
-                
+
                 {finalConfig.allowDownload && onDownloadClick && item.url && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => onDownloadClick(item)}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => onDownloadClick(item)}>
                     <Download className="h-4 w-4" />
                   </Button>
                 )}
-                
+
                 {finalConfig.allowEdit && onEditClick && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => onEditClick(item)}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => onEditClick(item)}>
                     Edit
                   </Button>
                 )}
-                
+
                 {finalConfig.allowDelete && onDeleteClick && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => onDeleteClick(item)}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => onDeleteClick(item)}>
                     Delete
                   </Button>
                 )}
@@ -418,7 +427,7 @@ export function UnifiedAddonDisplay({
       ) : (
         <div className="text-center py-8 text-gray-500">
           <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p>{hasActiveFilters ? 'No addons match your filters' : finalConfig.emptyStateText}</p>
+          <p>{hasActiveFilters ? "No addons match your filters" : finalConfig.emptyStateText}</p>
           {hasActiveFilters && (
             <Button variant="link" onClick={clearFilters} className="mt-2">
               Clear filters to see all addons
@@ -427,7 +436,7 @@ export function UnifiedAddonDisplay({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default UnifiedAddonDisplay 
+export default UnifiedAddonDisplay;

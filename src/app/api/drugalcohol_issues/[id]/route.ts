@@ -1,33 +1,30 @@
-import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { DrugAlcoholResult, DrugAlcoholReason, DrugAlcoholAgency } from '@prisma/client'
+import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { DrugAlcoholResult, DrugAlcoholReason, DrugAlcoholAgency } from "@prisma/client";
 
 interface DrugAlcoholIssueUpdateData {
-  result?: string
-  substance?: string
-  lab?: string
-  accreditedBy?: string
-  notes?: string
-  reason?: string
-  agency?: string
-  specimenNumber?: string
-  isDrug?: boolean
-  isAlcohol?: boolean
-  clinic?: any
-  title?: string
-  description?: string
-  priority?: string
+  result?: string;
+  substance?: string;
+  lab?: string;
+  accreditedBy?: string;
+  notes?: string;
+  reason?: string;
+  agency?: string;
+  specimenNumber?: string;
+  isDrug?: boolean;
+  isAlcohol?: boolean;
+  clinic?: any;
+  title?: string;
+  description?: string;
+  priority?: string;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const drugAlcoholIssue = await db.drugalcohol_issue.findUnique({
@@ -43,29 +40,29 @@ export async function GET(
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!drugAlcoholIssue) {
-      return Response.json({ error: 'Drug alcohol issue not found' }, { status: 404 })
+      return Response.json({ error: "Drug alcohol issue not found" }, { status: 404 });
     }
 
     // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    const party = drugAlcoholIssue.issue.party
-    
+    let hasAccess = false;
+    const party = drugAlcoholIssue.issue.party;
+
     // 1. Check direct ownership first
     if (party.userId === userId) {
-      hasAccess = true
+      hasAccess = true;
     }
 
     if (!hasAccess) {
@@ -73,31 +70,31 @@ export async function GET(
       const driverRole = await db.role.findFirst({
         where: {
           partyId: party.id,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (driverRole) {
         // 2. Check if user is a Master consultant who manages this organization
         const userMasterOrg = await db.organization.findFirst({
           where: {
-            party: { userId: userId }
-          }
-        })
+            party: { userId: userId },
+          },
+        });
 
         if (userMasterOrg) {
           // Check if master org manages the driver's organization
           const masterRole = await db.role.findFirst({
             where: {
-              roleType: 'master',
+              roleType: "master",
               partyId: userMasterOrg.partyId,
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (masterRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -107,12 +104,12 @@ export async function GET(
             where: {
               party: { userId: userId },
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (userOrgRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -122,39 +119,36 @@ export async function GET(
             where: {
               party: { userId: userId },
               locationId: driverRole.locationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (userLocationRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
       }
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
-    return Response.json(drugAlcoholIssue)
+    return Response.json(drugAlcoholIssue);
   } catch (error) {
-    console.error('Error fetching drug alcohol issue:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error fetching drug alcohol issue:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: DrugAlcoholIssueUpdateData = await request.json()
+    const body: DrugAlcoholIssueUpdateData = await request.json();
 
     // Get existing drugalcohol issue
     const existingDrugAlcoholIssue = await db.drugalcohol_issue.findUnique({
@@ -170,29 +164,29 @@ export async function PUT(
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!existingDrugAlcoholIssue) {
-      return Response.json({ error: 'Drug alcohol issue not found' }, { status: 404 })
+      return Response.json({ error: "Drug alcohol issue not found" }, { status: 404 });
     }
 
     // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    const party = existingDrugAlcoholIssue.issue.party
-    
+    let hasAccess = false;
+    const party = existingDrugAlcoholIssue.issue.party;
+
     // 1. Check direct ownership first
     if (party.userId === userId) {
-      hasAccess = true
+      hasAccess = true;
     }
 
     if (!hasAccess) {
@@ -200,31 +194,31 @@ export async function PUT(
       const driverRole = await db.role.findFirst({
         where: {
           partyId: party.id,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (driverRole) {
         // 2. Check if user is a Master consultant who manages this organization
         const userMasterOrg = await db.organization.findFirst({
           where: {
-            party: { userId: userId }
-          }
-        })
+            party: { userId: userId },
+          },
+        });
 
         if (userMasterOrg) {
           // Check if master org manages the driver's organization
           const masterRole = await db.role.findFirst({
             where: {
-              roleType: 'master',
+              roleType: "master",
               partyId: userMasterOrg.partyId,
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (masterRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -234,12 +228,12 @@ export async function PUT(
             where: {
               party: { userId: userId },
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (userOrgRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -249,19 +243,19 @@ export async function PUT(
             where: {
               party: { userId: userId },
               locationId: driverRole.locationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (userLocationRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
       }
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Update the main issue if needed
@@ -272,9 +266,9 @@ export async function PUT(
           ...(body.title && { title: body.title }),
           ...(body.description && { description: body.description }),
           ...(body.priority && { priority: body.priority }),
-          updatedAt: new Date()
-        }
-      })
+          updatedAt: new Date(),
+        },
+      });
     }
 
     // Update the drugalcohol issue
@@ -292,7 +286,7 @@ export async function PUT(
         ...(body.isDrug !== undefined && { isDrug: body.isDrug }),
         ...(body.isAlcohol !== undefined && { isAlcohol: body.isAlcohol }),
         ...(body.clinic !== undefined && { clinic: body.clinic }),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         issue: {
@@ -300,29 +294,26 @@ export async function PUT(
             party: {
               include: {
                 person: true,
-                organization: true
-              }
-            }
-          }
-        }
-      }
-    })
+                organization: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    return Response.json(updatedDrugAlcoholIssue)
+    return Response.json(updatedDrugAlcoholIssue);
   } catch (error) {
-    console.error('Error updating drug alcohol issue:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error updating drug alcohol issue:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get existing drugalcohol issue
@@ -339,29 +330,29 @@ export async function DELETE(
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!existingDrugAlcoholIssue) {
-      return Response.json({ error: 'Drug alcohol issue not found' }, { status: 404 })
+      return Response.json({ error: "Drug alcohol issue not found" }, { status: 404 });
     }
 
     // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    const party = existingDrugAlcoholIssue.issue.party
-    
+    let hasAccess = false;
+    const party = existingDrugAlcoholIssue.issue.party;
+
     // 1. Check direct ownership first
     if (party.userId === userId) {
-      hasAccess = true
+      hasAccess = true;
     }
 
     if (!hasAccess) {
@@ -369,31 +360,31 @@ export async function DELETE(
       const driverRole = await db.role.findFirst({
         where: {
           partyId: party.id,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (driverRole) {
         // 2. Check if user is a Master consultant who manages this organization
         const userMasterOrg = await db.organization.findFirst({
           where: {
-            party: { userId: userId }
-          }
-        })
+            party: { userId: userId },
+          },
+        });
 
         if (userMasterOrg) {
           // Check if master org manages the driver's organization
           const masterRole = await db.role.findFirst({
             where: {
-              roleType: 'master',
+              roleType: "master",
               partyId: userMasterOrg.partyId,
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (masterRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -403,12 +394,12 @@ export async function DELETE(
             where: {
               party: { userId: userId },
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (userOrgRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -418,33 +409,33 @@ export async function DELETE(
             where: {
               party: { userId: userId },
               locationId: driverRole.locationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (userLocationRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
       }
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Soft delete by updating status to 'deleted'
     await db.issue.update({
       where: { id: existingDrugAlcoholIssue.issueId },
       data: {
-        status: 'deleted',
-        updatedAt: new Date()
-      }
-    })
+        status: "deleted",
+        updatedAt: new Date(),
+      },
+    });
 
-    return Response.json({ message: 'Drug alcohol issue deleted successfully' })
+    return Response.json({ message: "Drug alcohol issue deleted successfully" });
   } catch (error) {
-    console.error('Error deleting drug alcohol issue:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error deleting drug alcohol issue:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

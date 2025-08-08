@@ -1,35 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { masterOrgId: string; orgId: string } }
+  { params }: { params: { masterOrgId: string; orgId: string } },
 ) {
   try {
-    const { userId } = await auth()
-    
+    const { userId } = await auth();
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { orgId } = params
+    const { orgId } = params;
 
     // Simplified authorization - just verify organization exists
     const organization = await db.organization.findUnique({
-      where: { id: orgId }
-    })
+      where: { id: orgId },
+    });
 
     if (!organization) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     // Get all active equipment for this organization (simplified query)
     const equipmentRoles = await db.role.findMany({
       where: {
         organizationId: orgId,
-        roleType: 'equipment',
-        isActive: true
+        roleType: "equipment",
+        isActive: true,
       },
       include: {
         party: {
@@ -42,23 +42,23 @@ export async function GET(
                     name: true,
                     address: true,
                     city: true,
-                    state: true
-                  }
-                }
-              }
-            }
-          }
-        }
+                    state: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        startDate: 'desc'
-      }
-    })
+        startDate: "desc",
+      },
+    });
 
     // Extract equipment from roles
     const equipment = equipmentRoles
-      .map(role => role.party?.equipment)
-      .filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined)
+      .map((role) => role.party?.equipment)
+      .filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined);
 
     // Transform equipment data with basic info (maintenance system to be implemented later)
     const equipmentWithStatus = equipment.map((item) => {
@@ -74,34 +74,39 @@ export async function GET(
         location: item.location,
         // Placeholder for future maintenance system
         maintenance: {
-          status: 'unknown' as const,
+          status: "unknown" as const,
           daysSinceLastMaintenance: null,
-          isOverdue: false
-        }
-      }
-    })
+          isOverdue: false,
+        },
+      };
+    });
 
     // Calculate summary statistics
-    const totalEquipment = equipment.length
-    const activeEquipment = totalEquipment // All equipment in roles are considered active
-    const inactiveEquipment = 0
-    const maintenanceOverdue = 0 // Placeholder until maintenance system is implemented
-    const maintenanceDue = 0
+    const totalEquipment = equipment.length;
+    const activeEquipment = totalEquipment; // All equipment in roles are considered active
+    const inactiveEquipment = 0;
+    const maintenanceOverdue = 0; // Placeholder until maintenance system is implemented
+    const maintenanceDue = 0;
 
     // Group by vehicle type for summary
-    const equipmentByType = equipment.reduce((acc, item) => {
-      const type = item.vehicleTypeId || 'Unknown'
-      acc[type] = (acc[type] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    const equipmentByType = equipment.reduce(
+      (acc, item) => {
+        const type = item.vehicleTypeId || "Unknown";
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    console.log(`📊 Org ${orgId}: Found ${totalEquipment} pieces of equipment, ${maintenanceOverdue} overdue for maintenance`)
+    console.log(
+      `📊 Org ${orgId}: Found ${totalEquipment} pieces of equipment, ${maintenanceOverdue} overdue for maintenance`,
+    );
 
     return NextResponse.json({
       organization: {
         id: organization.id,
         name: organization.name,
-        dotNumber: organization.dotNumber
+        dotNumber: organization.dotNumber,
       },
       equipment: equipmentWithStatus,
       summary: {
@@ -110,15 +115,11 @@ export async function GET(
         inactiveEquipment,
         maintenanceOverdue,
         maintenanceDue,
-        equipmentByType
-      }
-    })
-
+        equipmentByType,
+      },
+    });
   } catch (error) {
-    console.error('Error fetching organization equipment:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error("Error fetching organization equipment:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

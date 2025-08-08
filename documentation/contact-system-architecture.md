@@ -1,6 +1,6 @@
 # Contact System Architecture
 
-*Created: January 24, 2025*
+_Created: January 24, 2025_
 
 ## Overview
 
@@ -9,12 +9,14 @@ The contact system allows multiple contact methods (phone, email, address, socia
 ## Contact Method Types
 
 ### Primary Contact Types
+
 - **Phone**: Mobile, Home, Work, Fax
 - **Email**: Personal, Work, Billing, Emergency
 - **Address**: Home, Work, Mailing, Billing
 - **Social Media**: LinkedIn, Twitter, Facebook, etc.
 
 ### Contact Attributes
+
 - **Type**: Phone, Email, Address, Social
 - **Subtype**: Mobile, Work, Personal, etc.
 - **Value**: The actual contact information
@@ -26,31 +28,32 @@ The contact system allows multiple contact methods (phone, email, address, socia
 ## Database Architecture
 
 ### Contact Table Structure
+
 ```sql
 contact {
   id          String    @id
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   -- Contact Information
   type        String    -- phone, email, address, social
   subtype     String    -- mobile, work, personal, home, billing, etc.
   value       String    -- The actual contact value
   label       String?   -- Custom display label
-  
+
   -- Metadata
   priority    String    @default("secondary") -- primary, secondary, emergency
   isActive    Boolean   @default(true)
   isVerified  Boolean   @default(false)
   verifiedAt  DateTime?
-  
+
   -- Linking Strategy
   partyId     String?   -- Personal contact (linked to party)
   roleId      String?   -- Work contact (linked to role)
-  
+
   -- Validation: Must have either partyId OR roleId, not both
   -- Constraint: CHECK ((partyId IS NOT NULL) != (roleId IS NOT NULL))
-  
+
   -- Relationships
   party       party?    @relation(fields: [partyId], references: [id], onDelete: Cascade)
   role        role?     @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -58,6 +61,7 @@ contact {
 ```
 
 ### Extended Phone Contact Structure
+
 ```sql
 phone_contact {
   id            String   @id
@@ -73,6 +77,7 @@ phone_contact {
 ```
 
 ### Extended Email Contact Structure
+
 ```sql
 email_contact {
   id              String   @id
@@ -86,7 +91,8 @@ email_contact {
 }
 ```
 
-### Extended Address Contact Structure  
+### Extended Address Contact Structure
+
 ```sql
 address_contact {
   id           String   @id
@@ -105,6 +111,7 @@ address_contact {
 ```
 
 ### Extended Social Contact Structure
+
 ```sql
 social_contact {
   id           String   @id
@@ -120,6 +127,7 @@ social_contact {
 ## Contact Linking Strategy
 
 ### Personal Contacts (Linked to Party)
+
 - **When to Use**: Personal contact information that belongs to the individual
 - **Examples**:
   - Personal cell phone
@@ -131,7 +139,7 @@ social_contact {
 // Example: Personal mobile phone for John Driver
 {
   type: "phone",
-  subtype: "mobile", 
+  subtype: "mobile",
   value: "555-123-4567",
   label: "Personal Mobile",
   priority: "primary",
@@ -141,10 +149,11 @@ social_contact {
 ```
 
 ### Work Contacts (Linked to Role)
+
 - **When to Use**: Work-related contact information tied to a specific role/organization
 - **Examples**:
   - Company-provided phone
-  - Work email address  
+  - Work email address
   - Work location address
   - Professional social media
 
@@ -153,7 +162,7 @@ social_contact {
 {
   type: "phone",
   subtype: "work",
-  value: "555-987-6543", 
+  value: "555-987-6543",
   label: "ABC Trucking Mobile",
   priority: "secondary",
   partyId: null,
@@ -164,6 +173,7 @@ social_contact {
 ## Display Strategy
 
 ### Unified Contact List Display
+
 All contacts for a person are displayed together with contextual tags:
 
 ```
@@ -174,7 +184,7 @@ John Driver - Contact Information
 ├── (555) 987-6543 [ABC Trucking - Driver] [Secondary]
 └── (555) 111-2222 [Emergency Contact] [Emergency] 🚨
 
-📧 Email Addresses  
+📧 Email Addresses
 ├── john.personal@gmail.com [Personal] [Primary] ⭐
 ├── john.driver@abctrucking.com [ABC Trucking - Driver] [Secondary]
 └── john.backup@yahoo.com [Personal] [Backup]
@@ -190,78 +200,82 @@ John Driver - Contact Information
 ```
 
 ### Tag Generation Logic
+
 ```typescript
 interface ContactDisplayTag {
-  text: string
-  type: 'personal' | 'work' | 'emergency' | 'primary'
-  color: 'blue' | 'green' | 'orange' | 'red'
+  text: string;
+  type: "personal" | "work" | "emergency" | "primary";
+  color: "blue" | "green" | "orange" | "red";
 }
 
 function generateContactTags(contact: Contact): ContactDisplayTag[] {
-  const tags = []
-  
+  const tags = [];
+
   if (contact.partyId) {
-    tags.push({ text: 'Personal', type: 'personal', color: 'blue' })
+    tags.push({ text: "Personal", type: "personal", color: "blue" });
   }
-  
+
   if (contact.roleId) {
-    const role = contact.role
-    const orgName = role.organization?.name || 'Unknown Org'
-    const roleType = role.roleType.toLowerCase()
-    tags.push({ 
-      text: `${orgName} - ${roleType}`, 
-      type: 'work', 
-      color: 'green' 
-    })
+    const role = contact.role;
+    const orgName = role.organization?.name || "Unknown Org";
+    const roleType = role.roleType.toLowerCase();
+    tags.push({
+      text: `${orgName} - ${roleType}`,
+      type: "work",
+      color: "green",
+    });
   }
-  
-  if (contact.priority === 'primary') {
-    tags.push({ text: 'Primary', type: 'primary', color: 'blue' })
+
+  if (contact.priority === "primary") {
+    tags.push({ text: "Primary", type: "primary", color: "blue" });
   }
-  
-  if (contact.priority === 'emergency') {
-    tags.push({ text: 'Emergency', type: 'emergency', color: 'red' })
+
+  if (contact.priority === "emergency") {
+    tags.push({ text: "Emergency", type: "emergency", color: "red" });
   }
-  
-  return tags
+
+  return tags;
 }
 ```
 
 ## Contact Management Workflows
 
 ### Adding Personal Contact
+
 ```typescript
 // Add personal mobile phone
 await createContact({
-  type: 'phone',
-  subtype: 'mobile',
-  value: '555-123-4567',
-  label: 'Personal Mobile',
-  priority: 'primary',
+  type: "phone",
+  subtype: "mobile",
+  value: "555-123-4567",
+  label: "Personal Mobile",
+  priority: "primary",
   partyId: personPartyId,
-  roleId: null
-})
+  roleId: null,
+});
 ```
 
 ### Adding Work Contact
+
 ```typescript
 // Add work email when person gets driver role
 await createContact({
-  type: 'email', 
-  subtype: 'work',
-  value: 'john@abctrucking.com',
-  label: 'Work Email',
-  priority: 'secondary',
+  type: "email",
+  subtype: "work",
+  value: "john@abctrucking.com",
+  label: "Work Email",
+  priority: "secondary",
   partyId: null,
-  roleId: driverRoleId
-})
+  roleId: driverRoleId,
+});
 ```
 
 ### Contact Inheritance During Role Changes
+
 When a person's role changes or ends:
 
 1. **Personal Contacts**: Remain unchanged (always accessible)
-2. **Work Contacts**: 
+2. **Work Contacts**:
    - **Role Deactivated**: Contacts remain but marked as inactive
    - **Role Transferred**: Option to transfer contacts to new role
    - **Role Ended**: Contacts archived but preserved for audit
@@ -269,9 +283,10 @@ When a person's role changes or ends:
 ## API Design
 
 ### Contact Endpoints
+
 ```
 GET    /api/contacts?partyId=123              # Get all contacts for party
-GET    /api/contacts?roleId=456               # Get all contacts for role  
+GET    /api/contacts?roleId=456               # Get all contacts for role
 GET    /api/parties/123/contacts              # Get unified contact list for party
 POST   /api/contacts                          # Create new contact
 PUT    /api/contacts/789                      # Update contact
@@ -279,6 +294,7 @@ DELETE /api/contacts/789                      # Delete contact (soft delete)
 ```
 
 ### Unified Contact Query
+
 ```typescript
 // Get all contacts for a person (personal + all work roles)
 async function getPersonContacts(personPartyId: string) {
@@ -286,40 +302,41 @@ async function getPersonContacts(personPartyId: string) {
     where: {
       OR: [
         { partyId: personPartyId }, // Personal contacts
-        { 
-          role: { 
-            partyId: personPartyId,  // Work contacts via roles
-            isActive: true 
-          } 
-        }
-      ]
+        {
+          role: {
+            partyId: personPartyId, // Work contacts via roles
+            isActive: true,
+          },
+        },
+      ],
     },
     include: {
       party: true,
       role: {
         include: {
-          organization: true
-        }
+          organization: true,
+        },
       },
       phone_contact: true,
       email_contact: true,
       address_contact: true,
-      social_contact: true
+      social_contact: true,
     },
     orderBy: [
-      { priority: 'asc' }, // primary first
-      { type: 'asc' },
-      { createdAt: 'asc' }
-    ]
-  })
-  
-  return contacts
+      { priority: "asc" }, // primary first
+      { type: "asc" },
+      { createdAt: "asc" },
+    ],
+  });
+
+  return contacts;
 }
 ```
 
 ## UI Component Structure
 
 ### ContactList Component
+
 ```typescript
 interface ContactListProps {
   partyId: string
@@ -330,9 +347,9 @@ interface ContactListProps {
 
 function ContactList({ partyId, showPersonal = true, showWork = true }: ContactListProps) {
   const contacts = usePersonContacts(partyId)
-  
+
   const groupedContacts = groupBy(contacts, 'type')
-  
+
   return (
     <div className="space-y-6">
       {Object.entries(groupedContacts).map(([type, contacts]) => (
@@ -350,19 +367,20 @@ function ContactList({ partyId, showPersonal = true, showWork = true }: ContactL
 ```
 
 ### Contact Form Component
+
 ```typescript
 interface ContactFormProps {
-  partyId?: string
-  roleId?: string
-  contact?: Contact
-  onSuccess: () => void
-  onCancel: () => void
+  partyId?: string;
+  roleId?: string;
+  contact?: Contact;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
 function ContactForm({ partyId, roleId, contact }: ContactFormProps) {
-  const [contactType, setContactType] = useState('phone')
-  const [isPersonal, setIsPersonal] = useState(!!partyId)
-  
+  const [contactType, setContactType] = useState("phone");
+  const [isPersonal, setIsPersonal] = useState(!!partyId);
+
   // Form logic that creates contact with proper partyId or roleId
 }
 ```
@@ -370,18 +388,21 @@ function ContactForm({ partyId, roleId, contact }: ContactFormProps) {
 ## Implementation Priority
 
 ### Phase 1: Basic Contact System
+
 1. **Database Schema**: Create contact tables with party/role linking
 2. **Basic API**: CRUD operations for contacts
 3. **Contact Form**: Add/edit contact modal
 4. **Contact Display**: Simple list with tags
 
-### Phase 2: Enhanced Contact Features  
+### Phase 2: Enhanced Contact Features
+
 5. **Extended Types**: Phone, email, address, social extensions
 6. **Validation**: Phone formatting, email verification, address validation
 7. **Contact Import**: Bulk import from existing systems
 8. **Contact Export**: Export for external systems
 
 ### Phase 3: Advanced Contact Management
+
 9. **Contact Verification**: Email/SMS verification workflows
 10. **Contact Preferences**: Communication preferences per contact
 11. **Contact History**: Audit trail of contact changes
@@ -394,21 +415,23 @@ function ContactForm({ partyId, roleId, contact }: ContactFormProps) {
 ✅ **Role Inheritance**: Work contacts follow organizational relationships  
 ✅ **Data Integrity**: Clear separation between personal and organizational data  
 ✅ **Audit Trail**: Contact changes tracked with proper attribution  
-✅ **Scalable**: Supports multiple contact methods and future expansion  
+✅ **Scalable**: Supports multiple contact methods and future expansion
 
 ## Planned Enhancements
 
 ### Personal Relationships & Emergency Contacts
 
 #### Relationship Types
+
 Extend the contact system to support personal relationships for drivers and staff:
 
 - **Family**: Spouse, Child, Parent, Sibling, Guardian
-- **Emergency**: Emergency Contact, Alternate Emergency Contact  
+- **Emergency**: Emergency Contact, Alternate Emergency Contact
 - **Professional**: Doctor, Lawyer, Accountant, Insurance Agent
 - **Personal**: Friend, Neighbor, Religious Leader
 
 #### Database Enhancement
+
 ```sql
 contact_relationship {
   id                String    @id @default(cuid())
@@ -418,16 +441,17 @@ contact_relationship {
   isPrimary         Boolean   @default(false)
   isEmergency       Boolean   @default(false)
   notes             String?   -- Additional relationship notes
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   contact   contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 ```
 
 #### Integration Points
+
 - **Driver Pages**: Emergency contacts section with relationship context
 - **Staff Pages**: Professional contacts (supervisor, HR representative)
 - **Organization "Others" Tab**: Link external parties as professional contacts
@@ -436,6 +460,7 @@ contact_relationship {
 ### Dedicated Contact Tables
 
 #### Specialized Contact Storage
+
 Replace the generic `value` field with dedicated tables for better validation and formatting:
 
 ```sql
@@ -447,7 +472,7 @@ phone_contact {
   number      String    -- 7 digits
   extension   String?   -- Optional extension
   formatted   String    -- Display format: (555) 123-4567 x123
-  
+
   contact     contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
@@ -460,7 +485,7 @@ email_contact {
   validatedAt     DateTime?
   bounceCount     Int       @default(0)
   lastBouncedAt   DateTime?
-  
+
   contact         contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
@@ -478,12 +503,13 @@ address_contact {
   longitude     Decimal?  -- For mapping/routing
   isValidated   Boolean   @default(false)
   validatedAt   DateTime?
-  
+
   contact       contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 ```
 
 #### Benefits of Dedicated Tables
+
 - **Better Validation**: Phone formatting, email validation, address verification
 - **Enhanced Search**: Search by area code, domain, ZIP code, etc.
 - **Geographic Features**: Map integration, distance calculations
@@ -493,13 +519,16 @@ address_contact {
 ### Supervisor Relationships Enhancement
 
 #### Current Implementation Issues
+
 The current supervisor system uses a self-referential `staff.supervisorId` field, which has limitations:
+
 - Only supports staff-to-staff relationships
 - Cannot link supervisors who aren't formal staff members
 - Limited to organizational hierarchy
 - No support for matrix management or temporary assignments
 
 #### Enhanced Supervisor System
+
 ```sql
 supervision_relationship {
   id              String    @id @default(cuid())
@@ -508,22 +537,22 @@ supervision_relationship {
   relationshipType String   -- direct, matrix, temporary, mentor
   organizationId  String    -- FK to organization context
   locationId      String?   -- Optional location context
-  
+
   startDate       DateTime  @default(now())
   endDate         DateTime? -- For temporary assignments
   isActive        Boolean   @default(true)
   isPrimary       Boolean   @default(false) -- Primary supervisor
-  
+
   // Permissions & Authority
   canApproveTimeOff Boolean @default(false)
   canApproveCAFs    Boolean @default(false)
   canAccessRecords  Boolean @default(false)
   authorityLevel    String  @default("basic") -- basic, intermediate, full
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // Relations  
+
+  // Relations
   supervisor    party        @relation("Supervisor", fields: [supervisorId], references: [id])
   supervisee    party        @relation("Supervisee", fields: [superviseeId], references: [id])
   organization  organization @relation(fields: [organizationId], references: [id])
@@ -532,6 +561,7 @@ supervision_relationship {
 ```
 
 #### Supervision Features
+
 - **Party Model Integration**: Any party can be a supervisor (staff, external consultants, etc.)
 - **Multiple Supervisors**: Support matrix management with primary/secondary supervisors
 - **Temporary Assignments**: Project supervisors, training supervisors
@@ -540,6 +570,7 @@ supervision_relationship {
 - **Audit Trail**: Track supervision changes over time
 
 #### Integration with Existing Systems
+
 - **CAF System**: Use supervision relationships for CAF assignment and approval
 - **Driver Management**: Link drivers to fleet supervisors or safety managers
 - **Staff Management**: Enhanced organizational chart with multi-level relationships
@@ -548,24 +579,28 @@ supervision_relationship {
 ### Implementation Roadmap
 
 #### Phase 4: Personal Relationships (Post Core System)
+
 1. **Relationship Types**: Define and implement relationship categories
 2. **Emergency Contacts**: Quick access emergency contact system
 3. **Professional Networks**: Link external parties as professional contacts
 4. **Organization Integration**: Connect "Others" tab with personal relationships
 
 #### Phase 5: Dedicated Contact Tables (Performance & Features)
+
 1. **Table Migration**: Migrate from generic contact values to specialized tables
 2. **Enhanced Validation**: Implement phone/email/address validation
 3. **Search & Filtering**: Advanced contact search capabilities
 4. **Geographic Features**: Address validation and mapping integration
 
 #### Phase 6: Enhanced Supervision (Organizational Management)
+
 1. **Supervision Model**: Implement party-based supervision relationships
 2. **Authority Management**: Define and implement supervisor permissions
 3. **Matrix Management**: Support complex organizational structures
 4. **Migration Strategy**: Migrate existing staff.supervisorId relationships
 
 #### Phase 7: Integration & Optimization
+
 1. **Cross-System Integration**: Connect all contact features across driver/staff/incident systems
 2. **Performance Optimization**: Optimize queries for complex relationship traversals
 3. **Reporting & Analytics**: Contact relationship reporting and organizational charts
@@ -573,4 +608,4 @@ supervision_relationship {
 
 ---
 
-**This architecture provides the foundation for comprehensive contact management while maintaining clear separation between personal and organizational contact information.** 
+**This architecture provides the foundation for comprehensive contact management while maintaining clear separation between personal and organizational contact information.**

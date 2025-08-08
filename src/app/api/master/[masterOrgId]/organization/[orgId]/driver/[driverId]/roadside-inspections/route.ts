@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { captureAPIError } from '@/lib/sentry-utils'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { captureAPIError } from "@/lib/sentry-utils";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { masterOrgId: string; orgId: string; driverId: string } }
+  { params }: { params: { masterOrgId: string; orgId: string; driverId: string } },
 ) {
-  const { masterOrgId, orgId, driverId } = params
+  const { masterOrgId, orgId, driverId } = params;
   try {
-    const authResult = await auth()
-    const userId = authResult.userId
-    
+    const authResult = await auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Fetch all the contextual data in one query - Gold Standard pattern
@@ -21,13 +21,13 @@ export async function GET(
       // Master organization
       db.organization.findUnique({
         where: { id: masterOrgId },
-        select: { id: true, name: true }
+        select: { id: true, name: true },
       }),
 
-      // Target organization  
+      // Target organization
       db.organization.findUnique({
         where: { id: orgId },
-        select: { id: true, name: true }
+        select: { id: true, name: true },
       }),
 
       // Driver details
@@ -39,22 +39,22 @@ export async function GET(
           lastName: true,
           licenseNumber: true,
           party: {
-            select: { id: true }
-          }
-        }
+            select: { id: true },
+          },
+        },
       }),
 
       // Roadside inspections for this driver using the new incident system
       db.incident.findMany({
         where: {
-          incidentType: 'ROADSIDE_INSPECTION',
+          incidentType: "ROADSIDE_INSPECTION",
           issue: {
             party: {
               person: {
-                id: driverId
-              }
-            }
-          }
+                id: driverId,
+              },
+            },
+          },
         },
         include: {
           issue: {
@@ -70,12 +70,12 @@ export async function GET(
                   person: {
                     select: {
                       firstName: true,
-                      lastName: true
-                    }
-                  }
-                }
-              }
-            }
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
           },
           equipment: {
             select: {
@@ -89,8 +89,8 @@ export async function GET(
               plateState: true,
               vin: true,
               cvsaSticker: true,
-              oosSticker: true
-            }
+              oosSticker: true,
+            },
           },
           violations: {
             select: {
@@ -106,30 +106,25 @@ export async function GET(
               description: true,
               inspectorComments: true,
               violationType: true,
-              assignedPartyId: true
+              assignedPartyId: true,
             },
-            orderBy: [
-              { outOfService: 'desc' },
-              { violationCode: 'asc' }
-            ]
-          }
+            orderBy: [{ outOfService: "desc" }, { violationCode: "asc" }],
+          },
         },
-        orderBy: [
-          { incidentDate: 'desc' }
-        ]
-      })
-    ])
+        orderBy: [{ incidentDate: "desc" }],
+      }),
+    ]);
 
     if (!masterOrg) {
-      return NextResponse.json({ error: 'Master organization not found' }, { status: 404 })
+      return NextResponse.json({ error: "Master organization not found" }, { status: 404 });
     }
 
     if (!organization) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     if (!driver) {
-      return NextResponse.json({ error: 'Driver not found' }, { status: 404 })
+      return NextResponse.json({ error: "Driver not found" }, { status: 404 });
     }
 
     // Transform roadside inspection data to match frontend interface
@@ -150,33 +145,33 @@ export async function GET(
       overallResult: incident.roadsideData?.overallResult,
       dvirReceived: incident.roadsideData?.dvirReceived || false,
       dvirSource: incident.roadsideData?.dvirSource,
-      entryMethod: incident.roadsideData?.entryMethod || 'Manual_Entry',
+      entryMethod: incident.roadsideData?.entryMethod || "Manual_Entry",
       // Include relationships
       issue: incident.issue,
       equipment: incident.equipment,
-      violations: incident.violations
-    }))
+      violations: incident.violations,
+    }));
 
     // Return structured data that matches Gold Standard pattern
     const responseData = {
       masterOrg,
       organization,
       driver,
-      roadsideInspections: transformedInspections
-    }
+      roadsideInspections: transformedInspections,
+    };
 
-    return NextResponse.json(responseData)
-
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error('Error fetching driver roadside inspection data:', error)
-    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
-      endpoint: '/api/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/roadside-inspections',
-      method: 'GET',
-      extra: { masterOrgId, orgId, driverId }
-    })
+    console.error("Error fetching driver roadside inspection data:", error);
+    captureAPIError(error instanceof Error ? error : new Error("Unknown error"), {
+      endpoint:
+        "/api/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/roadside-inspections",
+      method: "GET",
+      extra: { masterOrgId, orgId, driverId },
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch driver roadside inspection data' },
-      { status: 500 }
-    )
+      { error: "Failed to fetch driver roadside inspection data" },
+      { status: 500 },
+    );
   }
-} 
+}

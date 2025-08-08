@@ -1,14 +1,15 @@
 # API Documentation
 
-*Updated: January 24, 2025 - Current Implementation*
+_Updated: January 24, 2025 - Current Implementation_
 
 ## Authentication & Authorization
 
 All API endpoints require authentication through Clerk. The `auth()` function from `@clerk/nextjs/server` provides user context.
 
 ### Access Control Logic
+
 1. **User Role Detection**: Check user's primary role relationship
-2. **Master Access**: Masters can access all organizations  
+2. **Master Access**: Masters can access all organizations
 3. **Direct Ownership**: Users can access organizations they created
 4. **Consultant Access**: Users can access organizations they consult for
 5. **Hierarchical Filtering**: Data filtered by organizational scope
@@ -16,13 +17,16 @@ All API endpoints require authentication through Clerk. The `auth()` function fr
 ## Organizations API
 
 ### `GET /api/organizations`
+
 Lists organizations accessible to the current user.
 
-**Access Control**: 
+**Access Control**:
+
 - Masters see all organizations
 - Users see organizations they own or consult for
 
 **Response Format**:
+
 ```json
 [
   {
@@ -45,16 +49,18 @@ Lists organizations accessible to the current user.
 ```
 
 ### `POST /api/organizations`
+
 Creates a new organization.
 
 **Request Body**:
+
 ```json
 {
   "name": "New Trucking Co",
   "dotNumber": "789012",
   "ein": "98-7654321",
   "address": "456 Oak Ave",
-  "city": "Other City", 
+  "city": "Other City",
   "state": "TX",
   "zipCode": "54321",
   "phone": "555-987-6543",
@@ -65,16 +71,19 @@ Creates a new organization.
 **Access Control**: All authenticated users can create organizations
 
 ### `GET /api/organizations/count`
+
 Returns count of organizations for smart routing logic.
 
 **Response**: `{ "count": 5 }`
 
 ### `PUT /api/organizations/[id]`
+
 Updates an existing organization.
 
 **Access Control**: Must have access to the organization
 
 ### `GET /api/organizations/[id]`
+
 Retrieves a specific organization.
 
 **Response**: Single organization object (same format as GET list)
@@ -82,11 +91,13 @@ Retrieves a specific organization.
 ## Locations API
 
 ### `GET /api/organizations/[id]/locations`
+
 Lists locations for a specific organization.
 
 **Access Control**: Must have access to the parent organization
 
 **Response Format**:
+
 ```json
 [
   {
@@ -94,7 +105,7 @@ Lists locations for a specific organization.
     "name": "Main Terminal",
     "address": "789 Terminal Blvd",
     "city": "Hub City",
-    "state": "IL", 
+    "state": "IL",
     "zipCode": "60601",
     "phone": "555-111-2222",
     "email": "terminal@acmetrucking.com",
@@ -107,9 +118,11 @@ Lists locations for a specific organization.
 ```
 
 ### `POST /api/organizations/[id]/locations`
+
 Creates a new location within an organization.
 
 **Request Body**:
+
 ```json
 {
   "name": "Branch Office",
@@ -123,24 +136,29 @@ Creates a new location within an organization.
 ```
 
 ### `GET /api/organizations/[id]/locations/[locationId]`
+
 Retrieves a specific location.
 
 ### `PUT /api/organizations/[id]/locations/[locationId]`
+
 Updates a specific location.
 
 ## Persons (Drivers/Staff) API
 
 ### `GET /api/persons`
+
 Lists all persons (drivers and staff) accessible to the current user.
 
 **Access Control**: Complex filtering based on user's organizational relationships
 
 **Query Parameters**:
+
 - `organizationId`: Filter by organization
 - `locationId`: Filter by location
 - `roleType`: Filter by DRIVER or STAFF
 
 **Response Format**:
+
 ```json
 [
   {
@@ -166,13 +184,15 @@ Lists all persons (drivers and staff) accessible to the current user.
 ```
 
 ### `POST /api/persons`
+
 Creates a new person (driver or staff member).
 
 **Request Body**:
+
 ```json
 {
   "firstName": "Jane",
-  "lastName": "Driver", 
+  "lastName": "Driver",
   "dateOfBirth": "1990-03-20",
   "organizationId": "org_123",
   "locationId": "loc_123",
@@ -183,15 +203,19 @@ Creates a new person (driver or staff member).
 **Access Control**: Must have access to the specified organization
 
 ### `GET /api/persons/[id]`
+
 Retrieves a specific person.
 
 ### `PUT /api/persons/[id]`
+
 Updates a specific person.
 
 ### `POST /api/persons/[id]/deactivate`
+
 Deactivates a person by setting their end date.
 
 **Request Body**:
+
 ```json
 {
   "endDate": "2025-01-24",
@@ -202,15 +226,18 @@ Deactivates a person by setting their end date.
 ## Equipment API
 
 ### `GET /api/equipment`
+
 Lists all equipment accessible to the current user.
 
 **Access Control**: Filtered by user's organizational relationships
 
 **Query Parameters**:
+
 - `organizationId`: Filter by organization
 - `locationId`: Filter by location
 
 **Response Format**:
+
 ```json
 [
   {
@@ -236,9 +263,11 @@ Lists all equipment accessible to the current user.
 ```
 
 ### `POST /api/equipment`
+
 Creates new equipment.
 
 **Request Body**:
+
 ```json
 {
   "type": "TRAILER",
@@ -252,17 +281,21 @@ Creates new equipment.
 ```
 
 ### `GET /api/equipment/[id]`
+
 Retrieves specific equipment.
 
 ### `PUT /api/equipment/[id]`
+
 Updates specific equipment.
 
 ## User Management API
 
 ### `GET /api/user/role`
+
 Returns the current user's primary role for navigation context.
 
 **Response Format**:
+
 ```json
 {
   "role": {
@@ -276,20 +309,25 @@ Returns the current user's primary role for navigation context.
 ```
 
 ### `GET /api/user/profile`
+
 Returns the current user's profile information.
 
 ### `POST /api/user/complete-profile`
+
 Completes user profile setup during onboarding.
 
 ### `PUT /api/user/update-organization`
+
 Updates user's organization association.
 
 ## Consultant API
 
 ### `POST /api/consultants/register`
+
 Registers a new consultant user.
 
 **Request Body**:
+
 ```json
 {
   "email": "consultant@example.com",
@@ -300,6 +338,7 @@ Registers a new consultant user.
 ## Error Handling
 
 ### Standard Error Response Format
+
 ```json
 {
   "error": "Descriptive error message",
@@ -311,6 +350,7 @@ Registers a new consultant user.
 ```
 
 ### HTTP Status Codes
+
 - `200`: Success
 - `201`: Created successfully
 - `400`: Bad request (validation error)
@@ -322,27 +362,27 @@ Registers a new consultant user.
 ## Access Control Examples
 
 ### Master User Access
+
 ```javascript
 // Masters can access all organizations
 const organizations = await db.organization.findMany({
-  include: { party: true }
-})
+  include: { party: true },
+});
 ```
 
 ### Organization Manager Access
+
 ```javascript
 // Organization managers see only their organizations
 const organizations = await db.organization.findMany({
   where: {
-    OR: [
-      { createdBy: userId },
-      { party: { role: { some: { userId, roleType: 'CONSULTANT' } } } }
-    ]
-  }
-})
+    OR: [{ createdBy: userId }, { party: { role: { some: { userId, roleType: "CONSULTANT" } } } }],
+  },
+});
 ```
 
 ### Location Manager Access
+
 ```javascript
 // Location managers see only their assigned location
 const drivers = await db.person.findMany({
@@ -351,34 +391,35 @@ const drivers = await db.person.findMany({
       role: {
         some: {
           locationId: userLocationId,
-          roleType: 'DRIVER'
-        }
-      }
-    }
-  }
-})
+          roleType: "DRIVER",
+        },
+      },
+    },
+  },
+});
 ```
 
 ## Transaction Examples
 
 ### Creating Person with Role
+
 ```javascript
 await db.$transaction(async (tx) => {
-  const party = await tx.party.create({ data: { id: partyId } })
-  
+  const party = await tx.party.create({ data: { id: partyId } });
+
   const person = await tx.person.create({
-    data: { ...personData, partyId }
-  })
-  
+    data: { ...personData, partyId },
+  });
+
   await tx.role.create({
     data: {
       partyId,
       organizationId,
       locationId,
-      roleType: 'DRIVER'
-    }
-  })
-})
+      roleType: "DRIVER",
+    },
+  });
+});
 ```
 
 ## Future API Endpoints (Planned)
@@ -392,4 +433,4 @@ await db.$transaction(async (tx) => {
 
 ---
 
-**Security Note**: All endpoints implement proper access control. Never expose data outside user's permission scope. 
+**Security Note**: All endpoints implement proper access control. Never expose data outside user's permission scope.

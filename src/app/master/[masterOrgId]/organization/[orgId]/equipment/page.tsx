@@ -1,222 +1,235 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { EquipmentForm } from '@/components/equipment/equipment-form'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { EmptyState } from "@/components/ui/empty-state"
-import { SectionHeader } from "@/components/ui/section-header"
-import { 
-  Truck, 
-  Plus, 
-  MapPin,
-  Hash,
-  Eye
-} from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { EquipmentForm } from "@/components/equipment/equipment-form";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Truck, Plus, MapPin, Hash, Eye } from "lucide-react";
 
 interface Equipment {
-  id: string
-  vehicleType: string
-  make?: string | null
-  model?: string | null
-  year?: number | null
-  vinNumber?: string | null
-  plateNumber?: string | null
-  registrationExpiry?: string | null
-  location?: { 
-    id: string
-    name: string
-    address?: string
-    city?: string
-    state?: string
-  } | null
+  id: string;
+  vehicleType: string;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
+  vinNumber?: string | null;
+  plateNumber?: string | null;
+  registrationExpiry?: string | null;
+  location?: {
+    id: string;
+    name: string;
+    address?: string;
+    city?: string;
+    state?: string;
+  } | null;
   maintenance: {
-    status: 'unknown'
-    daysSinceLastMaintenance: number | null
-    isOverdue: boolean
-  }
+    status: "unknown";
+    daysSinceLastMaintenance: number | null;
+    isOverdue: boolean;
+  };
 }
 
 interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
+  id: string;
+  name: string;
+  dotNumber?: string | null;
 }
 
 interface EquipmentPageData {
-  organization: Organization
-  equipment: Equipment[]
+  organization: Organization;
+  equipment: Equipment[];
   summary: {
-    totalEquipment: number
-    activeEquipment: number
-    inactiveEquipment: number
-    maintenanceOverdue: number
-    maintenanceDue: number
-    equipmentByType: Record<string, number>
-  }
+    totalEquipment: number;
+    activeEquipment: number;
+    inactiveEquipment: number;
+    maintenanceOverdue: number;
+    maintenanceDue: number;
+    equipmentByType: Record<string, number>;
+  };
 }
 
 export default function EquipmentPage() {
-  const params = useParams()
-  const masterOrgId = params.masterOrgId as string
-  const organizationId = params.orgId as string
-  const router = useRouter()
-  
-  const [data, setData] = useState<EquipmentPageData | null>(null)
-  const [masterOrg, setMasterOrg] = useState<Organization | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
+  const params = useParams();
+  const masterOrgId = params.masterOrgId as string;
+  const organizationId = params.orgId as string;
+  const router = useRouter();
 
+  const [data, setData] = useState<EquipmentPageData | null>(null);
+  const [masterOrg, setMasterOrg] = useState<Organization | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   // Fetch all data using URL-driven API 🚀
   useEffect(() => {
     const fetchData = async () => {
-      if (!masterOrgId || !organizationId) return
-      
-      setIsLoading(true)
+      if (!masterOrgId || !organizationId) return;
+
+      setIsLoading(true);
       try {
         // Fetch equipment data and master organization data in parallel
         const [equipmentResponse, masterOrgResponse] = await Promise.all([
           fetch(`/api/master/${masterOrgId}/organization/${organizationId}/equipment`),
-          fetch(`/api/organizations/${masterOrgId}`)
-        ])
+          fetch(`/api/organizations/${masterOrgId}`),
+        ]);
 
         if (equipmentResponse.ok) {
-          const equipmentResult: EquipmentPageData = await equipmentResponse.json()
-          setData(equipmentResult)
-          console.log(`✅ Loaded ${equipmentResult.equipment.length} equipment items for ${equipmentResult.organization.name}`)
+          const equipmentResult: EquipmentPageData = await equipmentResponse.json();
+          setData(equipmentResult);
+          console.log(
+            `✅ Loaded ${equipmentResult.equipment.length} equipment items for ${equipmentResult.organization.name}`,
+          );
         } else {
-          console.error('Failed to fetch equipment data:', equipmentResponse.status)
+          console.error("Failed to fetch equipment data:", equipmentResponse.status);
         }
 
         if (masterOrgResponse.ok) {
-          const masterOrgResult = await masterOrgResponse.json()
+          const masterOrgResult = await masterOrgResponse.json();
           setMasterOrg({
             id: masterOrgResult.id,
             name: masterOrgResult.name,
-            dotNumber: masterOrgResult.dotNumber
-          })
-          console.log(`✅ Loaded master organization: ${masterOrgResult.name}`)
+            dotNumber: masterOrgResult.dotNumber,
+          });
+          console.log(`✅ Loaded master organization: ${masterOrgResult.name}`);
         } else {
-          console.error('Failed to fetch master organization data:', masterOrgResponse.status)
+          console.error("Failed to fetch master organization data:", masterOrgResponse.status);
           // Fallback to a default if master org fetch fails
-          setMasterOrg({ 
-            id: masterOrgId, 
-            name: 'Master Organization'
-          })
+          setMasterOrg({
+            id: masterOrgId,
+            name: "Master Organization",
+          });
         }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error("Error fetching data:", error);
         // Set fallback master org data
-        setMasterOrg({ 
-          id: masterOrgId, 
-          name: 'Master Organization'
-        })
+        setMasterOrg({
+          id: masterOrgId,
+          name: "Master Organization",
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [masterOrgId, organizationId])
-
-
+    fetchData();
+  }, [masterOrgId, organizationId]);
 
   const refreshData = async () => {
-    const response = await fetch(`/api/master/${masterOrgId}/organization/${organizationId}/equipment`)
+    const response = await fetch(
+      `/api/master/${masterOrgId}/organization/${organizationId}/equipment`,
+    );
     if (response.ok) {
-      const result: EquipmentPageData = await response.json()
-      setData(result)
+      const result: EquipmentPageData = await response.json();
+      setData(result);
     }
-  }
+  };
 
   const getVehicleTypeLabel = (type: string) => {
     switch (type) {
-      case 'TRUCK': return 'Truck'
-      case 'TRAILER': return 'Trailer'
-      case 'VAN': return 'Van'
-      case 'BUS': return 'Bus'
-      case 'PICKUP': return 'Pickup Truck'
-      case 'CAR': return 'Car'
-      case 'MOTORCYCLE': return 'Motorcycle'
-      default: return type
+      case "TRUCK":
+        return "Truck";
+      case "TRAILER":
+        return "Trailer";
+      case "VAN":
+        return "Van";
+      case "BUS":
+        return "Bus";
+      case "PICKUP":
+        return "Pickup Truck";
+      case "CAR":
+        return "Car";
+      case "MOTORCYCLE":
+        return "Motorcycle";
+      default:
+        return type;
     }
-  }
+  };
 
   const getVehicleTypeBadgeColor = (type: string) => {
     switch (type) {
-      case 'TRUCK': return 'bg-blue-100 text-blue-700'
-      case 'TRAILER': return 'bg-green-100 text-green-700'
-      case 'VAN': return 'bg-purple-100 text-purple-700'
-      case 'BUS': return 'bg-orange-100 text-orange-700'
-      case 'PICKUP': return 'bg-teal-100 text-teal-700'
-      case 'CAR': return 'bg-indigo-100 text-indigo-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case "TRUCK":
+        return "bg-blue-100 text-blue-700";
+      case "TRAILER":
+        return "bg-green-100 text-green-700";
+      case "VAN":
+        return "bg-purple-100 text-purple-700";
+      case "BUS":
+        return "bg-orange-100 text-orange-700";
+      case "PICKUP":
+        return "bg-teal-100 text-teal-700";
+      case "CAR":
+        return "bg-indigo-100 text-indigo-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
-  }
+  };
 
   const getVehicleDisplayName = (item: Equipment) => {
-    const parts = [item.year, item.make, item.model].filter(Boolean)
-    return parts.length > 0 ? parts.join(' ') : 'Untitled Vehicle'
-  }
+    const parts = [item.year, item.make, item.model].filter(Boolean);
+    return parts.length > 0 ? parts.join(" ") : "Untitled Vehicle";
+  };
 
   // Build navigation breadcrumbs for equipment page (static labels)
   const topNav = [
-    { 
-      label: 'Master', 
-      href: `/master/${masterOrgId}`, 
-      isActive: false 
+    {
+      label: "Master",
+      href: `/master/${masterOrgId}`,
+      isActive: false,
     },
-    { 
-      label: 'Organization', 
-      href: `/master/${masterOrgId}/organization/${organizationId}`, 
-      isActive: false 
+    {
+      label: "Organization",
+      href: `/master/${masterOrgId}/organization/${organizationId}`,
+      isActive: false,
     },
-    { 
-      label: 'Drivers', 
-      href: `/master/${masterOrgId}/organization/${organizationId}/drivers`, 
-      isActive: false 
+    {
+      label: "Drivers",
+      href: `/master/${masterOrgId}/organization/${organizationId}/drivers`,
+      isActive: false,
     },
-    { 
-      label: 'Equipment', 
-      href: `/master/${masterOrgId}/organization/${organizationId}/equipment`, 
-      isActive: true 
-    }
-  ]
+    {
+      label: "Equipment",
+      href: `/master/${masterOrgId}/organization/${organizationId}/equipment`,
+      isActive: true,
+    },
+  ];
 
   // Loading state with proper header context
   if (isLoading || !data) {
     return (
-      <AppLayout 
-        name={masterOrg?.name || 'Master'} 
-        topNav={topNav}
-        className="p-6"
-      >
+      <AppLayout name={masterOrg?.name || "Master"} topNav={topNav} className="p-6">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading equipment data...</p>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   return (
-    <AppLayout
-      name={masterOrg?.name || 'Master'}
-      topNav={topNav}
-      className="p-6"
-    >
+    <AppLayout name={masterOrg?.name || "Master"} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Organization Name & Summary */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{data.organization.name}</h1>
           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-            <span>Total Equipment: <strong>{data.summary.totalEquipment}</strong></span>
-            <span>Active: <strong>{data.summary.activeEquipment}</strong></span>
+            <span>
+              Total Equipment: <strong>{data.summary.totalEquipment}</strong>
+            </span>
+            <span>
+              Active: <strong>{data.summary.activeEquipment}</strong>
+            </span>
             {data.summary.maintenanceOverdue > 0 && (
               <span className="text-red-600">
                 Maintenance Overdue: <strong>{data.summary.maintenanceOverdue}</strong>
@@ -224,7 +237,7 @@ export default function EquipmentPage() {
             )}
           </div>
         </div>
-        
+
         {/* Page Header */}
         <SectionHeader
           title="Equipment & Vehicles"
@@ -247,8 +260,8 @@ export default function EquipmentPage() {
                 <EquipmentForm
                   organizationId={organizationId}
                   onSuccess={() => {
-                    setShowAddForm(false)
-                    refreshData()
+                    setShowAddForm(false);
+                    refreshData();
                   }}
                   onCancel={() => setShowAddForm(false)}
                 />
@@ -256,8 +269,6 @@ export default function EquipmentPage() {
             </Dialog>
           }
         />
-
-
 
         {/* Equipment Summary Cards */}
         {Object.keys(data.summary.equipmentByType).length > 0 && (
@@ -288,9 +299,7 @@ export default function EquipmentPage() {
                     <div className="space-y-3 flex-1">
                       {/* Vehicle Name and Type */}
                       <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold">
-                          {getVehicleDisplayName(item)}
-                        </h3>
+                        <h3 className="text-lg font-semibold">{getVehicleDisplayName(item)}</h3>
                         <Badge className={getVehicleTypeBadgeColor(item.vehicleType)}>
                           {getVehicleTypeLabel(item.vehicleType)}
                         </Badge>
@@ -311,13 +320,12 @@ export default function EquipmentPage() {
                           </div>
                         )}
                         {item.plateNumber && (
-                          <div className="text-sm text-gray-600">
-                            Plate: {item.plateNumber}
-                          </div>
+                          <div className="text-sm text-gray-600">Plate: {item.plateNumber}</div>
                         )}
                         {item.registrationExpiry && (
                           <div className="text-sm text-gray-600">
-                            Registration Expires: {new Date(item.registrationExpiry).toLocaleDateString()}
+                            Registration Expires:{" "}
+                            {new Date(item.registrationExpiry).toLocaleDateString()}
                           </div>
                         )}
                       </div>
@@ -325,10 +333,14 @@ export default function EquipmentPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`)}
+                        onClick={() =>
+                          router.push(
+                            `/master/${masterOrgId}/organization/${organizationId}/equipment/${item.id}`,
+                          )
+                        }
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -346,11 +358,11 @@ export default function EquipmentPage() {
             description="Add vehicles and equipment to track registrations, maintenance, and inspections"
             action={{
               label: "Add First Vehicle",
-              onClick: () => setShowAddForm(true)
+              onClick: () => setShowAddForm(true),
             }}
           />
         )}
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

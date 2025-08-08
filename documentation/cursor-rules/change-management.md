@@ -7,12 +7,14 @@
 ## Core Principles
 
 ### 1. **HANDS-OFF RULE FOR STABLE FUNCTIONALITY**
+
 - ❌ **NEVER** modify working interfaces, components, or APIs without explicit discussion and approval
 - ❌ **NEVER** assume "small changes" won't have cascading effects
 - ✅ If functionality is working, leave it alone unless there's a compelling business reason to change it
 - ✅ Always ask: "Is this change necessary, or am I optimizing something that already works?"
 
 ### 2. **MANDATORY BUILD VALIDATION**
+
 - ❌ **NEVER** commit code without running `npm run build` successfully
 - ❌ **NEVER** ignore TypeScript compilation errors, even temporarily
 - ✅ **ALWAYS** run full build before any git commit
@@ -21,9 +23,11 @@
 ## Breaking Change Protocol
 
 ### Phase 1: Impact Assessment
+
 **Before making ANY interface changes:**
 
 1. **Identify ALL consumers:**
+
    ```bash
    # Search for all usages of the component/interface
    grep -r "ComponentName" src/ --include="*.tsx" --include="*.ts"
@@ -41,13 +45,15 @@
    - Plan rollback strategy
 
 ### Phase 2: Safe Migration Strategy
+
 **Never change interfaces directly. Use this pattern:**
 
 1. **Create new interface alongside old one:**
+
    ```typescript
    // Keep old interface working
    interface AppLayoutProps { ... }
-   
+
    // Add new interface
    interface AppLayoutPropsV2 { ... }
    ```
@@ -63,9 +69,11 @@
    - Document the migration completion
 
 ### Phase 3: Verification
+
 **After ALL changes:**
 
 1. **Full build validation:**
+
    ```bash
    npm run build
    ```
@@ -85,6 +93,7 @@
 If breaking changes are discovered after commit:
 
 1. **Immediate rollback:**
+
    ```bash
    git revert <commit-hash>
    ```
@@ -107,28 +116,30 @@ If breaking changes are discovered after commit:
 ## Examples of Protocol Violations
 
 ❌ **BAD:**
+
 ```typescript
 // Changing interface directly
 interface AppLayoutProps {
-  // Removed: organizations, showOrgSelector  
+  // Removed: organizations, showOrgSelector
   // Added: topNav instead of navigation
 }
 ```
 
 ✅ **GOOD:**
+
 ```typescript
 // Safe migration approach
 interface AppLayoutProps {
   // Keep old props for backward compatibility
-  organizations?: Organization[]
-  showOrgSelector?: boolean
-  navigation?: NavItem[]  // deprecated
-  
+  organizations?: Organization[];
+  showOrgSelector?: boolean;
+  navigation?: NavItem[]; // deprecated
+
   // Add new props
-  topNav?: NavItem[]      // new preferred prop
+  topNav?: NavItem[]; // new preferred prop
 }
 ```
 
 ---
 
-**Remember: Working code is more valuable than "perfect" code. Stability over optimization.** 
+**Remember: Working code is more valuable than "perfect" code. Stability over optimization.**

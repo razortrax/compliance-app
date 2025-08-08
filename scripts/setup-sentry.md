@@ -5,7 +5,7 @@
 Sentry will be **invaluable** for Equipment Gold Standard implementation because:
 
 - **Complex Equipment Logic**: Annual inspections, maintenance tracking, multi-driver relationships
-- **NHTSA VPIC Integration**: API failures and data parsing issues  
+- **NHTSA VPIC Integration**: API failures and data parsing issues
 - **Performance Monitoring**: Equipment list filtering, search, and status calculations
 - **Form State Management**: Complex equipment forms with file uploads
 - **Compliance Calculations**: Equipment expiration dates and violation tracking
@@ -23,6 +23,7 @@ Sentry will be **invaluable** for Equipment Gold Standard implementation because
 ### **Step 2: Get Your DSN**
 
 After creating the project:
+
 1. Go to **Settings > Projects > Fleetrax > Client Keys (DSN)**
 2. Copy the **Public DSN** (starts with `https://...@sentry.io/...`)
 
@@ -50,6 +51,7 @@ npm run dev
 ## 💰 **Pricing & Upgrade Path**
 
 ### **Free Tier (Perfect for Now)**
+
 - ✅ **5,000 errors/month** (generous for development + early customers)
 - ✅ **1 team member** (perfect for solo development)
 - ✅ **30-day error retention**
@@ -58,7 +60,9 @@ npm run dev
 - ✅ **Basic alerting**
 
 ### **When to Upgrade ($26/month)**
+
 Only upgrade when you hit these limits:
+
 - More than 5,000 errors/month
 - Need more team members
 - Want longer retention (90+ days)
@@ -71,56 +75,59 @@ Only upgrade when you hit these limits:
 Sentry is already configured! It will automatically capture:
 
 ### **Equipment Development Errors**
+
 ```typescript
 // Automatic capture in API routes
 export async function POST(request: Request) {
   try {
-    const equipment = await createEquipment(data)
-    return Response.json(equipment)
+    const equipment = await createEquipment(data);
+    return Response.json(equipment);
   } catch (error) {
     // Sentry automatically captures this with full context!
-    throw error
+    throw error;
   }
 }
 ```
 
 ### **Manual Error Capture**
+
 ```typescript
-import * as Sentry from "@sentry/nextjs"
+import * as Sentry from "@sentry/nextjs";
 
 // Capture custom equipment errors
 Sentry.captureException(error, {
-  tags: { 
-    feature: 'equipment-annual-inspection',
+  tags: {
+    feature: "equipment-annual-inspection",
     organization: orgId,
-    equipment: equipmentId 
+    equipment: equipmentId,
   },
   user: { id: userId, email: userEmail },
-  extra: { 
+  extra: {
     vinNumber: equipment.vinNumber,
-    inspectionType: 'annual' 
-  }
-})
+    inspectionType: "annual",
+  },
+});
 
 // Track equipment processing performance
-const transaction = Sentry.startTransaction({ 
-  name: 'process-equipment-inspection' 
-})
+const transaction = Sentry.startTransaction({
+  name: "process-equipment-inspection",
+});
 // ... processing logic ...
-transaction.finish()
+transaction.finish();
 ```
 
 ### **NHTSA VPIC Integration Monitoring**
+
 ```typescript
 // Monitor VIN decoder API calls
 try {
-  const vinData = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/${vin}`)
-  const data = await vinData.json()
+  const vinData = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/${vin}`);
+  const data = await vinData.json();
 } catch (error) {
   Sentry.captureException(error, {
-    tags: { feature: 'nhtsa-vpic-integration' },
-    extra: { vin: vin }
-  })
+    tags: { feature: "nhtsa-vpic-integration" },
+    extra: { vin: vin },
+  });
 }
 ```
 
@@ -142,8 +149,8 @@ Once configured, access your Sentry dashboard at:
 ## 🎯 **Next Steps**
 
 1. ✅ **Sentry is already configured** in your codebase
-2. 🔄 **Sign up** at sentry.io using the instructions above  
+2. 🔄 **Sign up** at sentry.io using the instructions above
 3. 🔑 **Add your DSN** to `.env.local`
 4. 🚀 **Start developing** Equipment features with confidence!
 
-Sentry will immediately start capturing errors and performance data as you build Equipment Gold Standard features. 
+Sentry will immediately start capturing errors and performance data as you build Equipment Gold Standard features.

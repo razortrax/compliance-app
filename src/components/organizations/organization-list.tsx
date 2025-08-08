@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,117 +12,116 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { OrganizationForm } from "./organization-form"
+} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrganizationForm } from "./organization-form";
 // Removed onboarding wizard - users complete profile during signup
 
-import { Search, Plus, Building2 } from "lucide-react"
+import { Search, Plus, Building2 } from "lucide-react";
 
 interface Organization {
-  id: string
-  name: string
-  dotNumber?: string
-  einNumber?: string
-  phone?: string
+  id: string;
+  name: string;
+  dotNumber?: string;
+  einNumber?: string;
+  phone?: string;
   party: {
-    id: string
-    status: string
-    createdAt: string
-    updatedAt: string
-  }
+    id: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 interface OrganizationListProps {
-  masterOrgId: string
+  masterOrgId: string;
 }
 
 export function OrganizationList({ masterOrgId }: OrganizationListProps) {
-  const searchParams = useSearchParams()
-  const userRole = searchParams.get('role') as 'master' | 'organization' | null
-  
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [filteredOrganizations, setFilteredOrganizations] = useState<Organization[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+  const searchParams = useSearchParams();
+  const userRole = searchParams.get("role") as "master" | "organization" | null;
+
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [filteredOrganizations, setFilteredOrganizations] = useState<Organization[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   useEffect(() => {
-    fetchOrganizations()
-  }, [])
+    fetchOrganizations();
+  }, []);
 
   useEffect(() => {
     // Filter organizations based on search term
-    const filtered = organizations.filter(org =>
-      org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (org.dotNumber && org.dotNumber.includes(searchTerm))
-    )
-    setFilteredOrganizations(filtered)
-  }, [organizations, searchTerm])
+    const filtered = organizations.filter(
+      (org) =>
+        org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (org.dotNumber && org.dotNumber.includes(searchTerm)),
+    );
+    setFilteredOrganizations(filtered);
+  }, [organizations, searchTerm]);
 
   const fetchOrganizations = async () => {
     try {
-      setIsLoading(true)
-      const response = await fetch('/api/organizations')
+      setIsLoading(true);
+      const response = await fetch("/api/organizations");
       if (response.ok) {
-        const data = await response.json()
-        setOrganizations(data)
+        const data = await response.json();
+        setOrganizations(data);
       } else {
-        console.error('Failed to fetch organizations')
+        console.error("Failed to fetch organizations");
       }
     } catch (error) {
-      console.error('Error fetching organizations:', error)
+      console.error("Error fetching organizations:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCreateOrganization = async (formData: any) => {
     try {
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
+      const response = await fetch("/api/organizations", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
-      })
+      });
 
       if (response.ok) {
-        await fetchOrganizations() // Refresh the list
+        await fetchOrganizations(); // Refresh the list
       } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create organization')
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create organization");
       }
     } catch (error) {
-      console.error('Error creating organization:', error)
-      throw error
+      console.error("Error creating organization:", error);
+      throw error;
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge variant="default" className="bg-green-600">Active</Badge>
-      case 'pending':
-        return <Badge variant="secondary">Pending</Badge>
-      case 'inactive':
-        return <Badge variant="outline">Inactive</Badge>
-      case 'suspended':
-        return <Badge variant="destructive">Suspended</Badge>
+      case "active":
+        return (
+          <Badge variant="default" className="bg-green-600">
+            Active
+          </Badge>
+        );
+      case "pending":
+        return <Badge variant="secondary">Pending</Badge>;
+      case "inactive":
+        return <Badge variant="outline">Inactive</Badge>;
+      case "suspended":
+        return <Badge variant="destructive">Suspended</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status}</Badge>;
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
-  }
+    return new Date(dateString).toLocaleDateString();
+  };
 
   if (isLoading) {
     return (
@@ -134,15 +133,13 @@ export function OrganizationList({ masterOrgId }: OrganizationListProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // Users complete their profile during signup, so no onboarding needed here
 
   return (
     <div className="space-y-4">
-
-      
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -151,9 +148,7 @@ export function OrganizationList({ masterOrgId }: OrganizationListProps) {
                 <Building2 className="h-5 w-5" />
                 Organizations
               </CardTitle>
-              <CardDescription>
-                Manage your fleet organizations and companies
-              </CardDescription>
+              <CardDescription>Manage your fleet organizations and companies</CardDescription>
             </div>
             <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -182,7 +177,9 @@ export function OrganizationList({ masterOrgId }: OrganizationListProps) {
               <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-medium">No organizations found</p>
               <p className="text-muted-foreground mb-4">
-                {searchTerm ? 'Try adjusting your search criteria' : 'Get started by adding your first organization'}
+                {searchTerm
+                  ? "Try adjusting your search criteria"
+                  : "Get started by adding your first organization"}
               </p>
               {!searchTerm && (
                 <Button onClick={() => setIsFormOpen(true)}>
@@ -227,8 +224,8 @@ export function OrganizationList({ masterOrgId }: OrganizationListProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setSelectedOrg(org)
-                            setIsFormOpen(true)
+                            setSelectedOrg(org);
+                            setIsFormOpen(true);
                           }}
                         >
                           Edit
@@ -246,17 +243,21 @@ export function OrganizationList({ masterOrgId }: OrganizationListProps) {
       <OrganizationForm
         open={isFormOpen}
         onOpenChange={(open) => {
-          setIsFormOpen(open)
-          if (!open) setSelectedOrg(null)
+          setIsFormOpen(open);
+          if (!open) setSelectedOrg(null);
         }}
         onSubmit={handleCreateOrganization}
-        initialData={selectedOrg ? {
-          name: selectedOrg.name,
-          dotNumber: selectedOrg.dotNumber || "",
-          phone: selectedOrg.phone || "",
-        } : undefined}
+        initialData={
+          selectedOrg
+            ? {
+                name: selectedOrg.name,
+                dotNumber: selectedOrg.dotNumber || "",
+                phone: selectedOrg.phone || "",
+              }
+            : undefined
+        }
         isEditing={!!selectedOrg}
       />
     </div>
-  )
-} 
+  );
+}

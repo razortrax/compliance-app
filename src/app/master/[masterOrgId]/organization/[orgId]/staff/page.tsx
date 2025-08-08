@@ -1,172 +1,173 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, Users, CheckCircle, XCircle, Trash2, Edit, Phone, Mail } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import { StaffForm } from '@/components/staff/staff-form'
-import { getUserRole, buildStandardNavigation } from '@/lib/utils'
+import React, { useState, useEffect } from "react";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus, Users, CheckCircle, XCircle, Trash2, Edit, Phone, Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { StaffForm } from "@/components/staff/staff-form";
+import { getUserRole, buildStandardNavigation } from "@/lib/utils";
 
 interface Staff {
-  id: string
-  employeeId?: string
-  position?: string
-  department?: string
-  canApproveCAFs: boolean
-  canSignCAFs: boolean
+  id: string;
+  employeeId?: string;
+  position?: string;
+  department?: string;
+  canApproveCAFs: boolean;
+  canSignCAFs: boolean;
   party: {
     person: {
-      firstName: string
-      lastName: string
-      email?: string
-      phone?: string
-    }
-  }
+      firstName: string;
+      lastName: string;
+      email?: string;
+      phone?: string;
+    };
+  };
   supervisor?: {
     party: {
       person: {
-        firstName: string
-        lastName: string
-      }
-    }
-    position?: string
-  }
-  createdAt: string
+        firstName: string;
+        lastName: string;
+      };
+    };
+    position?: string;
+  };
+  createdAt: string;
 }
 
 interface StaffPageProps {
   params: {
-    masterOrgId: string
-    orgId: string
-  }
+    masterOrgId: string;
+    orgId: string;
+  };
 }
 
 export default function StaffPage({ params }: StaffPageProps) {
-  const [staff, setStaff] = useState<Staff[]>([])
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [masterOrgName, setMasterOrgName] = useState<string>('')
-  const [currentOrgName, setCurrentOrgName] = useState<string>('')
-  const [userRole, setUserRole] = useState<string>('')
-  const { toast } = useToast()
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [masterOrgName, setMasterOrgName] = useState<string>("");
+  const [currentOrgName, setCurrentOrgName] = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("");
+  const { toast } = useToast();
 
-  const { masterOrgId, orgId } = params
+  const { masterOrgId, orgId } = params;
 
   useEffect(() => {
-    Promise.all([
-      fetchStaff(),
-      fetchMasterOrgName(),
-      fetchCurrentOrgName(),
-      fetchUserRole()
-    ])
-  }, [masterOrgId, orgId])
+    Promise.all([fetchStaff(), fetchMasterOrgName(), fetchCurrentOrgName(), fetchUserRole()]);
+  }, [masterOrgId, orgId]);
 
   const fetchStaff = async () => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/staff?organizationId=${orgId}`)
+      setLoading(true);
+      const response = await fetch(`/api/staff?organizationId=${orgId}`);
       if (response.ok) {
-        const data = await response.json()
-        setStaff(data)
+        const data = await response.json();
+        setStaff(data);
         if (data.length > 0 && !selectedStaff) {
-          setSelectedStaff(data[0])
+          setSelectedStaff(data[0]);
         }
       } else {
-        console.error('Failed to fetch staff:', response.statusText)
+        console.error("Failed to fetch staff:", response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching staff:', error)
+      console.error("Error fetching staff:", error);
       toast({
         title: "Error",
         description: "Failed to load staff members",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchMasterOrgName = async () => {
     try {
-      const response = await fetch(`/api/organizations/${masterOrgId}`)
+      const response = await fetch(`/api/organizations/${masterOrgId}`);
       if (response.ok) {
-        const data = await response.json()
-        setMasterOrgName(data.name)
+        const data = await response.json();
+        setMasterOrgName(data.name);
       }
     } catch (error) {
-      console.error('Error fetching master org:', error)
+      console.error("Error fetching master org:", error);
     }
-  }
+  };
 
   const fetchCurrentOrgName = async () => {
     try {
-      const response = await fetch(`/api/organizations/${orgId}`)
+      const response = await fetch(`/api/organizations/${orgId}`);
       if (response.ok) {
-        const data = await response.json()
-        setCurrentOrgName(data.name)
+        const data = await response.json();
+        setCurrentOrgName(data.name);
       }
     } catch (error) {
-      console.error('Error fetching current org:', error)
+      console.error("Error fetching current org:", error);
     }
-  }
+  };
 
   const fetchUserRole = async () => {
     try {
-      const role = await getUserRole()
-      setUserRole(role || '')
+      const role = await getUserRole();
+      setUserRole(role || "");
     } catch (error) {
-      console.error('Error fetching user role:', error)
+      console.error("Error fetching user role:", error);
     }
-  }
+  };
 
   const handleFormSuccess = () => {
-    fetchStaff()
-    setIsAddModalOpen(false)
-    setIsEditModalOpen(false)
+    fetchStaff();
+    setIsAddModalOpen(false);
+    setIsEditModalOpen(false);
     toast({
       title: "Success",
       description: "Staff member saved successfully",
-    })
-  }
+    });
+  };
 
   const handleDeleteStaff = async (staffId: string) => {
-    if (!confirm('Are you sure you want to delete this staff member?')) return
+    if (!confirm("Are you sure you want to delete this staff member?")) return;
 
     try {
       const response = await fetch(`/api/staff/${staffId}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
-        setStaff(prev => prev.filter(s => s.id !== staffId))
+        setStaff((prev) => prev.filter((s) => s.id !== staffId));
         if (selectedStaff?.id === staffId) {
-          const remaining = staff.filter(s => s.id !== staffId)
-          setSelectedStaff(remaining.length > 0 ? remaining[0] : null)
+          const remaining = staff.filter((s) => s.id !== staffId);
+          setSelectedStaff(remaining.length > 0 ? remaining[0] : null);
         }
         toast({
           title: "Success",
           description: "Staff member deleted successfully",
-        })
+        });
       } else {
-        throw new Error('Failed to delete staff member')
+        throw new Error("Failed to delete staff member");
       }
     } catch (error) {
-      console.error('Error deleting staff:', error)
+      console.error("Error deleting staff:", error);
       toast({
         title: "Error",
         description: "Failed to delete staff member",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const navigation = buildStandardNavigation(userRole, masterOrgId, orgId)
+  const navigation = buildStandardNavigation(userRole, masterOrgId, orgId);
 
   if (loading) {
     return (
@@ -175,7 +176,7 @@ export default function StaffPage({ params }: StaffPageProps) {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   return (
@@ -206,7 +207,7 @@ export default function StaffPage({ params }: StaffPageProps) {
               </Dialog>
             </div>
             <p className="text-sm text-gray-600">
-              {staff.length} staff member{staff.length !== 1 ? 's' : ''}
+              {staff.length} staff member{staff.length !== 1 ? "s" : ""}
             </p>
           </div>
 
@@ -239,7 +240,7 @@ export default function StaffPage({ params }: StaffPageProps) {
                 <Card
                   key={staffMember.id}
                   className={`cursor-pointer transition-colors hover:bg-gray-50 ${
-                    selectedStaff?.id === staffMember.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                    selectedStaff?.id === staffMember.id ? "ring-2 ring-blue-500 bg-blue-50" : ""
                   }`}
                   onClick={() => setSelectedStaff(staffMember)}
                 >
@@ -258,10 +259,14 @@ export default function StaffPage({ params }: StaffPageProps) {
                       </div>
                       <div className="flex flex-col gap-1">
                         {staffMember.canSignCAFs && (
-                          <Badge variant="default" className="text-xs">CAF Signer</Badge>
+                          <Badge variant="default" className="text-xs">
+                            CAF Signer
+                          </Badge>
                         )}
                         {staffMember.canApproveCAFs && (
-                          <Badge variant="secondary" className="text-xs">CAF Approver</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            CAF Approver
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -325,22 +330,24 @@ export default function StaffPage({ params }: StaffPageProps) {
                   <CardContent className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-gray-500">Employee ID</label>
-                      <p className="text-gray-900">{selectedStaff.employeeId || 'Not assigned'}</p>
+                      <p className="text-gray-900">{selectedStaff.employeeId || "Not assigned"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Position</label>
-                      <p className="text-gray-900">{selectedStaff.position || 'Not specified'}</p>
+                      <p className="text-gray-900">{selectedStaff.position || "Not specified"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Department</label>
-                      <p className="text-gray-900">{selectedStaff.department || 'Not specified'}</p>
+                      <p className="text-gray-900">{selectedStaff.department || "Not specified"}</p>
                     </div>
                     {selectedStaff.supervisor && (
                       <div>
                         <label className="text-sm font-medium text-gray-500">Supervisor</label>
                         <p className="text-gray-900">
-                          {selectedStaff.supervisor.party.person.firstName} {selectedStaff.supervisor.party.person.lastName}
-                          {selectedStaff.supervisor.position && ` (${selectedStaff.supervisor.position})`}
+                          {selectedStaff.supervisor.party.person.firstName}{" "}
+                          {selectedStaff.supervisor.party.person.lastName}
+                          {selectedStaff.supervisor.position &&
+                            ` (${selectedStaff.supervisor.position})`}
                         </p>
                       </div>
                     )}
@@ -388,7 +395,9 @@ export default function StaffPage({ params }: StaffPageProps) {
                         <div>
                           <p className="font-medium text-gray-900">Can Sign CAFs</p>
                           <p className="text-sm text-gray-500">
-                            {selectedStaff.canSignCAFs ? 'Authorized to sign corrective action forms' : 'Not authorized to sign CAFs'}
+                            {selectedStaff.canSignCAFs
+                              ? "Authorized to sign corrective action forms"
+                              : "Not authorized to sign CAFs"}
                           </p>
                         </div>
                       </div>
@@ -401,7 +410,9 @@ export default function StaffPage({ params }: StaffPageProps) {
                         <div>
                           <p className="font-medium text-gray-900">Can Approve CAFs</p>
                           <p className="text-sm text-gray-500">
-                            {selectedStaff.canApproveCAFs ? 'Authorized to approve corrective action forms' : 'Not authorized to approve CAFs'}
+                            {selectedStaff.canApproveCAFs
+                              ? "Authorized to approve corrective action forms"
+                              : "Not authorized to approve CAFs"}
                           </p>
                         </div>
                       </div>
@@ -421,5 +432,5 @@ export default function StaffPage({ params }: StaffPageProps) {
         </div>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

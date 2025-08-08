@@ -1,134 +1,148 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Loader2, X } from 'lucide-react'
-import { addYears } from 'date-fns'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, X } from "lucide-react";
+import { addYears } from "date-fns";
 
 interface AnnualInspection {
-  id: string
-  inspectorName: string
-  inspectionDate: string
-  expirationDate: string
-  result: 'Pending' | 'Pass' | 'Fail'
-  status: 'Scheduled' | 'Active' | 'Inactive'
-  notes?: string | null
+  id: string;
+  inspectorName: string;
+  inspectionDate: string;
+  expirationDate: string;
+  result: "Pending" | "Pass" | "Fail";
+  status: "Scheduled" | "Active" | "Inactive";
+  notes?: string | null;
   issue: {
-    id: string
-    title: string
-    description?: string | null
-    status: string
-    priority: string
+    id: string;
+    title: string;
+    description?: string | null;
+    status: string;
+    priority: string;
     party: {
-      id: string
+      id: string;
       equipment?: {
-        make?: string | null
-        model?: string | null
-        year?: number | null
-      } | null
+        make?: string | null;
+        model?: string | null;
+        year?: number | null;
+      } | null;
       organization?: {
-        name: string
-      } | null
-    }
-  }
+        name: string;
+      } | null;
+    };
+  };
 }
 
 interface Equipment {
-  id: string
-  make?: string | null
-  model?: string | null
-  year?: number | null
+  id: string;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
   party: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 interface AnnualInspectionFormProps {
-  annualInspection?: AnnualInspection | null
-  equipmentId?: string // Auto-assign to this equipment if provided
-  renewingInspection?: AnnualInspection | null // Inspection being renewed (triggers renewal logic)
-  onSuccess: (inspection: any) => void
-  onCancel: () => void
+  annualInspection?: AnnualInspection | null;
+  equipmentId?: string; // Auto-assign to this equipment if provided
+  renewingInspection?: AnnualInspection | null; // Inspection being renewed (triggers renewal logic)
+  onSuccess: (inspection: any) => void;
+  onCancel: () => void;
 }
 
-export function AnnualInspectionForm({ 
-  annualInspection, 
-  equipmentId, 
+export function AnnualInspectionForm({
+  annualInspection,
+  equipmentId,
   renewingInspection,
-  onSuccess, 
-  onCancel 
+  onSuccess,
+  onCancel,
 }: AnnualInspectionFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [equipment, setEquipment] = useState<Equipment | null>(null)
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [equipment, setEquipment] = useState<Equipment | null>(null);
+
   // Form state
   const [inspectorName, setInspectorName] = useState(
-    annualInspection?.inspectorName || renewingInspection?.inspectorName || ''
-  )
-  const [schedulingType, setSchedulingType] = useState<'scheduled_at_shop' | 'drop_in' | 'inspector_visits' | 'in_house_inspector'>(
-    'scheduled_at_shop'
-  )
+    annualInspection?.inspectorName || renewingInspection?.inspectorName || "",
+  );
+  const [schedulingType, setSchedulingType] = useState<
+    "scheduled_at_shop" | "drop_in" | "inspector_visits" | "in_house_inspector"
+  >("scheduled_at_shop");
   const [inspectionDate, setInspectionDate] = useState(
-    annualInspection?.inspectionDate ? new Date(annualInspection.inspectionDate).toISOString().split('T')[0] : 
-    renewingInspection ? new Date().toISOString().split('T')[0] : // For renewals, start with today
-    new Date().toISOString().split('T')[0] // Default to today for new inspections
-  )
+    annualInspection?.inspectionDate
+      ? new Date(annualInspection.inspectionDate).toISOString().split("T")[0]
+      : renewingInspection
+        ? new Date().toISOString().split("T")[0] // For renewals, start with today
+        : new Date().toISOString().split("T")[0], // Default to today for new inspections
+  );
   const [expirationDate, setExpirationDate] = useState(
-    annualInspection?.expirationDate ? new Date(annualInspection.expirationDate).toISOString().split('T')[0] : 
-    renewingInspection ? addYears(new Date(), 1).toISOString().split('T')[0] : // Pre-calculate for renewals
-    ''
-  )
-  const [result, setResult] = useState<'Pending' | 'Pass' | 'Fail'>(annualInspection?.result || 'Pending')
-  const [status, setStatus] = useState<'Scheduled' | 'Active' | 'Inactive'>(annualInspection?.status || 'Scheduled')
-  const [notes, setNotes] = useState(annualInspection?.notes || '')
+    annualInspection?.expirationDate
+      ? new Date(annualInspection.expirationDate).toISOString().split("T")[0]
+      : renewingInspection
+        ? addYears(new Date(), 1).toISOString().split("T")[0] // Pre-calculate for renewals
+        : "",
+  );
+  const [result, setResult] = useState<"Pending" | "Pass" | "Fail">(
+    annualInspection?.result || "Pending",
+  );
+  const [status, setStatus] = useState<"Scheduled" | "Active" | "Inactive">(
+    annualInspection?.status || "Scheduled",
+  );
+  const [notes, setNotes] = useState(annualInspection?.notes || "");
 
   // Auto-calculate expiration date (1 year after inspection date)
   useEffect(() => {
     if (inspectionDate) {
-      const inspection = new Date(inspectionDate)
-      const expiration = addYears(inspection, 1)
-      setExpirationDate(expiration.toISOString().split('T')[0])
+      const inspection = new Date(inspectionDate);
+      const expiration = addYears(inspection, 1);
+      setExpirationDate(expiration.toISOString().split("T")[0]);
     }
-  }, [inspectionDate])
+  }, [inspectionDate]);
 
   // Load equipment if equipmentId provided
   useEffect(() => {
     if (equipmentId) {
       const fetchEquipment = async () => {
         try {
-          const response = await fetch(`/api/equipment/${equipmentId}`)
+          const response = await fetch(`/api/equipment/${equipmentId}`);
           if (response.ok) {
-            const data = await response.json()
-            setEquipment(data)
+            const data = await response.json();
+            setEquipment(data);
           }
         } catch (error) {
-          console.error('Error fetching equipment:', error)
+          console.error("Error fetching equipment:", error);
         }
-      }
-      fetchEquipment()
+      };
+      fetchEquipment();
     }
-  }, [equipmentId])
+  }, [equipmentId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!inspectorName || !inspectionDate || !expirationDate) {
-      alert('Please fill in all required fields')
-      return
+      alert("Please fill in all required fields");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const partyId = equipment?.party.id || annualInspection?.issue.party.id
+      const partyId = equipment?.party.id || annualInspection?.issue.party.id;
       if (!partyId) {
-        throw new Error('No equipment party ID found')
+        throw new Error("No equipment party ID found");
       }
 
       const inspectionData = {
@@ -139,60 +153,63 @@ export function AnnualInspectionForm({
         status,
         notes: notes.trim() || null,
         partyId,
-        title: `Annual Inspection: ${equipment?.make || 'Equipment'} ${equipment?.model || ''} - ${result}`,
-        description: `Annual inspection for ${equipment?.make || 'Equipment'} ${equipment?.model || ''} ${equipment?.year || ''} by ${inspectorName}`.trim(),
-        priority: result === 'Fail' ? 'high' : 'medium'
-      }
+        title: `Annual Inspection: ${equipment?.make || "Equipment"} ${equipment?.model || ""} - ${result}`,
+        description:
+          `Annual inspection for ${equipment?.make || "Equipment"} ${equipment?.model || ""} ${equipment?.year || ""} by ${inspectorName}`.trim(),
+        priority: result === "Fail" ? "high" : "medium",
+      };
 
-      const url = annualInspection ? `/api/annual-inspections/${annualInspection.id}` : '/api/annual-inspections'
-      const method = annualInspection ? 'PUT' : 'POST'
+      const url = annualInspection
+        ? `/api/annual-inspections/${annualInspection.id}`
+        : "/api/annual-inspections";
+      const method = annualInspection ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inspectionData)
-      })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inspectionData),
+      });
 
       if (response.ok) {
-        const result = await response.json()
-        
+        const result = await response.json();
+
         // If this is a renewal, update the old inspection status
         if (renewingInspection) {
           await fetch(`/api/annual-inspections/${renewingInspection.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...renewingInspection,
-              status: 'Inactive' // Mark old inspection as inactive
-            })
-          })
+              status: "Inactive", // Mark old inspection as inactive
+            }),
+          });
         }
-        
-        onSuccess(result)
+
+        onSuccess(result);
       } else {
-        const error = await response.json()
-        console.error('Annual inspection save error:', error)
-        alert(`Error: ${error.error || 'Failed to save annual inspection'}`)
+        const error = await response.json();
+        console.error("Annual inspection save error:", error);
+        alert(`Error: ${error.error || "Failed to save annual inspection"}`);
       }
     } catch (error) {
-      console.error('Error submitting annual inspection:', error)
-      alert('An error occurred while saving. Please try again.')
+      console.error("Error submitting annual inspection:", error);
+      alert("An error occurred while saving. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const getFormTitle = () => {
-    if (renewingInspection) return 'Renew Annual Inspection'
-    if (annualInspection) return 'Edit Annual Inspection'
-    return 'Add New Annual Inspection'
-  }
+    if (renewingInspection) return "Renew Annual Inspection";
+    if (annualInspection) return "Edit Annual Inspection";
+    return "Add New Annual Inspection";
+  };
 
   const getFormDescription = () => {
-    if (renewingInspection) return 'Create a new annual inspection for continued compliance'
-    if (annualInspection) return 'Update annual inspection information'
-    return 'Record annual equipment inspection results'
-  }
+    if (renewingInspection) return "Create a new annual inspection for continued compliance";
+    if (annualInspection) return "Update annual inspection information";
+    return "Record annual equipment inspection results";
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -200,7 +217,11 @@ export function AnnualInspectionForm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {getFormTitle()}
-            {renewingInspection && <Badge variant="outline" className="bg-blue-50">Renewal</Badge>}
+            {renewingInspection && (
+              <Badge variant="outline" className="bg-blue-50">
+                Renewal
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>{getFormDescription()}</CardDescription>
         </CardHeader>
@@ -216,13 +237,21 @@ export function AnnualInspectionForm({
               placeholder="Inspector name (full selection coming soon)"
               required
             />
-            <p className="text-xs text-gray-500">Full inspector selection will be available once the Org {'>'}  Others tab is implemented</p>
+            <p className="text-xs text-gray-500">
+              Full inspector selection will be available once the Org {">"} Others tab is
+              implemented
+            </p>
           </div>
 
           {/* Scheduling Type */}
           <div className="space-y-2">
             <Label htmlFor="schedulingType">Scheduling Type</Label>
-            <Select value={schedulingType} onValueChange={(value: 'scheduled_at_shop' | 'drop_in' | 'inspector_visits' | 'in_house_inspector') => setSchedulingType(value)}>
+            <Select
+              value={schedulingType}
+              onValueChange={(
+                value: "scheduled_at_shop" | "drop_in" | "inspector_visits" | "in_house_inspector",
+              ) => setSchedulingType(value)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -234,10 +263,11 @@ export function AnnualInspectionForm({
               </SelectContent>
             </Select>
             <p className="text-xs text-gray-500">
-              {schedulingType === 'scheduled_at_shop' && 'Requires specific appointment time'}
-              {schedulingType === 'drop_in' && 'No appointment needed, flexible timing'}
-              {schedulingType === 'inspector_visits' && 'Inspector comes to your location'}
-              {schedulingType === 'in_house_inspector' && 'Company has certified inspector on staff'}
+              {schedulingType === "scheduled_at_shop" && "Requires specific appointment time"}
+              {schedulingType === "drop_in" && "No appointment needed, flexible timing"}
+              {schedulingType === "inspector_visits" && "Inspector comes to your location"}
+              {schedulingType === "in_house_inspector" &&
+                "Company has certified inspector on staff"}
             </p>
           </div>
 
@@ -274,7 +304,11 @@ export function AnnualInspectionForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="result">Inspection Result *</Label>
-              <Select value={result} onValueChange={(value: 'Pending' | 'Pass' | 'Fail') => setResult(value)} required>
+              <Select
+                value={result}
+                onValueChange={(value: "Pending" | "Pass" | "Fail") => setResult(value)}
+                required
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -284,20 +318,27 @@ export function AnnualInspectionForm({
                   <SelectItem value="Fail">Fail</SelectItem>
                 </SelectContent>
               </Select>
-              {result === 'Pending' && (
+              {result === "Pending" && (
                 <p className="text-xs text-blue-600">Inspection scheduled but not yet performed</p>
               )}
-              {result === 'Fail' && (
-                <p className="text-xs text-orange-600">Failed inspection: equipment remains compliant until current inspection expires</p>
+              {result === "Fail" && (
+                <p className="text-xs text-orange-600">
+                  Failed inspection: equipment remains compliant until current inspection expires
+                </p>
               )}
-              {result === 'Pass' && (
-                <p className="text-xs text-green-600">Inspection passed: equipment compliant for one year</p>
+              {result === "Pass" && (
+                <p className="text-xs text-green-600">
+                  Inspection passed: equipment compliant for one year
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={(value: 'Scheduled' | 'Active' | 'Inactive') => setStatus(value)}>
+              <Select
+                value={status}
+                onValueChange={(value: "Scheduled" | "Active" | "Inactive") => setStatus(value)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -334,15 +375,23 @@ export function AnnualInspectionForm({
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {renewingInspection ? 'Renewing...' : annualInspection ? 'Updating...' : 'Creating...'}
+              {renewingInspection
+                ? "Renewing..."
+                : annualInspection
+                  ? "Updating..."
+                  : "Creating..."}
             </>
           ) : (
             <>
-              {renewingInspection ? 'Renew Inspection' : annualInspection ? 'Update Inspection' : 'Create Inspection'}
+              {renewingInspection
+                ? "Renew Inspection"
+                : annualInspection
+                  ? "Update Inspection"
+                  : "Create Inspection"}
             </>
           )}
         </Button>
       </div>
     </form>
-  )
-} 
+  );
+}

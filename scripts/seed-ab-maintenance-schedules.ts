@@ -1,36 +1,36 @@
-import { db } from '@/db'
+import { db } from "@/db";
 
 /**
  * Comprehensive A&B Maintenance Schedule Seeding
  * Based on industry standards for commercial vehicles
- * 
+ *
  * A Schedule: Frequent, basic maintenance (every 90-120 days or 25,000-30,000 miles)
  * B Schedule: Comprehensive maintenance (every 180-365 days or 50,000-100,000 miles)
  */
 
 interface ABScheduleItem {
-  equipmentCategory: string
-  scheduleType: string
-  itemCode: string
-  itemDescription: string
-  intervalDays?: number
-  intervalMiles?: number
-  intervalType: string
-  category: string
-  component: string
-  taskType: string
-  estimatedHours?: number
-  estimatedCost?: number
-  dotRequired: boolean
-  priority: string
-  safetyRelated: boolean
-  sortOrder: number
+  equipmentCategory: string;
+  scheduleType: string;
+  itemCode: string;
+  itemDescription: string;
+  intervalDays?: number;
+  intervalMiles?: number;
+  intervalType: string;
+  category: string;
+  component: string;
+  taskType: string;
+  estimatedHours?: number;
+  estimatedCost?: number;
+  dotRequired: boolean;
+  priority: string;
+  safetyRelated: boolean;
+  sortOrder: number;
 }
 
 // POWER UNIT A&B MAINTENANCE SCHEDULE
 const powerUnitSchedule: ABScheduleItem[] = [
   // === A SCHEDULE (Every 90 days or 25,000 miles) ===
-  
+
   // Engine & Fluids
   {
     equipmentCategory: "POWER",
@@ -44,11 +44,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Oil Filter",
     taskType: "REPLACE",
     estimatedHours: 1.0,
-    estimatedCost: 150.00,
+    estimatedCost: 150.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     equipmentCategory: "POWER",
@@ -62,11 +62,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Fuel Filter",
     taskType: "REPLACE",
     estimatedHours: 0.5,
-    estimatedCost: 75.00,
+    estimatedCost: 75.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 2
+    sortOrder: 2,
   },
   {
     equipmentCategory: "POWER",
@@ -80,13 +80,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Air Filter",
     taskType: "INSPECT",
     estimatedHours: 0.3,
-    estimatedCost: 25.00,
+    estimatedCost: 25.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 3
+    sortOrder: 3,
   },
-  
+
   // Cooling System
   {
     equipmentCategory: "POWER",
@@ -100,13 +100,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Coolant",
     taskType: "INSPECT",
     estimatedHours: 0.2,
-    estimatedCost: 20.00,
+    estimatedCost: 20.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 4
+    sortOrder: 4,
   },
-  
+
   // Brake System
   {
     equipmentCategory: "POWER",
@@ -120,11 +120,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Brake Shoes",
     taskType: "INSPECT",
     estimatedHours: 1.5,
-    estimatedCost: 100.00,
+    estimatedCost: 100.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 5
+    sortOrder: 5,
   },
   {
     equipmentCategory: "POWER",
@@ -138,13 +138,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Air System",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 75.00,
+    estimatedCost: 75.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 6
+    sortOrder: 6,
   },
-  
+
   // Steering & Suspension
   {
     equipmentCategory: "POWER",
@@ -158,11 +158,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Steering Linkage",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 60.00,
+    estimatedCost: 60.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 7
+    sortOrder: 7,
   },
   {
     equipmentCategory: "POWER",
@@ -176,13 +176,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Springs/Shocks",
     taskType: "INSPECT",
     estimatedHours: 1.5,
-    estimatedCost: 80.00,
+    estimatedCost: 80.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 8
+    sortOrder: 8,
   },
-  
+
   // Tires & Wheels
   {
     equipmentCategory: "POWER",
@@ -196,11 +196,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Tires",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 25.00,
+    estimatedCost: 25.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 9
+    sortOrder: 9,
   },
   {
     equipmentCategory: "POWER",
@@ -214,13 +214,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Wheel Fasteners",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 50.00,
+    estimatedCost: 50.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 10
+    sortOrder: 10,
   },
-  
+
   // Lighting & Electrical
   {
     equipmentCategory: "POWER",
@@ -234,15 +234,15 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Lights",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 30.00,
+    estimatedCost: 30.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 11
+    sortOrder: 11,
   },
-  
+
   // === B SCHEDULE (Every 180 days or 50,000 miles) ===
-  
+
   // Transmission & Drivetrain
   {
     equipmentCategory: "POWER",
@@ -256,11 +256,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Transmission Filter",
     taskType: "REPLACE",
     estimatedHours: 2.5,
-    estimatedCost: 350.00,
+    estimatedCost: 350.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 20
+    sortOrder: 20,
   },
   {
     equipmentCategory: "POWER",
@@ -274,13 +274,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Differential",
     taskType: "SERVICE",
     estimatedHours: 1.5,
-    estimatedCost: 200.00,
+    estimatedCost: 200.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 21
+    sortOrder: 21,
   },
-  
+
   // Engine - Comprehensive
   {
     equipmentCategory: "POWER",
@@ -294,11 +294,11 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Turbocharger",
     taskType: "INSPECT",
     estimatedHours: 2.0,
-    estimatedCost: 150.00,
+    estimatedCost: 150.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 22
+    sortOrder: 22,
   },
   {
     equipmentCategory: "POWER",
@@ -312,13 +312,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "EGR Valve",
     taskType: "SERVICE",
     estimatedHours: 1.5,
-    estimatedCost: 250.00,
+    estimatedCost: 250.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 23
+    sortOrder: 23,
   },
-  
+
   // Cooling System - Comprehensive
   {
     equipmentCategory: "POWER",
@@ -332,13 +332,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Radiator",
     taskType: "SERVICE",
     estimatedHours: 2.0,
-    estimatedCost: 300.00,
+    estimatedCost: 300.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 24
+    sortOrder: 24,
   },
-  
+
   // Electrical - Comprehensive
   {
     equipmentCategory: "POWER",
@@ -352,13 +352,13 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Battery",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 75.00,
+    estimatedCost: 75.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 25
+    sortOrder: 25,
   },
-  
+
   // Fifth Wheel & Coupling
   {
     equipmentCategory: "POWER",
@@ -372,18 +372,18 @@ const powerUnitSchedule: ABScheduleItem[] = [
     component: "Fifth Wheel",
     taskType: "LUBRICATE",
     estimatedHours: 1.0,
-    estimatedCost: 80.00,
+    estimatedCost: 80.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 26
-  }
-]
+    sortOrder: 26,
+  },
+];
 
 // TRAILER A&B MAINTENANCE SCHEDULE
 const trailerSchedule: ABScheduleItem[] = [
   // === A SCHEDULE (Every 90 days or 25,000 miles) ===
-  
+
   // Brake System
   {
     equipmentCategory: "TRAILER",
@@ -397,11 +397,11 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Brake Shoes",
     taskType: "INSPECT",
     estimatedHours: 1.5,
-    estimatedCost: 100.00,
+    estimatedCost: 100.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     equipmentCategory: "TRAILER",
@@ -415,13 +415,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Air Lines",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 40.00,
+    estimatedCost: 40.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 2
+    sortOrder: 2,
   },
-  
+
   // Tires & Wheels
   {
     equipmentCategory: "TRAILER",
@@ -435,11 +435,11 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Tires",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 25.00,
+    estimatedCost: 25.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 3
+    sortOrder: 3,
   },
   {
     equipmentCategory: "TRAILER",
@@ -453,13 +453,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Wheel Fasteners",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 50.00,
+    estimatedCost: 50.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 4
+    sortOrder: 4,
   },
-  
+
   // Suspension & Frame
   {
     equipmentCategory: "TRAILER",
@@ -473,11 +473,11 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Springs/Airbags",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 60.00,
+    estimatedCost: 60.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 5
+    sortOrder: 5,
   },
   {
     equipmentCategory: "TRAILER",
@@ -491,13 +491,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Frame Rails",
     taskType: "INSPECT",
     estimatedHours: 1.5,
-    estimatedCost: 75.00,
+    estimatedCost: 75.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 6
+    sortOrder: 6,
   },
-  
+
   // Lighting & Electrical
   {
     equipmentCategory: "TRAILER",
@@ -511,11 +511,11 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Lights",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 30.00,
+    estimatedCost: 30.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 7
+    sortOrder: 7,
   },
   {
     equipmentCategory: "TRAILER",
@@ -529,13 +529,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Wiring",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 25.00,
+    estimatedCost: 25.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 8
+    sortOrder: 8,
   },
-  
+
   // Coupling & Kingpin
   {
     equipmentCategory: "TRAILER",
@@ -549,13 +549,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Kingpin",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 40.00,
+    estimatedCost: 40.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 9
+    sortOrder: 9,
   },
-  
+
   // Landing Gear
   {
     equipmentCategory: "TRAILER",
@@ -569,15 +569,15 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Landing Gear",
     taskType: "INSPECT",
     estimatedHours: 0.5,
-    estimatedCost: 35.00,
+    estimatedCost: 35.0,
     dotRequired: true,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 10
+    sortOrder: 10,
   },
-  
+
   // === B SCHEDULE (Every 180 days or 50,000 miles) ===
-  
+
   // Brake System - Comprehensive
   {
     equipmentCategory: "TRAILER",
@@ -591,13 +591,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Brake Adjusters",
     taskType: "SERVICE",
     estimatedHours: 2.0,
-    estimatedCost: 150.00,
+    estimatedCost: 150.0,
     dotRequired: true,
     priority: "HIGH",
     safetyRelated: true,
-    sortOrder: 20
+    sortOrder: 20,
   },
-  
+
   // Suspension - Comprehensive
   {
     equipmentCategory: "TRAILER",
@@ -611,13 +611,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Air Bags",
     taskType: "SERVICE",
     estimatedHours: 1.5,
-    estimatedCost: 200.00,
+    estimatedCost: 200.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: true,
-    sortOrder: 21
+    sortOrder: 21,
   },
-  
+
   // Landing Gear - Comprehensive
   {
     equipmentCategory: "TRAILER",
@@ -631,13 +631,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Landing Gear Gears",
     taskType: "LUBRICATE",
     estimatedHours: 1.0,
-    estimatedCost: 75.00,
+    estimatedCost: 75.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 22
+    sortOrder: 22,
   },
-  
+
   // Doors & Cargo Handling
   {
     equipmentCategory: "TRAILER",
@@ -651,13 +651,13 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Door Hinges",
     taskType: "LUBRICATE",
     estimatedHours: 0.5,
-    estimatedCost: 40.00,
+    estimatedCost: 40.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 23
+    sortOrder: 23,
   },
-  
+
   // Floor & Cargo Area
   {
     equipmentCategory: "TRAILER",
@@ -671,33 +671,33 @@ const trailerSchedule: ABScheduleItem[] = [
     component: "Floor",
     taskType: "INSPECT",
     estimatedHours: 1.0,
-    estimatedCost: 50.00,
+    estimatedCost: 50.0,
     dotRequired: false,
     priority: "ROUTINE",
     safetyRelated: false,
-    sortOrder: 24
-  }
-]
+    sortOrder: 24,
+  },
+];
 
 async function seedABSchedules() {
-  console.log('🔧 Starting A&B Maintenance Schedule seeding...')
-  
+  console.log("🔧 Starting A&B Maintenance Schedule seeding...");
+
   try {
     // Combine both schedules
-    const allScheduleItems = [...powerUnitSchedule, ...trailerSchedule]
-    
-    console.log(`📋 Seeding ${allScheduleItems.length} A&B schedule items...`)
-    console.log(`   - Power Unit items: ${powerUnitSchedule.length}`)
-    console.log(`   - Trailer items: ${trailerSchedule.length}`)
-    
+    const allScheduleItems = [...powerUnitSchedule, ...trailerSchedule];
+
+    console.log(`📋 Seeding ${allScheduleItems.length} A&B schedule items...`);
+    console.log(`   - Power Unit items: ${powerUnitSchedule.length}`);
+    console.log(`   - Trailer items: ${trailerSchedule.length}`);
+
     // Clear existing default schedule items
     await db.equipment_ab_schedule.deleteMany({
       where: {
         isDefault: true,
-        organizationId: null // Only delete system defaults
-      }
-    })
-    
+        organizationId: null, // Only delete system defaults
+      },
+    });
+
     // Insert new schedule items
     for (const item of allScheduleItems) {
       await db.equipment_ab_schedule.create({
@@ -720,24 +720,27 @@ async function seedABSchedules() {
           safetyRelated: item.safetyRelated,
           sortOrder: item.sortOrder,
           isActive: true,
-          isDefault: true
-        }
-      })
+          isDefault: true,
+        },
+      });
     }
-    
-    console.log('✅ A&B Maintenance Schedule seeding completed successfully!')
-    console.log('')
-    console.log('📊 Summary:')
-    console.log('   Power Unit A Schedule: Engine, brakes, tires, steering (90 days/25K miles)')
-    console.log('   Power Unit B Schedule: Transmission, differential, comprehensive (180 days/50K miles)')
-    console.log('   Trailer A Schedule: Brakes, tires, suspension, lighting (90 days/25K miles)')
-    console.log('   Trailer B Schedule: Comprehensive brake/suspension service (180 days/50K miles)')
-    console.log('')
-    console.log('🔄 Organizations can now customize these schedules in their preferences.')
-    
+
+    console.log("✅ A&B Maintenance Schedule seeding completed successfully!");
+    console.log("");
+    console.log("📊 Summary:");
+    console.log("   Power Unit A Schedule: Engine, brakes, tires, steering (90 days/25K miles)");
+    console.log(
+      "   Power Unit B Schedule: Transmission, differential, comprehensive (180 days/50K miles)",
+    );
+    console.log("   Trailer A Schedule: Brakes, tires, suspension, lighting (90 days/25K miles)");
+    console.log(
+      "   Trailer B Schedule: Comprehensive brake/suspension service (180 days/50K miles)",
+    );
+    console.log("");
+    console.log("🔄 Organizations can now customize these schedules in their preferences.");
   } catch (error) {
-    console.error('❌ Error seeding A&B schedules:', error)
-    throw error
+    console.error("❌ Error seeding A&B schedules:", error);
+    throw error;
   }
 }
 
@@ -746,9 +749,9 @@ if (require.main === module) {
   seedABSchedules()
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error(error)
-      process.exit(1)
-    })
+      console.error(error);
+      process.exit(1);
+    });
 }
 
-export { seedABSchedules } 
+export { seedABSchedules };

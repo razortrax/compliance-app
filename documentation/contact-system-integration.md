@@ -1,6 +1,6 @@
 # Contact System Integration Guide
 
-*Created: January 24, 2025*
+_Created: January 24, 2025_
 
 ## Overview
 
@@ -9,6 +9,7 @@ This document shows how the contact system integrates with our existing Party mo
 ## Current Schema Integration
 
 ### Adding Contact Tables to Existing Schema
+
 ```prisma
 // Add to existing prisma/schema.prisma
 
@@ -16,23 +17,23 @@ model contact {
   id          String    @id @default(cuid())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   // Contact Information
   type        String    // phone, email, address, social
   subtype     String    // mobile, work, personal, home, billing, etc.
   value       String    // The actual contact value
   label       String?   // Custom display label
-  
+
   // Metadata
   priority    String    @default("secondary") // primary, secondary, emergency
   isActive    Boolean   @default(true)
   isVerified  Boolean   @default(false)
   verifiedAt  DateTime?
-  
+
   // Linking Strategy - EITHER party OR role, not both
   partyId     String?   // Personal contact
   roleId      String?   // Work contact
-  
+
   // Relationships
   party           party?           @relation(fields: [partyId], references: [id], onDelete: Cascade)
   role            role?            @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -95,6 +96,7 @@ model social_contact {
 ```
 
 ### Updates to Existing Models
+
 ```prisma
 // Update existing models to include contact relationships
 
@@ -135,6 +137,7 @@ model role {
 ## Migration Strategy
 
 ### Step 1: Add Contact Tables
+
 ```sql
 -- Create contact tables
 CREATE TABLE contact (
@@ -172,32 +175,34 @@ CREATE TABLE phone_contact (
 ```
 
 ### Step 2: Migrate Existing Contact Data
+
 ```sql
 -- Migrate existing person phone/email to contact system
 INSERT INTO contact (type, subtype, value, label, priority, party_id)
-SELECT 
+SELECT
   'phone',
   'mobile',
   phone,
   'Personal Phone',
   'primary',
   party_id
-FROM person 
+FROM person
 WHERE phone IS NOT NULL;
 
 INSERT INTO contact (type, subtype, value, label, priority, party_id)
-SELECT 
+SELECT
   'email',
   'personal',
   email,
   'Personal Email',
   'primary',
   party_id
-FROM person 
+FROM person
 WHERE email IS NOT NULL;
 ```
 
 ### Step 3: Remove Old Contact Fields
+
 ```sql
 -- After migration, remove old contact fields from person table
 ALTER TABLE person DROP COLUMN phone;
@@ -211,168 +216,172 @@ ALTER TABLE person DROP COLUMN zip_code;
 ## Example Data Scenarios
 
 ### Personal Driver with Multiple Contacts
+
 ```typescript
 // John Driver's contacts after migration
 const johnContacts = [
   // Personal contacts (linked to party)
   {
-    type: 'phone',
-    subtype: 'mobile',
-    value: '555-123-4567',
-    label: 'Personal Mobile',
-    priority: 'primary',
-    partyId: 'john_party_123',
-    roleId: null
+    type: "phone",
+    subtype: "mobile",
+    value: "555-123-4567",
+    label: "Personal Mobile",
+    priority: "primary",
+    partyId: "john_party_123",
+    roleId: null,
   },
   {
-    type: 'email', 
-    subtype: 'personal',
-    value: 'john.personal@gmail.com',
-    label: 'Personal Email',
-    priority: 'primary',
-    partyId: 'john_party_123',
-    roleId: null
+    type: "email",
+    subtype: "personal",
+    value: "john.personal@gmail.com",
+    label: "Personal Email",
+    priority: "primary",
+    partyId: "john_party_123",
+    roleId: null,
   },
   {
-    type: 'address',
-    subtype: 'home',
-    value: '123 Main St, Hometown, TX 12345',
-    label: 'Home Address',
-    priority: 'primary',
-    partyId: 'john_party_123',
-    roleId: null
+    type: "address",
+    subtype: "home",
+    value: "123 Main St, Hometown, TX 12345",
+    label: "Home Address",
+    priority: "primary",
+    partyId: "john_party_123",
+    roleId: null,
   },
-  
+
   // Work contacts (linked to driver role at ABC Trucking)
   {
-    type: 'phone',
-    subtype: 'work',
-    value: '555-987-6543',
-    label: 'Company Phone',
-    priority: 'secondary',
+    type: "phone",
+    subtype: "work",
+    value: "555-987-6543",
+    label: "Company Phone",
+    priority: "secondary",
     partyId: null,
-    roleId: 'john_abc_driver_role_456'
+    roleId: "john_abc_driver_role_456",
   },
   {
-    type: 'email',
-    subtype: 'work', 
-    value: 'john.driver@abctrucking.com',
-    label: 'Work Email',
-    priority: 'secondary',
+    type: "email",
+    subtype: "work",
+    value: "john.driver@abctrucking.com",
+    label: "Work Email",
+    priority: "secondary",
     partyId: null,
-    roleId: 'john_abc_driver_role_456'
+    roleId: "john_abc_driver_role_456",
   },
-  
+
   // Emergency contact (personal)
   {
-    type: 'phone',
-    subtype: 'emergency',
-    value: '555-111-2222',
-    label: 'Emergency Contact',
-    priority: 'emergency',
-    partyId: 'john_party_123',
-    roleId: null
-  }
-]
+    type: "phone",
+    subtype: "emergency",
+    value: "555-111-2222",
+    label: "Emergency Contact",
+    priority: "emergency",
+    partyId: "john_party_123",
+    roleId: null,
+  },
+];
 ```
 
 ### Organization Contacts
+
 ```typescript
 // ABC Trucking organization contacts
 const abcTruckingContacts = [
   {
-    type: 'phone',
-    subtype: 'main',
-    value: '555-TRUCKING',
-    label: 'Main Office',
-    priority: 'primary',
-    partyId: 'abc_trucking_party_789',
-    roleId: null
+    type: "phone",
+    subtype: "main",
+    value: "555-TRUCKING",
+    label: "Main Office",
+    priority: "primary",
+    partyId: "abc_trucking_party_789",
+    roleId: null,
   },
   {
-    type: 'email',
-    subtype: 'general',
-    value: 'info@abctrucking.com',
-    label: 'General Inquiries',
-    priority: 'primary',
-    partyId: 'abc_trucking_party_789',
-    roleId: null
+    type: "email",
+    subtype: "general",
+    value: "info@abctrucking.com",
+    label: "General Inquiries",
+    priority: "primary",
+    partyId: "abc_trucking_party_789",
+    roleId: null,
   },
   {
-    type: 'address',
-    subtype: 'headquarters',
-    value: '456 Corporate Blvd, Business City, TX 54321',
-    label: 'Corporate Headquarters',
-    priority: 'primary',
-    partyId: 'abc_trucking_party_789',
-    roleId: null
-  }
-]
+    type: "address",
+    subtype: "headquarters",
+    value: "456 Corporate Blvd, Business City, TX 54321",
+    label: "Corporate Headquarters",
+    priority: "primary",
+    partyId: "abc_trucking_party_789",
+    roleId: null,
+  },
+];
 ```
 
 ## API Implementation
 
 ### Contact API Endpoints
+
 ```typescript
 // GET /api/parties/[partyId]/contacts - Unified contact list
 export async function GET(request: Request, { params }: { params: { partyId: string } }) {
-  const contacts = await getPersonContacts(params.partyId)
-  return Response.json(contacts)
+  const contacts = await getPersonContacts(params.partyId);
+  return Response.json(contacts);
 }
 
 // POST /api/contacts - Create new contact
 export async function POST(request: Request) {
-  const body = await request.json()
-  
+  const body = await request.json();
+
   // Validate that exactly one of partyId or roleId is provided
   if ((!body.partyId && !body.roleId) || (body.partyId && body.roleId)) {
-    return Response.json({ error: 'Must provide exactly one of partyId or roleId' }, { status: 400 })
+    return Response.json(
+      { error: "Must provide exactly one of partyId or roleId" },
+      { status: 400 },
+    );
   }
-  
-  const contact = await createContact(body)
-  return Response.json(contact, { status: 201 })
+
+  const contact = await createContact(body);
+  return Response.json(contact, { status: 201 });
 }
 ```
 
 ### Contact Query Functions
+
 ```typescript
 async function getPersonContacts(personPartyId: string) {
   return await db.contact.findMany({
     where: {
       OR: [
         { partyId: personPartyId }, // Personal contacts
-        { 
-          role: { 
+        {
+          role: {
             partyId: personPartyId,
-            isActive: true 
-          } 
-        } // Work contacts via active roles
-      ]
+            isActive: true,
+          },
+        }, // Work contacts via active roles
+      ],
     },
     include: {
       party: true,
       role: {
         include: {
-          organization: { select: { name: true } }
-        }
+          organization: { select: { name: true } },
+        },
       },
       phone_contact: true,
       email_contact: true,
       address_contact: true,
-      social_contact: true
+      social_contact: true,
     },
-    orderBy: [
-      { priority: 'asc' },
-      { type: 'asc' },
-      { createdAt: 'asc' }
-    ]
-  })
+    orderBy: [{ priority: "asc" }, { type: "asc" }, { createdAt: "asc" }],
+  });
 }
 ```
 
 ## UI Components Integration
 
 ### Driver Page with Contacts Tab
+
 ```typescript
 // Add to existing driver page tabs
 <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -382,9 +391,9 @@ async function getPersonContacts(personPartyId: string) {
     <TabsTrigger value="licenses">Licenses</TabsTrigger>
     <TabsTrigger value="incidents">Incidents</TabsTrigger>
   </TabsList>
-  
+
   <TabsContent value="contacts">
-    <ContactList 
+    <ContactList
       partyId={driver.partyId}
       allowEdit={true}
       showAddButton={true}
@@ -394,13 +403,14 @@ async function getPersonContacts(personPartyId: string) {
 ```
 
 ### Contact Display in Driver Card
+
 ```typescript
 // Enhanced driver card with primary contacts
 function DriverCard({ driver }: { driver: Driver }) {
   const contacts = usePersonContacts(driver.partyId)
   const primaryPhone = contacts.find(c => c.type === 'phone' && c.priority === 'primary')
   const primaryEmail = contacts.find(c => c.type === 'email' && c.priority === 'primary')
-  
+
   return (
     <Card>
       <CardHeader>
@@ -438,30 +448,34 @@ function DriverCard({ driver }: { driver: Driver }) {
 ✅ **Clear Separation**: Personal vs work contacts with visual distinction  
 ✅ **Flexible Display**: Unified view with contextual tags  
 ✅ **Role Management**: Work contacts automatically managed with role changes  
-✅ **Audit Trail**: Complete history of contact changes  
+✅ **Audit Trail**: Complete history of contact changes
 
 ## Implementation Timeline
 
 ### Week 1: Database Schema
+
 - Add contact tables to schema
 - Create migration scripts
 - Test migration with sample data
 
-### Week 2: API Development  
+### Week 2: API Development
+
 - Implement contact CRUD endpoints
 - Add contact queries to existing entity APIs
 - Test API functionality
 
 ### Week 3: UI Components
+
 - Create ContactList and ContactForm components
 - Add contact tabs to driver/organization pages
 - Implement contact display in cards
 
 ### Week 4: Migration & Testing
+
 - Migrate existing contact data
 - Remove old contact fields
 - Comprehensive testing of new system
 
 ---
 
-**This integration provides a solid foundation for comprehensive contact management while preserving all existing functionality.** 
+**This integration provides a solid foundation for comprehensive contact management while preserving all existing functionality.**

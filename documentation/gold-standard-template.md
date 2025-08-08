@@ -3,11 +3,12 @@
 ## 🚨 **CRITICAL: EXACT LAYOUT STRUCTURE REQUIRED**
 
 ### **📐 Main Layout Pattern (MANDATORY)**
+
 ```typescript
 <AppLayout {...requiredProps}>
   <div className="max-w-7xl mx-auto h-full">           {/* ⚠️ CRITICAL: Max width container */}
     <div className="space-y-6">                        {/* ⚠️ CRITICAL: Vertical spacing */}
-      
+
       {/* Header Section - EXACT STRUCTURE */}
       <div className="flex justify-between items-start">
         <div>
@@ -19,7 +20,7 @@
             Description for {driver.firstName} {driver.lastName}
           </p>
         </div>
-        
+
         {/* Button Group - RIGHT ALIGNED */}
         <div className="flex items-center gap-3">
           {/* Conditional action buttons */}
@@ -32,7 +33,7 @@
 
       {/* Split Pane Layout - EXACT STRUCTURE */}
       <div className="flex gap-6 h-[calc(100vh-200px)]">  {/* ⚠️ CRITICAL: Fixed flexbox */}
-        
+
         {/* Left Pane - EXACT STRUCTURE */}
         <div className="w-[300px] flex-shrink-0">          {/* ⚠️ CRITICAL: Fixed width */}
           <Card className="h-full">                        {/* ⚠️ CRITICAL: Full height */}
@@ -71,101 +72,106 @@
 ## 📋 **MANDATORY IMPLEMENTATION CHECKLIST**
 
 ### **🔍 Step 1: State Management (Copy from Training exactly)**
+
 ```typescript
-const [data, setData] = useState<ContextData | null>(null)
-const [loading, setLoading] = useState(true)
-const [error, setError] = useState<string | null>(null)
-const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null)
-const [organizations, setOrganizations] = useState<any[]>([])        // ⚠️ CRITICAL
-const [isSheetOpen, setIsSheetOpen] = useState(false)               // ⚠️ CRITICAL
-const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false)
-const [isSubmitting, setIsSubmitting] = useState(false)
+const [data, setData] = useState<ContextData | null>(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
+const [organizations, setOrganizations] = useState<any[]>([]); // ⚠️ CRITICAL
+const [isSheetOpen, setIsSheetOpen] = useState(false); // ⚠️ CRITICAL
+const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
 ```
 
 ### **🔍 Step 2: Data Fetching (Copy useEffect patterns exactly)**
+
 ```typescript
 // Main data fetch - EXACT ERROR HANDLING
 useEffect(() => {
   const fetchData = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await fetch(`/api/master/${masterOrgId}/organization/${orgId}/driver/${driverId}/{ISSUE_TYPE}`)
-      
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/master/${masterOrgId}/organization/${orgId}/driver/${driverId}/{ISSUE_TYPE}`,
+      );
+
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Driver not found in this organization')
+          throw new Error("Driver not found in this organization");
         } else if (response.status === 403) {
-          throw new Error('Access denied to this organization')
+          throw new Error("Access denied to this organization");
         } else {
-          throw new Error(`Failed to load data: ${response.status}`)
+          throw new Error(`Failed to load data: ${response.status}`);
         }
       }
-      
-      const result = await response.json()
-      setData(result)
-      
+
+      const result = await response.json();
+      setData(result);
+
       // Auto-select first issue if available
       if (result.issues && result.issues.length > 0) {
-        setSelectedIssue(result.issues[0])
+        setSelectedIssue(result.issues[0]);
       }
-      
     } catch (error) {
-      console.error('❌ Error fetching data:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load data')
+      console.error("❌ Error fetching data:", error);
+      setError(error instanceof Error ? error.message : "Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-  fetchData()
-}, [masterOrgId, orgId, driverId])
+  };
+  fetchData();
+}, [masterOrgId, orgId, driverId]);
 
 // Organizations fetch - ⚠️ CRITICAL FOR SIDEBAR
 useEffect(() => {
   const fetchOrganizations = async () => {
     try {
-      const response = await fetch('/api/organizations')
+      const response = await fetch("/api/organizations");
       if (response.ok) {
-        const orgs = await response.json()
-        setOrganizations(orgs)
+        const orgs = await response.json();
+        setOrganizations(orgs);
       }
     } catch (error) {
-      console.error('Error fetching organizations:', error)
+      console.error("Error fetching organizations:", error);
     }
-  }
-  fetchOrganizations()
-}, [])
+  };
+  fetchOrganizations();
+}, []);
 ```
 
 ### **🔍 Step 3: Navigation & Organization Handler**
+
 ```typescript
 // ⚠️ CRITICAL: Static topNav using buildStandardDriverNavigation
 const topNav = buildStandardDriverNavigation(
-  { id: '', role: '' },
+  { id: "", role: "" },
   data.masterOrg,
   data.organization,
   undefined,
-  'drivers' // or 'equipment'
-)
+  "drivers", // or 'equipment'
+);
 
 // ⚠️ CRITICAL: Organization selector handler
 const handleOrganizationSelect = (org: any) => {
-  console.log('Organization selected:', org.id)
-  setIsSheetOpen(false)
-  window.location.href = `/master/${masterOrgId}/organization/${org.id}`
-}
+  console.log("Organization selected:", org.id);
+  setIsSheetOpen(false);
+  window.location.href = `/master/${masterOrgId}/organization/${org.id}`;
+};
 ```
 
 ### **🔍 Step 4: AppLayout Props (ALL 6 required)**
+
 ```typescript
-<AppLayout 
+<AppLayout
   name={data.masterOrg.name}                     // ⚠️ CRITICAL
   topNav={topNav}                                // ⚠️ CRITICAL
   showOrgSelector={true}                         // ⚠️ CRITICAL
-  organizations={organizations}                  // ⚠️ CRITICAL  
+  organizations={organizations}                  // ⚠️ CRITICAL
   onOrganizationSelect={handleOrganizationSelect} // ⚠️ CRITICAL
   isSheetOpen={isSheetOpen}                     // ⚠️ CRITICAL
   onSheetOpenChange={setIsSheetOpen}            // ⚠️ CRITICAL
@@ -174,12 +180,13 @@ const handleOrganizationSelect = (org: any) => {
 ```
 
 ### **🔍 Step 5: Activity Log Integration**
+
 ```typescript
 // ⚠️ CRITICAL: Import ActivityLog
 import { ActivityLog } from '@/components/ui/activity-log'
 
 // ⚠️ CRITICAL: Add in details section
-<ActivityLog 
+<ActivityLog
   issueId={selectedIssue.issue.id}
   title="Activity Log"
   allowedTypes={['note', 'communication', 'url', 'credential', 'attachment', 'task']}
@@ -191,11 +198,13 @@ import { ActivityLog } from '@/components/ui/activity-log'
 ## 🎯 **IMPLEMENTATION PROCESS**
 
 ### **Phase 1: Copy Training File Exactly**
+
 1. **Copy entire Training file** → Rename to new issue type
 2. **Find & Replace**: `training` → `{issue_type}`, `Training` → `{ISSUE_TYPE}`
 3. **DO NOT change layout structure**
 
 ### **Phase 2: Systematic Verification**
+
 1. ✅ **Layout Structure**: `flex gap-6 h-[calc(100vh-200px)]`
 2. ✅ **Left Pane**: `w-[300px] flex-shrink-0`
 3. ✅ **Right Pane**: `flex-1`
@@ -208,6 +217,7 @@ import { ActivityLog } from '@/components/ui/activity-log'
 10. ✅ **ActivityLog**: Integrated with exact props
 
 ### **Phase 3: API & Form Customization**
+
 1. Update API endpoints (keep URL-driven pattern)
 2. Update form components
 3. Update interfaces/types
@@ -226,6 +236,7 @@ import { ActivityLog } from '@/components/ui/activity-log'
 9. **Header button alignment** (right-aligned action buttons)
 
 ## 🔧 **Comprehensive Verification Script**
+
 ```bash
 # Layout Structure Checks
 grep -n "flex gap-6 h-\[calc" {new_file}              # Fixed flexbox
@@ -233,7 +244,7 @@ grep -n "w-\[300px\] flex-shrink-0" {new_file}        # Fixed left width
 grep -n "className=\"h-full\"" {new_file}             # Full height cards
 grep -n "flex-1 overflow-auto" {new_file}             # Scrollable content
 
-# State & Props Checks  
+# State & Props Checks
 grep -n "organizations.*useState" {new_file}           # Organization state
 grep -n "showOrgSelector.*true" {new_file}            # Org selector enabled
 grep -n "max-w-7xl mx-auto" {new_file}               # Container margins
@@ -247,4 +258,4 @@ grep -n "status.*Active" {new_file}                   # Correct issue status
 
 ## 🚨 **ZERO TOLERANCE POLICY**
 
-**If ANY verification check fails, STOP and fix before proceeding. Layout inconsistency creates user confusion and breaks the unified experience.** 
+**If ANY verification check fails, STOP and fix before proceeding. Layout inconsistency creates user confusion and breaks the unified experience.**

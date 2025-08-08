@@ -1,44 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { createId } from '@paralleldrive/cuid2'
-import type { Prisma } from '@prisma/client'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { createId } from "@paralleldrive/cuid2";
+import type { Prisma } from "@prisma/client";
 
 // GET /api/persons - List all persons for current user's organizations
 export async function GET(req: NextRequest) {
   // Declare variables at function scope for error handling
-  let userId: string | null = null
-  let organizationId: string | null = null
-  let roleType: string | null = null
+  let userId: string | null = null;
+  let organizationId: string | null = null;
+  let roleType: string | null = null;
 
   try {
-    const authResult = await auth()
-    userId = authResult.userId
+    const authResult = await auth();
+    userId = authResult.userId;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get query parameters
-    const { searchParams } = new URL(req.url)
-    organizationId = searchParams.get('organizationId')
-    roleType = searchParams.get('roleType') // New filter for role type
+    const { searchParams } = new URL(req.url);
+    organizationId = searchParams.get("organizationId");
+    roleType = searchParams.get("roleType"); // New filter for role type
 
-    console.log(`👤 User ${userId} requesting persons for org: ${organizationId}, roleType: ${roleType}`)
+    console.log(
+      `👤 User ${userId} requesting persons for org: ${organizationId}, roleType: ${roleType}`,
+    );
 
     // Simplified access control using a single query
-    let allOrgIds: string[] = []
+    let allOrgIds: string[] = [];
 
     if (organizationId) {
       // Check if user is a master (can access any organization)
       const userMasterOrg = await db.organization.findFirst({
         where: { party: { userId } },
-        select: { id: true }
-      })
+        select: { id: true },
+      });
 
       if (userMasterOrg) {
         // Master user can access any organization
-        allOrgIds.push(organizationId)
-        console.log(`✅ Master user - access granted to organization ${organizationId}`)
+        allOrgIds.push(organizationId);
+        console.log(`✅ Master user - access granted to organization ${organizationId}`);
       } else {
         // Check if user has direct access to this specific organization
         const accessCheck = await db.organization.findFirst({
@@ -47,20 +49,20 @@ export async function GET(req: NextRequest) {
             OR: [
               // User owns this organization directly
               { party: { userId } },
-              // User has a role in this organization  
-              { party: { role: { some: { party: { userId }, isActive: true } } } }
-            ]
+              // User has a role in this organization
+              { party: { role: { some: { party: { userId }, isActive: true } } } },
+            ],
           },
-          select: { id: true }
-        })
+          select: { id: true },
+        });
 
         if (!accessCheck) {
-          console.log(`❌ Access denied to organization ${organizationId} for user ${userId}`)
-          return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 })
+          console.log(`❌ Access denied to organization ${organizationId} for user ${userId}`);
+          return NextResponse.json({ error: "Access denied to organization" }, { status: 403 });
         }
 
-        allOrgIds.push(organizationId)
-        console.log(`✅ Access granted to organization ${organizationId}`)
+        allOrgIds.push(organizationId);
+        console.log(`✅ Access granted to organization ${organizationId}`);
       }
     } else {
       // Get all accessible organizations efficiently
@@ -70,53 +72,53 @@ export async function GET(req: NextRequest) {
             // Organizations user owns
             { party: { userId } },
             // Organizations where user has roles
-            { party: { role: { some: { party: { userId }, isActive: true } } } }
-          ]
+            { party: { role: { some: { party: { userId }, isActive: true } } } },
+          ],
         },
-        select: { id: true }
-      })
+        select: { id: true },
+      });
 
-      allOrgIds = userOrgs.map(org => org.id)
-      console.log(`✅ User has access to ${allOrgIds.length} organizations`)
-      
+      allOrgIds = userOrgs.map((org) => org.id);
+      console.log(`✅ User has access to ${allOrgIds.length} organizations`);
+
       // If user is a master, they can access all organizations
       const isMaster = await db.organization.findFirst({
         where: { party: { userId } },
-        select: { id: true }
-      })
+        select: { id: true },
+      });
 
       if (isMaster) {
-        const allOrgs = await db.organization.findMany({ select: { id: true } })
-        allOrgIds = allOrgs.map(org => org.id)
-        console.log(`✅ Master user - access to all ${allOrgIds.length} organizations`)
+        const allOrgs = await db.organization.findMany({ select: { id: true } });
+        allOrgIds = allOrgs.map((org) => org.id);
+        console.log(`✅ Master user - access to all ${allOrgIds.length} organizations`);
       }
     }
 
     // Remove duplicates
-    const orgIds = Array.from(new Set(allOrgIds))
+    const orgIds = Array.from(new Set(allOrgIds));
 
     // Build where clause for role filtering
     const roleWhere: any = {
       organizationId: { in: orgIds },
-      isActive: true
-    }
+      isActive: true,
+    };
 
     // Add roleType filter if specified
     if (roleType) {
-      roleWhere.roleType = roleType
+      roleWhere.roleType = roleType;
     }
 
-    console.log(`🔍 Querying persons with roleWhere:`, roleWhere)
-    console.log(`🔍 Organizations in scope:`, orgIds.length, 'orgs')
+    console.log(`🔍 Querying persons with roleWhere:`, roleWhere);
+    console.log(`🔍 Organizations in scope:`, orgIds.length, "orgs");
 
     // Get all persons assigned to these organizations
     const persons = await db.person.findMany({
       where: {
         party: {
           role: {
-            some: roleWhere
-          }
-        }
+            some: roleWhere,
+          },
+        },
       },
       include: {
         party: {
@@ -125,67 +127,70 @@ export async function GET(req: NextRequest) {
               where: { isActive: true },
               include: {
                 location: {
-                  select: { id: true, name: true }
-                }
-              }
-            }
-          }
-        }
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
+        },
       },
-      orderBy: [
-        { lastName: 'asc' },
-        { firstName: 'asc' }
-      ]
-    })
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    });
 
-    console.log(`✅ Found ${persons.length} persons`)
-    return NextResponse.json(persons)
+    console.log(`✅ Found ${persons.length} persons`);
+    return NextResponse.json(persons);
   } catch (error) {
-    console.error('🔥 Error in persons API:', error)
-    console.error('🔥 Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
+    console.error("🔥 Error in persons API:", error);
+    console.error("🔥 Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
       organizationId,
       roleType,
-      userId
-    })
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+      userId,
+    });
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
   }
 }
 
 // POST /api/persons - Create new person
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json()
-    const { 
-      firstName, 
-      lastName, 
-      dateOfBirth, 
-      licenseNumber, 
-      phone, 
-      email, 
-      address, 
-      city, 
-      state, 
+    const body = await req.json();
+    const {
+      firstName,
+      lastName,
+      dateOfBirth,
+      licenseNumber,
+      phone,
+      email,
+      address,
+      city,
+      state,
       zipCode,
       roleType, // 'DRIVER', 'STAFF', etc.
       organizationId,
-      locationId 
-    } = body
+      locationId,
+    } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !roleType || !organizationId) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: firstName, lastName, roleType, organizationId' 
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Missing required fields: firstName, lastName, roleType, organizationId",
+        },
+        { status: 400 },
+      );
     }
 
     // Verify user has access to this organization
@@ -193,34 +198,34 @@ export async function POST(req: NextRequest) {
     const userMasterOrg = await db.organization.findFirst({
       where: {
         party: {
-          userId: userId
-        }
-      }
-    })
+          userId: userId,
+        },
+      },
+    });
 
-    let hasAccess = false
-    let organization = null
+    let hasAccess = false;
+    let organization = null;
 
     // Check if this is the user's master organization
     if (userMasterOrg && userMasterOrg.id === organizationId) {
-      hasAccess = true
-      organization = userMasterOrg
+      hasAccess = true;
+      organization = userMasterOrg;
     } else if (userMasterOrg) {
       // Check if the user's master org manages this organization
       const masterRole = await db.role.findFirst({
         where: {
-          roleType: 'master',
+          roleType: "master",
           partyId: userMasterOrg.partyId,
           organizationId: organizationId,
-          isActive: true
-        }
-      })
-      
+          isActive: true,
+        },
+      });
+
       if (masterRole) {
-        hasAccess = true
+        hasAccess = true;
         organization = await db.organization.findUnique({
-          where: { id: organizationId }
-        })
+          where: { id: organizationId },
+        });
       }
     }
 
@@ -230,33 +235,36 @@ export async function POST(req: NextRequest) {
       organization = await db.organization.findFirst({
         where: {
           id: organizationId,
-          party: { userId }
-        }
-      })
+          party: { userId },
+        },
+      });
 
       if (organization) {
-        hasAccess = true
+        hasAccess = true;
       } else {
         // Check if user has an active role in this organization
         const hasRole = await db.role.findFirst({
           where: {
             party: { userId },
             organizationId: organizationId,
-            isActive: true
-          }
-        })
+            isActive: true,
+          },
+        });
 
         if (hasRole) {
-          hasAccess = true
+          hasAccess = true;
           organization = await db.organization.findUnique({
-            where: { id: organizationId }
-          })
+            where: { id: organizationId },
+          });
         }
       }
     }
 
     if (!hasAccess || !organization) {
-      return NextResponse.json({ error: 'Organization not found or access denied' }, { status: 404 })
+      return NextResponse.json(
+        { error: "Organization not found or access denied" },
+        { status: 404 },
+      );
     }
 
     // Create person with party model
@@ -265,9 +273,9 @@ export async function POST(req: NextRequest) {
       const party = await tx.party.create({
         data: {
           id: createId(),
-          status: 'active'
-        }
-      })
+          status: "active",
+        },
+      });
 
       // 2. Create person record
       const person = await tx.person.create({
@@ -283,9 +291,9 @@ export async function POST(req: NextRequest) {
           address: address || null,
           city: city || null,
           state: state || null,
-          zipCode: zipCode || null
-        }
-      })
+          zipCode: zipCode || null,
+        },
+      });
 
       // 3. Create role relationship
       await tx.role.create({
@@ -295,17 +303,17 @@ export async function POST(req: NextRequest) {
           roleType,
           organizationId,
           locationId: locationId || null,
-          status: 'active',
-          isActive: true
-        }
-      })
+          status: "active",
+          isActive: true,
+        },
+      });
 
-      return person
-    })
+      return person;
+    });
 
-    return NextResponse.json(result, { status: 201 })
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error('Error creating person:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error creating person:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

@@ -15,31 +15,37 @@ The "Others" tab in the organization page will manage external parties that the 
 ## 📋 **Entity Types**
 
 ### **1. Vendors**
+
 - **Purpose**: Suppliers of parts, services, or equipment
 - **Sub-table**: Vendor contacts (sales reps, account managers)
 - **Use Cases**: Equipment maintenance, parts ordering, service contracts
 
 ### **2. Agencies**
+
 - **Purpose**: Government and regulatory organizations
 - **Sub-table**: Agency contacts (inspectors, administrators)
 - **Use Cases**: DOT interactions, regulatory compliance, audit coordination
 
 ### **3. Repair Shops**
+
 - **Purpose**: Maintenance and repair service providers
 - **Sub-table**: Shop contacts (mechanics, service managers)
 - **Use Cases**: Equipment maintenance issues, annual inspections
 
 ### **4. Inspectors**
+
 - **Purpose**: Individual DOT/regulatory inspectors
 - **Sub-table**: Inspector contact details and specializations
 - **Use Cases**: Annual inspections, roadside inspection follow-up
 
 ### **5. Testing Labs**
+
 - **Purpose**: Medical and compliance testing facilities
 - **Sub-table**: Lab contacts (technicians, administrators)
 - **Use Cases**: Drug & alcohol testing, physical exams, equipment testing
 
 ### **6. Collection Sites**
+
 - **Purpose**: Drug & alcohol testing collection locations
 - **Sub-table**: Site contacts and operating hours
 - **Use Cases**: Random drug testing, post-accident testing
@@ -49,6 +55,7 @@ The "Others" tab in the organization page will manage external parties that the 
 ## 🏗️ **Data Structure**
 
 ### **Party Model Integration**
+
 ```typescript
 // Core party record
 party: {
@@ -91,6 +98,7 @@ role: {
 ```
 
 ### **Contacts Sub-table**
+
 ```typescript
 // Person records for contacts within external organizations
 person: {
@@ -123,12 +131,14 @@ role: {
 ## 🎨 **UI Design**
 
 ### **Layout Structure**
+
 - **Tab Integration**: Add "Others" tab after "Staff" in organization page
-- **Two-Column Layout**: 
+- **Two-Column Layout**:
   - Left: Entity type selector and list (300px)
   - Right: Selected entity details with contacts sub-table
 
 ### **Entity Type Selector**
+
 ```
 ┌─ Vendors (12)
 ├─ Agencies (3)
@@ -139,6 +149,7 @@ role: {
 ```
 
 ### **Entity List View**
+
 ```
 [Selected Entity Type - e.g., Repair Shops]
 ┌─────────────────────────────┐
@@ -156,6 +167,7 @@ role: {
 ```
 
 ### **Detail View with Contacts**
+
 ```
 Name Row: [Entity Name] [Edit Button]
 
@@ -179,16 +191,19 @@ Contacts Sub-table:
 ## 🔧 **Integration Points**
 
 ### **Equipment Issues Integration**
+
 - **Maintenance Issues**: Repair shop selector from organization's repair shops
 - **Annual Inspections**: Inspector selector from organization's inspectors
 - **Parts Orders**: Vendor selector for equipment parts and services
 
 ### **Driver Issues Integration**
+
 - **Drug & Alcohol Testing**: Collection site and testing lab selectors
 - **Physical Exams**: Testing lab selector for DOT physicals
 - **Training**: Vendor selector for training providers
 
 ### **Incident Management**
+
 - **Roadside Inspections**: Inspector records for follow-up contact
 - **Accidents**: Repair shop selection for vehicle repairs
 - **CAF Workflow**: Agency contacts for regulatory communication
@@ -198,28 +213,31 @@ Contacts Sub-table:
 ## 📊 **API Endpoints**
 
 ### **Entity Management**
+
 ```typescript
-GET /api/organizations/{orgId}/others
-GET /api/organizations/{orgId}/others/{entityType}
-POST /api/organizations/{orgId}/others
-PUT /api/organizations/{orgId}/others/{otherId}
-DELETE /api/organizations/{orgId}/others/{otherId}
+GET / api / organizations / { orgId } / others;
+GET / api / organizations / { orgId } / others / { entityType };
+POST / api / organizations / { orgId } / others;
+PUT / api / organizations / { orgId } / others / { otherId };
+DELETE / api / organizations / { orgId } / others / { otherId };
 ```
 
 ### **Contact Management**
+
 ```typescript
-GET /api/organizations/{orgId}/others/{otherId}/contacts
-POST /api/organizations/{orgId}/others/{otherId}/contacts
-PUT /api/organizations/{orgId}/others/{otherId}/contacts/{contactId}
-DELETE /api/organizations/{orgId}/others/{otherId}/contacts/{contactId}
+GET / api / organizations / { orgId } / others / { otherId } / contacts;
+POST / api / organizations / { orgId } / others / { otherId } / contacts;
+PUT / api / organizations / { orgId } / others / { otherId } / contacts / { contactId };
+DELETE / api / organizations / { orgId } / others / { otherId } / contacts / { contactId };
 ```
 
 ### **Lookup Endpoints**
+
 ```typescript
-GET /api/organizations/{orgId}/vendors        // For equipment forms
-GET /api/organizations/{orgId}/repair-shops   // For maintenance forms
-GET /api/organizations/{orgId}/testing-labs   // For drug/alcohol forms
-GET /api/organizations/{orgId}/inspectors     // For annual inspection forms
+GET / api / organizations / { orgId } / vendors; // For equipment forms
+GET / api / organizations / { orgId } / repair - shops; // For maintenance forms
+GET / api / organizations / { orgId } / testing - labs; // For drug/alcohol forms
+GET / api / organizations / { orgId } / inspectors; // For annual inspection forms
 ```
 
 ---
@@ -227,16 +245,19 @@ GET /api/organizations/{orgId}/inspectors     // For annual inspection forms
 ## 🚀 **Implementation Priority**
 
 ### **Phase 1: Core Structure** (When Equipment Issues Begin)
+
 - Basic entity management (CRUD operations)
 - Party model integration
 - Simple contact management
 
 ### **Phase 2: Integration** (During Equipment Development)
+
 - Repair shop selector in maintenance forms
 - Inspector selector in annual inspection forms
 - Vendor integration for parts/services
 
 ### **Phase 3: Enhancement** (Future)
+
 - Advanced contact management
 - Service history tracking
 - Performance rating system
@@ -247,16 +268,19 @@ GET /api/organizations/{orgId}/inspectors     // For annual inspection forms
 ## 💡 **Business Value**
 
 ### **Operational Efficiency**
+
 - **Centralized Contacts**: Single source for all external organization contacts
 - **Quick Access**: Easy selection in forms without manual entry
 - **Relationship Tracking**: Maintain history of interactions and services
 
 ### **Compliance Benefits**
+
 - **Inspector Database**: Track inspector certifications and specializations
 - **Audit Trail**: Complete record of external service providers
 - **Regulatory Contacts**: Direct access to agency contacts for compliance issues
 
 ### **Cost Management**
+
 - **Vendor Comparison**: Track multiple vendors for competitive pricing
 - **Service History**: Monitor repair shop performance and costs
 - **Contract Tracking**: Manage service agreements and renewals
@@ -266,12 +290,14 @@ GET /api/organizations/{orgId}/inspectors     // For annual inspection forms
 ## 🔮 **Future Enhancements**
 
 ### **Advanced Features**
+
 - **Performance Ratings**: Rate external organizations on quality and timeliness
 - **Service Contracts**: Track agreement terms and renewal dates
 - **Invoice Integration**: Link external organizations to accounting systems
 - **Notification System**: Alerts for contract renewals and performance issues
 
 ### **Reporting Integration**
+
 - **Vendor Performance Reports**: Cost analysis and service quality metrics
 - **Compliance Reporting**: Agency interaction tracking for audit preparation
 - **Service History Reports**: Maintenance and repair tracking by provider
@@ -293,4 +319,4 @@ GET /api/organizations/{orgId}/inspectors     // For annual inspection forms
 - **Current Status**: `current-status.md` - Overall project status and implementation priorities
 - **Navigation Standards**: `navigation-standards.md` - UI consistency requirements for Others tab implementation
 
-This system provides a comprehensive foundation for managing external relationships while maintaining consistency with the existing party model architecture. 
+This system provides a comprehensive foundation for managing external relationships while maintaining consistency with the existing party model architecture.

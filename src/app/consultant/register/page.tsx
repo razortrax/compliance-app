@@ -1,73 +1,79 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Shield, CheckCircle, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Shield, CheckCircle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 const specializations = [
-  { value: 'DOT_AUDIT', label: 'DOT Audit Preparation' },
-  { value: 'SAFETY', label: 'Safety Management' },
-  { value: 'HOURS_OF_SERVICE', label: 'Hours of Service Compliance' },
-  { value: 'DRIVER_QUALIFICATION', label: 'Driver Qualification Files' },
-  { value: 'VEHICLE_MAINTENANCE', label: 'Vehicle Maintenance Records' },
-  { value: 'DRUG_ALCOHOL', label: 'Drug & Alcohol Testing' },
-  { value: 'HAZMAT', label: 'Hazmat Transportation' },
-  { value: 'GENERAL', label: 'General DOT Compliance' }
-]
+  { value: "DOT_AUDIT", label: "DOT Audit Preparation" },
+  { value: "SAFETY", label: "Safety Management" },
+  { value: "HOURS_OF_SERVICE", label: "Hours of Service Compliance" },
+  { value: "DRIVER_QUALIFICATION", label: "Driver Qualification Files" },
+  { value: "VEHICLE_MAINTENANCE", label: "Vehicle Maintenance Records" },
+  { value: "DRUG_ALCOHOL", label: "Drug & Alcohol Testing" },
+  { value: "HAZMAT", label: "Hazmat Transportation" },
+  { value: "GENERAL", label: "General DOT Compliance" },
+];
 
 export default function ConsultantRegisterPage() {
-  const { isSignedIn } = useAuth()
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const { isSignedIn } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    licenseNumber: '',
-    yearsExperience: '',
-    hourlyRate: '',
-    bio: '',
-    specializations: [] as string[]
-  })
+    licenseNumber: "",
+    yearsExperience: "",
+    hourlyRate: "",
+    bio: "",
+    specializations: [] as string[],
+  });
 
   const handleSpecializationToggle = (value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       specializations: prev.specializations.includes(value)
-        ? prev.specializations.filter(s => s !== value)
-        : [...prev.specializations, value]
-    }))
-  }
+        ? prev.specializations.filter((s) => s !== value)
+        : [...prev.specializations, value],
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const response = await fetch('/api/consultants/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
+      const response = await fetch("/api/consultants/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
       if (response.ok) {
-        router.push('/consultant/dashboard')
+        router.push("/consultant/dashboard");
       } else {
-        throw new Error('Registration failed')
+        throw new Error("Registration failed");
       }
     } catch (error) {
-      console.error('Registration error:', error)
-      alert('Registration failed. Please try again.')
+      console.error("Registration error:", error);
+      alert("Registration failed. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!isSignedIn) {
     return (
@@ -76,9 +82,7 @@ export default function ConsultantRegisterPage() {
           <CardHeader className="text-center">
             <Shield className="h-12 w-12 text-purple-600 mx-auto mb-4" />
             <CardTitle>Sign In Required</CardTitle>
-            <CardDescription>
-              Please sign in to register as a DOT consultant
-            </CardDescription>
+            <CardDescription>Please sign in to register as a DOT consultant</CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/">
@@ -90,7 +94,7 @@ export default function ConsultantRegisterPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -120,19 +124,27 @@ export default function ConsultantRegisterPage() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <p className="text-sm font-medium">📊 Access to Real Data</p>
-                  <p className="text-xs text-muted-foreground">Review client compliance data with their consent</p>
+                  <p className="text-xs text-muted-foreground">
+                    Review client compliance data with their consent
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">🎯 Targeted Opportunities</p>
-                  <p className="text-xs text-muted-foreground">Receive consultation requests matching your expertise</p>
+                  <p className="text-xs text-muted-foreground">
+                    Receive consultation requests matching your expertise
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">⏰ Flexible Engagement</p>
-                  <p className="text-xs text-muted-foreground">Accept projects that fit your schedule</p>
+                  <p className="text-xs text-muted-foreground">
+                    Accept projects that fit your schedule
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">💰 Built-in Billing</p>
-                  <p className="text-xs text-muted-foreground">Integrated payment processing for your services</p>
+                  <p className="text-xs text-muted-foreground">
+                    Integrated payment processing for your services
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -154,7 +166,9 @@ export default function ConsultantRegisterPage() {
                   <Input
                     id="licenseNumber"
                     value={formData.licenseNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, licenseNumber: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, licenseNumber: e.target.value }))
+                    }
                     placeholder="e.g., DOT-12345"
                   />
                 </div>
@@ -168,7 +182,9 @@ export default function ConsultantRegisterPage() {
                     min="0"
                     max="50"
                     value={formData.yearsExperience}
-                    onChange={(e) => setFormData(prev => ({ ...prev, yearsExperience: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, yearsExperience: e.target.value }))
+                    }
                     placeholder="e.g., 10"
                     required
                   />
@@ -184,7 +200,9 @@ export default function ConsultantRegisterPage() {
                     max="500"
                     step="5"
                     value={formData.hourlyRate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hourlyRate: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, hourlyRate: e.target.value }))
+                    }
                     placeholder="e.g., 150"
                     required
                   />
@@ -193,15 +211,17 @@ export default function ConsultantRegisterPage() {
                 {/* Specializations */}
                 <div className="space-y-3">
                   <Label>Areas of Expertise</Label>
-                  <p className="text-sm text-muted-foreground">Select all areas where you provide consulting services</p>
+                  <p className="text-sm text-muted-foreground">
+                    Select all areas where you provide consulting services
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
                     {specializations.map((spec) => (
                       <div
                         key={spec.value}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                           formData.specializations.includes(spec.value)
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? "border-purple-500 bg-purple-50"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => handleSpecializationToggle(spec.value)}
                       >
@@ -215,7 +235,9 @@ export default function ConsultantRegisterPage() {
                     ))}
                   </div>
                   {formData.specializations.length === 0 && (
-                    <p className="text-sm text-red-500">Please select at least one specialization</p>
+                    <p className="text-sm text-red-500">
+                      Please select at least one specialization
+                    </p>
                   )}
                 </div>
 
@@ -225,13 +247,14 @@ export default function ConsultantRegisterPage() {
                   <Textarea
                     id="bio"
                     value={formData.bio}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
                     placeholder="Describe your background, certifications, and what makes you a great DOT consultant..."
                     rows={4}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    This will be shown to potential clients. Highlight your experience and qualifications.
+                    This will be shown to potential clients. Highlight your experience and
+                    qualifications.
                   </p>
                 </div>
 
@@ -248,7 +271,7 @@ export default function ConsultantRegisterPage() {
                     disabled={loading || formData.specializations.length === 0}
                     className="flex-2 bg-purple-600 hover:bg-purple-700"
                   >
-                    {loading ? 'Creating Profile...' : 'Complete Registration'}
+                    {loading ? "Creating Profile..." : "Complete Registration"}
                   </Button>
                 </div>
               </form>
@@ -257,5 +280,5 @@ export default function ConsultantRegisterPage() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

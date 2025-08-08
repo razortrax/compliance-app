@@ -1,188 +1,202 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, X } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, X } from "lucide-react";
 
 interface Equipment {
-  id: string
-  make?: string | null
-  model?: string | null
-  year?: number | null
-  vin?: string | null
-  
+  id: string;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
+  vin?: string | null;
+
   // Status and classification
-  statusId?: string | null
-  status?: { id: string; label: string } | null
-  
+  statusId?: string | null;
+  status?: { id: string; label: string } | null;
+
   // Weight specifications
-  eqpWeightGross?: number | null
-  eqpWeightGrossRating?: number | null
-  eqpWeightGrossTagged?: number | null
-  
+  eqpWeightGross?: number | null;
+  eqpWeightGrossRating?: number | null;
+  eqpWeightGrossTagged?: number | null;
+
   // Fuel and engine information
-  fuelTypeId?: string | null
-  fuelType?: { id: string; label: string } | null
-  engineModel?: string | null
-  engineDisplacement?: string | null
-  driveType?: string | null
-  dateOfManufacture?: string | null
-  countCylinders?: number | null
-  
+  fuelTypeId?: string | null;
+  fuelType?: { id: string; label: string } | null;
+  engineModel?: string | null;
+  engineDisplacement?: string | null;
+  driveType?: string | null;
+  dateOfManufacture?: string | null;
+  countCylinders?: number | null;
+
   // Physical characteristics
-  countAxles?: number | null
-  colorId?: string | null
-  color?: { id: string; label: string } | null
-  tireSize?: string | null
-  
+  countAxles?: number | null;
+  colorId?: string | null;
+  color?: { id: string; label: string } | null;
+  tireSize?: string | null;
+
   // Usage tracking
-  startMileage?: number | null
-  startDate?: string | null
-  retireMileage?: number | null
-  retireDate?: string | null
-  
+  startMileage?: number | null;
+  startDate?: string | null;
+  retireMileage?: number | null;
+  retireDate?: string | null;
+
   // Vehicle classification
-  vehicleTypeId?: string | null
-  vehicleType?: { id: string; label: string } | null
-  
+  vehicleTypeId?: string | null;
+  vehicleType?: { id: string; label: string } | null;
+
   // Ownership information
-  ownershipTypeId?: string | null
-  ownershipType?: { id: string; label: string } | null
-  
+  ownershipTypeId?: string | null;
+  ownershipType?: { id: string; label: string } | null;
+
   // Category
-  categoryId?: string | null
-  category?: { id: string; label: string } | null
-  
+  categoryId?: string | null;
+  category?: { id: string; label: string } | null;
+
   // Location assignment
-  locationId?: string | null
-  location?: { id: string; name: string } | null
+  locationId?: string | null;
+  location?: { id: string; name: string } | null;
 }
 
 interface Location {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface EnumOption {
-  id: string
-  code: string
-  label: string
+  id: string;
+  code: string;
+  label: string;
 }
 
 interface EquipmentFormProps {
-  organizationId: string
-  equipment?: Equipment
-  onSuccess: () => void
-  onCancel: () => void
+  organizationId: string;
+  equipment?: Equipment;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-const CURRENT_YEAR = new Date().getFullYear()
-const YEARS = Array.from({ length: 50 }, (_, i) => CURRENT_YEAR - i)
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 50 }, (_, i) => CURRENT_YEAR - i);
 
-export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }: EquipmentFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [locations, setLocations] = useState<Location[]>([])
-  
+export function EquipmentForm({
+  organizationId,
+  equipment,
+  onSuccess,
+  onCancel,
+}: EquipmentFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([]);
+
   // Enum options
-  const [statusOptions, setStatusOptions] = useState<EnumOption[]>([])
-  const [fuelTypeOptions, setFuelTypeOptions] = useState<EnumOption[]>([])
-  const [vehicleTypeOptions, setVehicleTypeOptions] = useState<EnumOption[]>([])
-  const [colorOptions, setColorOptions] = useState<EnumOption[]>([])
-  const [ownershipTypeOptions, setOwnershipTypeOptions] = useState<EnumOption[]>([])
-  const [categoryOptions, setCategoryOptions] = useState<EnumOption[]>([])
-  
+  const [statusOptions, setStatusOptions] = useState<EnumOption[]>([]);
+  const [fuelTypeOptions, setFuelTypeOptions] = useState<EnumOption[]>([]);
+  const [vehicleTypeOptions, setVehicleTypeOptions] = useState<EnumOption[]>([]);
+  const [colorOptions, setColorOptions] = useState<EnumOption[]>([]);
+  const [ownershipTypeOptions, setOwnershipTypeOptions] = useState<EnumOption[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<EnumOption[]>([]);
+
   const [formData, setFormData] = useState({
     // Basic Information
-    make: equipment?.make || '',
-    model: equipment?.model || '',
-    year: equipment?.year?.toString() || '',
-    vin: equipment?.vin || '',
-    
+    make: equipment?.make || "",
+    model: equipment?.model || "",
+    year: equipment?.year?.toString() || "",
+    vin: equipment?.vin || "",
+
     // Status and Classification
-    statusId: equipment?.statusId || '',
-    categoryId: equipment?.categoryId || '',
-    vehicleTypeId: equipment?.vehicleTypeId || '',
-    ownershipTypeId: equipment?.ownershipTypeId || '',
-    
+    statusId: equipment?.statusId || "",
+    categoryId: equipment?.categoryId || "",
+    vehicleTypeId: equipment?.vehicleTypeId || "",
+    ownershipTypeId: equipment?.ownershipTypeId || "",
+
     // Weight Specifications (in pounds)
-    eqpWeightGross: equipment?.eqpWeightGross?.toString() || '',
-    eqpWeightGrossRating: equipment?.eqpWeightGrossRating?.toString() || '',
-    eqpWeightGrossTagged: equipment?.eqpWeightGrossTagged?.toString() || '',
-    
+    eqpWeightGross: equipment?.eqpWeightGross?.toString() || "",
+    eqpWeightGrossRating: equipment?.eqpWeightGrossRating?.toString() || "",
+    eqpWeightGrossTagged: equipment?.eqpWeightGrossTagged?.toString() || "",
+
     // Engine and Fuel
-    fuelTypeId: equipment?.fuelTypeId || '',
-    engineModel: equipment?.engineModel || '',
-    engineDisplacement: equipment?.engineDisplacement || '',
-    driveType: equipment?.driveType || '',
-    countCylinders: equipment?.countCylinders?.toString() || '',
-    dateOfManufacture: equipment?.dateOfManufacture ? equipment.dateOfManufacture.split('T')[0] : '',
-    
+    fuelTypeId: equipment?.fuelTypeId || "",
+    engineModel: equipment?.engineModel || "",
+    engineDisplacement: equipment?.engineDisplacement || "",
+    driveType: equipment?.driveType || "",
+    countCylinders: equipment?.countCylinders?.toString() || "",
+    dateOfManufacture: equipment?.dateOfManufacture
+      ? equipment.dateOfManufacture.split("T")[0]
+      : "",
+
     // Physical Characteristics
-    countAxles: equipment?.countAxles?.toString() || '',
-    colorId: equipment?.colorId || '',
-    tireSize: equipment?.tireSize || '',
-    
+    countAxles: equipment?.countAxles?.toString() || "",
+    colorId: equipment?.colorId || "",
+    tireSize: equipment?.tireSize || "",
+
     // Usage Tracking
-    startMileage: equipment?.startMileage?.toString() || '',
-    startDate: equipment?.startDate ? equipment.startDate.split('T')[0] : '',
-    retireMileage: equipment?.retireMileage?.toString() || '',
-    retireDate: equipment?.retireDate ? equipment.retireDate.split('T')[0] : '',
-    
+    startMileage: equipment?.startMileage?.toString() || "",
+    startDate: equipment?.startDate ? equipment.startDate.split("T")[0] : "",
+    retireMileage: equipment?.retireMileage?.toString() || "",
+    retireDate: equipment?.retireDate ? equipment.retireDate.split("T")[0] : "",
+
     // Location Assignment
-    locationId: equipment?.locationId || 'none'
-  })
+    locationId: equipment?.locationId || "none",
+  });
 
   // Load all options
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch locations
-        const locationsResponse = await fetch(`/api/organizations/${organizationId}/locations`)
+        const locationsResponse = await fetch(`/api/organizations/${organizationId}/locations`);
         if (locationsResponse.ok) {
-          const locationsData = await locationsResponse.json()
-          setLocations(locationsData)
+          const locationsData = await locationsResponse.json();
+          setLocations(locationsData);
         }
 
         // Fetch enum options (system defaults + org-specific)
         const enumPromises = [
-          fetch('/api/equipment/enums/status').then(r => r.json()),
-          fetch('/api/equipment/enums/fuel-types').then(r => r.json()),
-          fetch('/api/equipment/enums/vehicle-types').then(r => r.json()),
-          fetch('/api/equipment/enums/colors').then(r => r.json()),
-          fetch('/api/equipment/enums/ownership-types').then(r => r.json()),
-          fetch('/api/equipment/enums/categories').then(r => r.json())
-        ]
+          fetch("/api/equipment/enums/status").then((r) => r.json()),
+          fetch("/api/equipment/enums/fuel-types").then((r) => r.json()),
+          fetch("/api/equipment/enums/vehicle-types").then((r) => r.json()),
+          fetch("/api/equipment/enums/colors").then((r) => r.json()),
+          fetch("/api/equipment/enums/ownership-types").then((r) => r.json()),
+          fetch("/api/equipment/enums/categories").then((r) => r.json()),
+        ];
 
-        const [statuses, fuelTypes, vehicleTypes, colors, ownershipTypes, categories] = await Promise.all(enumPromises)
-        
-        setStatusOptions(statuses)
-        setFuelTypeOptions(fuelTypes)
-        setVehicleTypeOptions(vehicleTypes)
-        setColorOptions(colors)
-        setOwnershipTypeOptions(ownershipTypes)
-        setCategoryOptions(categories)
+        const [statuses, fuelTypes, vehicleTypes, colors, ownershipTypes, categories] =
+          await Promise.all(enumPromises);
+
+        setStatusOptions(statuses);
+        setFuelTypeOptions(fuelTypes);
+        setVehicleTypeOptions(vehicleTypes);
+        setColorOptions(colors);
+        setOwnershipTypeOptions(ownershipTypes);
+        setCategoryOptions(categories);
       } catch (error) {
-        console.error('Error fetching form data:', error)
+        console.error("Error fetching form data:", error);
       }
-    }
+    };
 
-    fetchData()
-  }, [organizationId])
+    fetchData();
+  }, [organizationId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
       // Client-side validation for required fields
       if (!formData.categoryId) {
-        alert('Please select a category (Power Unit or Trailer)')
-        setIsLoading(false)
-        return
+        alert("Please select a category (Power Unit or Trailer)");
+        setIsLoading(false);
+        return;
       }
 
       const payload = {
@@ -191,18 +205,22 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
         model: formData.model || null,
         year: formData.year ? parseInt(formData.year) : null,
         vin: formData.vin || null,
-        
+
         // Status and Classification
         statusId: formData.statusId || null,
         categoryId: formData.categoryId || null,
         vehicleTypeId: formData.vehicleTypeId || null,
         ownershipTypeId: formData.ownershipTypeId || null,
-        
+
         // Weight Specifications
         eqpWeightGross: formData.eqpWeightGross ? parseInt(formData.eqpWeightGross) : null,
-        eqpWeightGrossRating: formData.eqpWeightGrossRating ? parseInt(formData.eqpWeightGrossRating) : null,
-        eqpWeightGrossTagged: formData.eqpWeightGrossTagged ? parseInt(formData.eqpWeightGrossTagged) : null,
-        
+        eqpWeightGrossRating: formData.eqpWeightGrossRating
+          ? parseInt(formData.eqpWeightGrossRating)
+          : null,
+        eqpWeightGrossTagged: formData.eqpWeightGrossTagged
+          ? parseInt(formData.eqpWeightGrossTagged)
+          : null,
+
         // Engine and Fuel
         fuelTypeId: formData.fuelTypeId || null,
         engineModel: formData.engineModel || null,
@@ -210,50 +228,50 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
         driveType: formData.driveType || null,
         countCylinders: formData.countCylinders ? parseInt(formData.countCylinders) : null,
         dateOfManufacture: formData.dateOfManufacture || null,
-        
+
         // Physical Characteristics
         countAxles: formData.countAxles ? parseInt(formData.countAxles) : null,
         colorId: formData.colorId || null,
         tireSize: formData.tireSize || null,
-        
+
         // Usage Tracking
         startMileage: formData.startMileage ? parseInt(formData.startMileage) : null,
         startDate: formData.startDate || null,
         retireMileage: formData.retireMileage ? parseInt(formData.retireMileage) : null,
         retireDate: formData.retireDate || null,
-        
+
         // Organization and Location
         organizationId,
-        locationId: formData.locationId === 'none' ? null : formData.locationId
-      }
+        locationId: formData.locationId === "none" ? null : formData.locationId,
+      };
 
-      const url = equipment ? `/api/equipment/${equipment.id}` : '/api/equipment'
-      const method = equipment ? 'PUT' : 'POST'
+      const url = equipment ? `/api/equipment/${equipment.id}` : "/api/equipment";
+      const method = equipment ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (response.ok) {
-        onSuccess()
+        onSuccess();
       } else {
-        const error = await response.json()
-        console.error('Error saving equipment:', error)
-        alert(`Error: ${error.error || 'Failed to save equipment'}`)
+        const error = await response.json();
+        console.error("Error saving equipment:", error);
+        alert(`Error: ${error.error || "Failed to save equipment"}`);
       }
     } catch (error) {
-      console.error('Error saving equipment:', error)
-      alert('An error occurred while saving. Please try again.')
+      console.error("Error saving equipment:", error);
+      alert("An error occurred while saving. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -261,9 +279,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
-          <CardDescription>
-            Essential equipment identification details
-          </CardDescription>
+          <CardDescription>Essential equipment identification details</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
@@ -272,7 +288,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Input
                 id="make"
                 value={formData.make}
-                onChange={(e) => handleInputChange('make', e.target.value)}
+                onChange={(e) => handleInputChange("make", e.target.value)}
                 placeholder="Ford, Freightliner, etc."
               />
             </div>
@@ -281,19 +297,24 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Input
                 id="model"
                 value={formData.model}
-                onChange={(e) => handleInputChange('model', e.target.value)}
+                onChange={(e) => handleInputChange("model", e.target.value)}
                 placeholder="F-150, Cascadia, etc."
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="year">Year</Label>
-              <Select value={formData.year} onValueChange={(value) => handleInputChange('year', value)}>
+              <Select
+                value={formData.year}
+                onValueChange={(value) => handleInputChange("year", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
-                  {YEARS.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  {YEARS.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -305,7 +326,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
             <Input
               id="vin"
               value={formData.vin}
-              onChange={(e) => handleInputChange('vin', e.target.value)}
+              onChange={(e) => handleInputChange("vin", e.target.value)}
               placeholder="17-character VIN"
               maxLength={17}
             />
@@ -317,21 +338,24 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Status & Classification</CardTitle>
-          <CardDescription>
-            Equipment status, category, and type information
-          </CardDescription>
+          <CardDescription>Equipment status, category, and type information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="statusId">Status</Label>
-              <Select value={formData.statusId} onValueChange={(value) => handleInputChange('statusId', value)}>
+              <Select
+                value={formData.statusId}
+                onValueChange={(value) => handleInputChange("statusId", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statusOptions.map(status => (
-                    <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
+                  {statusOptions.map((status) => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -340,14 +364,14 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Label htmlFor="categoryId">
                 Category <span className="text-red-500">*</span>
               </Label>
-              <Select 
-                value={formData.categoryId} 
+              <Select
+                value={formData.categoryId}
                 onValueChange={(value) => {
-                  handleInputChange('categoryId', value)
+                  handleInputChange("categoryId", value);
                   // Clear vehicle type if switching to Trailer category
-                  const selectedCategory = categoryOptions.find(cat => cat.id === value)
-                  if (selectedCategory?.code !== 'Power') {
-                    handleInputChange('vehicleTypeId', '')
+                  const selectedCategory = categoryOptions.find((cat) => cat.id === value);
+                  if (selectedCategory?.code !== "Power") {
+                    handleInputChange("vehicleTypeId", "");
                   }
                 }}
               >
@@ -355,8 +379,10 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map(category => (
-                    <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>
+                  {categoryOptions.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -366,32 +392,44 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
           <div className="grid grid-cols-2 gap-4">
             {/* Only show Vehicle Type for Power Unit category */}
             {(() => {
-              const selectedCategory = categoryOptions.find(cat => cat.id === formData.categoryId)
-              return selectedCategory?.code === 'Power' ? (
+              const selectedCategory = categoryOptions.find(
+                (cat) => cat.id === formData.categoryId,
+              );
+              return selectedCategory?.code === "Power" ? (
                 <div className="space-y-2">
                   <Label htmlFor="vehicleTypeId">Vehicle Type</Label>
-                  <Select value={formData.vehicleTypeId} onValueChange={(value) => handleInputChange('vehicleTypeId', value)}>
+                  <Select
+                    value={formData.vehicleTypeId}
+                    onValueChange={(value) => handleInputChange("vehicleTypeId", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select vehicle type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vehicleTypeOptions.map(type => (
-                        <SelectItem key={type.id} value={type.id}>{type.label}</SelectItem>
+                      {vehicleTypeOptions.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              ) : null
+              ) : null;
             })()}
             <div className="space-y-2">
               <Label htmlFor="ownershipTypeId">Ownership Type</Label>
-              <Select value={formData.ownershipTypeId} onValueChange={(value) => handleInputChange('ownershipTypeId', value)}>
+              <Select
+                value={formData.ownershipTypeId}
+                onValueChange={(value) => handleInputChange("ownershipTypeId", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select ownership type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ownershipTypeOptions.map(ownership => (
-                    <SelectItem key={ownership.id} value={ownership.id}>{ownership.label}</SelectItem>
+                  {ownershipTypeOptions.map((ownership) => (
+                    <SelectItem key={ownership.id} value={ownership.id}>
+                      {ownership.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -404,9 +442,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Weight Specifications</CardTitle>
-          <CardDescription>
-            Equipment weight ratings (in pounds)
-          </CardDescription>
+          <CardDescription>Equipment weight ratings (in pounds)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
@@ -416,7 +452,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="eqpWeightGross"
                 type="number"
                 value={formData.eqpWeightGross}
-                onChange={(e) => handleInputChange('eqpWeightGross', e.target.value)}
+                onChange={(e) => handleInputChange("eqpWeightGross", e.target.value)}
                 placeholder="Weight in pounds"
               />
             </div>
@@ -426,7 +462,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="eqpWeightGrossRating"
                 type="number"
                 value={formData.eqpWeightGrossRating}
-                onChange={(e) => handleInputChange('eqpWeightGrossRating', e.target.value)}
+                onChange={(e) => handleInputChange("eqpWeightGrossRating", e.target.value)}
                 placeholder="Rating in pounds"
               />
             </div>
@@ -436,7 +472,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="eqpWeightGrossTagged"
                 type="number"
                 value={formData.eqpWeightGrossTagged}
-                onChange={(e) => handleInputChange('eqpWeightGrossTagged', e.target.value)}
+                onChange={(e) => handleInputChange("eqpWeightGrossTagged", e.target.value)}
                 placeholder="Tagged weight in pounds"
               />
             </div>
@@ -448,21 +484,24 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Engine & Fuel Information</CardTitle>
-          <CardDescription>
-            Engine specifications and fuel details
-          </CardDescription>
+          <CardDescription>Engine specifications and fuel details</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fuelTypeId">Fuel Type</Label>
-              <Select value={formData.fuelTypeId} onValueChange={(value) => handleInputChange('fuelTypeId', value)}>
+              <Select
+                value={formData.fuelTypeId}
+                onValueChange={(value) => handleInputChange("fuelTypeId", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select fuel type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {fuelTypeOptions.map(fuel => (
-                    <SelectItem key={fuel.id} value={fuel.id}>{fuel.label}</SelectItem>
+                  {fuelTypeOptions.map((fuel) => (
+                    <SelectItem key={fuel.id} value={fuel.id}>
+                      {fuel.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -472,7 +511,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Input
                 id="engineModel"
                 value={formData.engineModel}
-                onChange={(e) => handleInputChange('engineModel', e.target.value)}
+                onChange={(e) => handleInputChange("engineModel", e.target.value)}
                 placeholder="Engine model/series"
               />
             </div>
@@ -484,7 +523,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Input
                 id="engineDisplacement"
                 value={formData.engineDisplacement}
-                onChange={(e) => handleInputChange('engineDisplacement', e.target.value)}
+                onChange={(e) => handleInputChange("engineDisplacement", e.target.value)}
                 placeholder="e.g., 6.7L, 455 cu in"
               />
             </div>
@@ -494,7 +533,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="countCylinders"
                 type="number"
                 value={formData.countCylinders}
-                onChange={(e) => handleInputChange('countCylinders', e.target.value)}
+                onChange={(e) => handleInputChange("countCylinders", e.target.value)}
                 placeholder="e.g., 6, 8"
               />
             </div>
@@ -503,7 +542,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Input
                 id="driveType"
                 value={formData.driveType}
-                onChange={(e) => handleInputChange('driveType', e.target.value)}
+                onChange={(e) => handleInputChange("driveType", e.target.value)}
                 placeholder="AWD, FWD, RWD, 4WD"
               />
             </div>
@@ -515,7 +554,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               id="dateOfManufacture"
               type="date"
               value={formData.dateOfManufacture}
-              onChange={(e) => handleInputChange('dateOfManufacture', e.target.value)}
+              onChange={(e) => handleInputChange("dateOfManufacture", e.target.value)}
             />
           </div>
         </CardContent>
@@ -525,21 +564,24 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Physical Characteristics</CardTitle>
-          <CardDescription>
-            Physical attributes and specifications
-          </CardDescription>
+          <CardDescription>Physical attributes and specifications</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="colorId">Color</Label>
-              <Select value={formData.colorId} onValueChange={(value) => handleInputChange('colorId', value)}>
+              <Select
+                value={formData.colorId}
+                onValueChange={(value) => handleInputChange("colorId", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select color" />
                 </SelectTrigger>
                 <SelectContent>
-                  {colorOptions.map(color => (
-                    <SelectItem key={color.id} value={color.id}>{color.label}</SelectItem>
+                  {colorOptions.map((color) => (
+                    <SelectItem key={color.id} value={color.id}>
+                      {color.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -550,7 +592,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="countAxles"
                 type="number"
                 value={formData.countAxles}
-                onChange={(e) => handleInputChange('countAxles', e.target.value)}
+                onChange={(e) => handleInputChange("countAxles", e.target.value)}
                 placeholder="e.g., 2, 3, 5"
               />
             </div>
@@ -559,7 +601,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
               <Input
                 id="tireSize"
                 value={formData.tireSize}
-                onChange={(e) => handleInputChange('tireSize', e.target.value)}
+                onChange={(e) => handleInputChange("tireSize", e.target.value)}
                 placeholder="e.g., 225/70R19.5"
               />
             </div>
@@ -571,9 +613,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Usage Tracking</CardTitle>
-          <CardDescription>
-            Service dates and mileage information
-          </CardDescription>
+          <CardDescription>Service dates and mileage information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -583,7 +623,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="startDate"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                onChange={(e) => handleInputChange("startDate", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -592,7 +632,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="startMileage"
                 type="number"
                 value={formData.startMileage}
-                onChange={(e) => handleInputChange('startMileage', e.target.value)}
+                onChange={(e) => handleInputChange("startMileage", e.target.value)}
                 placeholder="Starting odometer reading"
               />
             </div>
@@ -605,7 +645,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="retireDate"
                 type="date"
                 value={formData.retireDate}
-                onChange={(e) => handleInputChange('retireDate', e.target.value)}
+                onChange={(e) => handleInputChange("retireDate", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -614,7 +654,7 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
                 id="retireMileage"
                 type="number"
                 value={formData.retireMileage}
-                onChange={(e) => handleInputChange('retireMileage', e.target.value)}
+                onChange={(e) => handleInputChange("retireMileage", e.target.value)}
                 placeholder="Final odometer reading"
               />
             </div>
@@ -626,21 +666,24 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
       <Card>
         <CardHeader>
           <CardTitle>Location Assignment</CardTitle>
-          <CardDescription>
-            Assign equipment to a specific location
-          </CardDescription>
+          <CardDescription>Assign equipment to a specific location</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="locationId">Assigned Location</Label>
-            <Select value={formData.locationId} onValueChange={(value) => handleInputChange('locationId', value)}>
+            <Select
+              value={formData.locationId}
+              onValueChange={(value) => handleInputChange("locationId", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select location (optional)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No specific location</SelectItem>
-                {locations.map(location => (
-                  <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -658,15 +701,13 @@ export function EquipmentForm({ organizationId, equipment, onSuccess, onCancel }
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {equipment ? 'Updating...' : 'Adding...'}
+              {equipment ? "Updating..." : "Adding..."}
             </>
           ) : (
-            <>
-              {equipment ? 'Update Equipment' : 'Add Equipment'}
-            </>
+            <>{equipment ? "Update Equipment" : "Add Equipment"}</>
           )}
         </Button>
       </div>
     </form>
-  )
-} 
+  );
+}

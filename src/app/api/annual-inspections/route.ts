@@ -1,81 +1,81 @@
-import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { createId } from '@paralleldrive/cuid2'
-import { captureAPIError } from '@/lib/sentry-utils'
+import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { createId } from "@paralleldrive/cuid2";
+import { captureAPIError } from "@/lib/sentry-utils";
 
 // Define types for annual inspection data
 interface AnnualInspectionData {
-  inspectorName: string
-  inspectionDate: string
-  expirationDate: string
-  result: 'Pass' | 'Fail'
-  status: 'Active' | 'Inactive'
-  notes?: string
-  partyId: string
-  title: string
-  description?: string
-  priority?: string
+  inspectorName: string;
+  inspectionDate: string;
+  expirationDate: string;
+  result: "Pass" | "Fail";
+  status: "Active" | "Inactive";
+  notes?: string;
+  partyId: string;
+  title: string;
+  description?: string;
+  priority?: string;
 }
 
 // GET /api/annual-inspections - List annual inspections with filtering
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const partyId = searchParams.get('partyId')
-    const result = searchParams.get('result')
-    const status = searchParams.get('status')
+    const { searchParams } = new URL(request.url);
+    const partyId = searchParams.get("partyId");
+    const result = searchParams.get("result");
+    const status = searchParams.get("status");
 
     // Build where clause for filtering
-    const where: any = {}
-    
+    const where: any = {};
+
     if (partyId) {
-      where.issue = { partyId }
+      where.issue = { partyId };
     }
-    
+
     if (result) {
-      where.result = result
+      where.result = result;
     }
 
     if (status) {
-      where.status = status
+      where.status = status;
     }
 
     // Access control - support Master, Organization, and Location managers
-    let accessFilter = {}
-    
+    let accessFilter = {};
+
     // Get user's role to determine access
     const userRole = await db.role.findFirst({
-      where: { 
+      where: {
         party: { userId },
-        isActive: true 
-      }
-    })
-    
+        isActive: true,
+      },
+    });
+
     // Get user's master organization first
     const userMasterOrg = await db.organization.findFirst({
       where: {
-        party: { userId: userId }
-      }
-    })
+        party: { userId: userId },
+      },
+    });
 
     if (userMasterOrg) {
       // Master user - can see inspections for all organizations they manage
       const managedOrgs = await db.role.findMany({
         where: {
-          roleType: 'master',
+          roleType: "master",
           partyId: userMasterOrg.partyId,
-          isActive: true
+          isActive: true,
         },
-        select: { organizationId: true }
-      })
+        select: { organizationId: true },
+      });
 
-      const managedOrgIds = managedOrgs.map(role => role.organizationId).filter(Boolean)
+      const managedOrgIds = managedOrgs.map((role) => role.organizationId).filter(Boolean);
 
       if (managedOrgIds.length > 0) {
         accessFilter = {
@@ -84,12 +84,12 @@ export async function GET(request: NextRequest) {
               role: {
                 some: {
                   organizationId: { in: managedOrgIds },
-                  isActive: true
-                }
-              }
-            }
-          }
-        }
+                  isActive: true,
+                },
+              },
+            },
+          },
+        };
       }
     } else if (userRole) {
       // Organization or Location user
@@ -100,31 +100,33 @@ export async function GET(request: NextRequest) {
               role: {
                 some: {
                   organizationId: userRole.organizationId,
-                  isActive: true
-                }
-              }
-            }
-          }
-        }
+                  isActive: true,
+                },
+              },
+            },
+          },
+        };
       }
     } else {
       // Individual user - only their own inspections
       accessFilter = {
         issue: {
           partyId: {
-            in: await db.party.findMany({
-              where: { userId },
-              select: { id: true }
-            }).then(parties => parties.map(p => p.id))
-          }
-        }
-      }
+            in: await db.party
+              .findMany({
+                where: { userId },
+                select: { id: true },
+              })
+              .then((parties) => parties.map((p) => p.id)),
+          },
+        },
+      };
     }
 
     const inspections = await db.annual_inspection_issue.findMany({
       where: {
         ...where,
-        ...accessFilter
+        ...accessFilter,
       },
       include: {
         issue: {
@@ -133,43 +135,48 @@ export async function GET(request: NextRequest) {
               include: {
                 equipment: true,
                 person: true,
-                organization: true
-              }
-            }
-          }
-        }
+                organization: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        expirationDate: 'desc'
-      }
-    })
+        expirationDate: "desc",
+      },
+    });
 
-    return Response.json({ inspections })
+    return Response.json({ inspections });
   } catch (error) {
-    console.error('Error fetching annual inspections:', error)
-    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
-      endpoint: '/api/annual-inspections',
-      method: 'GET',
-      userId: (await auth()).userId || 'unknown'
-    })
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error fetching annual inspections:", error);
+    captureAPIError(error instanceof Error ? error : new Error("Unknown error"), {
+      endpoint: "/api/annual-inspections",
+      method: "GET",
+      userId: (await auth()).userId || "unknown",
+    });
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 // POST /api/annual-inspections - Create new annual inspection
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: AnnualInspectionData = await request.json()
-    
+    const body: AnnualInspectionData = await request.json();
+
     // Validate required fields
-    if (!body.inspectorName || !body.inspectionDate || 
-        !body.expirationDate || !body.partyId || !body.result) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 })
+    if (
+      !body.inspectorName ||
+      !body.inspectionDate ||
+      !body.expirationDate ||
+      !body.partyId ||
+      !body.result
+    ) {
+      return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Check if user has access to the party (equipment)
@@ -181,24 +188,24 @@ export async function POST(request: NextRequest) {
           include: {
             party: {
               include: {
-                organization: true
-              }
-            }
-          }
-        }
-      }
-    })
+                organization: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!party) {
-      return Response.json({ error: 'Party not found' }, { status: 404 })
+      return Response.json({ error: "Party not found" }, { status: 404 });
     }
 
     // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    
+    let hasAccess = false;
+
     // 1. Check direct ownership first
     if (party.userId === userId) {
-      hasAccess = true
+      hasAccess = true;
     }
 
     if (!hasAccess) {
@@ -206,31 +213,31 @@ export async function POST(request: NextRequest) {
       const equipmentRole = await db.role.findFirst({
         where: {
           partyId: body.partyId,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (equipmentRole) {
         // 2. Check if user is a Master consultant who manages this organization
         const userMasterOrg = await db.organization.findFirst({
           where: {
-            party: { userId: userId }
-          }
-        })
+            party: { userId: userId },
+          },
+        });
 
         if (userMasterOrg) {
           // Check if master org manages the equipment's organization
           const masterRole = await db.role.findFirst({
             where: {
-              roleType: 'master',
+              roleType: "master",
               partyId: userMasterOrg.partyId,
               organizationId: equipmentRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (masterRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -240,13 +247,13 @@ export async function POST(request: NextRequest) {
             where: {
               party: { userId: userId },
               organizationId: equipmentRole.organizationId,
-              roleType: { in: ['organization_manager', 'owner', 'consultant'] },
-              isActive: true
-            }
-          })
+              roleType: { in: ["organization_manager", "owner", "consultant"] },
+              isActive: true,
+            },
+          });
 
           if (orgManagerRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -256,20 +263,20 @@ export async function POST(request: NextRequest) {
             where: {
               party: { userId: userId },
               locationId: equipmentRole.locationId,
-              roleType: 'location_manager',
-              isActive: true
-            }
-          })
+              roleType: "location_manager",
+              isActive: true,
+            },
+          });
 
           if (locationManagerRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
       }
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Create annual inspection in transaction
@@ -278,16 +285,16 @@ export async function POST(request: NextRequest) {
       const issue = await tx.issue.create({
         data: {
           id: createId(),
-          issueType: 'annual_inspection',
-          status: 'open',
-          priority: body.priority || 'medium',
+          issueType: "annual_inspection",
+          status: "open",
+          priority: body.priority || "medium",
           partyId: body.partyId,
           title: body.title,
           description: body.description,
           dueDate: new Date(body.expirationDate),
-          updatedAt: new Date()
-        }
-      })
+          updatedAt: new Date(),
+        },
+      });
 
       // Create the annual inspection issue
       const inspectionIssue = await tx.annual_inspection_issue.create({
@@ -297,8 +304,8 @@ export async function POST(request: NextRequest) {
           inspectionDate: new Date(body.inspectionDate),
           expirationDate: new Date(body.expirationDate),
           result: body.result,
-          status: body.status || 'Active',
-          notes: body.notes
+          status: body.status || "Active",
+          notes: body.notes,
         },
         include: {
           issue: {
@@ -306,25 +313,25 @@ export async function POST(request: NextRequest) {
               party: {
                 include: {
                   equipment: true,
-                  organization: true
-                }
-              }
-            }
-          }
-        }
-      })
+                  organization: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-      return inspectionIssue
-    })
+      return inspectionIssue;
+    });
 
-    return Response.json(result, { status: 201 })
+    return Response.json(result, { status: 201 });
   } catch (error) {
-    console.error('Error creating annual inspection:', error)
-    captureAPIError(error instanceof Error ? error : new Error('Unknown error'), {
-      endpoint: '/api/annual-inspections',
-      method: 'POST',
-      userId: (await auth()).userId || 'unknown'
-    })
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error creating annual inspection:", error);
+    captureAPIError(error instanceof Error ? error : new Error("Unknown error"), {
+      endpoint: "/api/annual-inspections",
+      method: "POST",
+      userId: (await auth()).userId || "unknown",
+    });
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

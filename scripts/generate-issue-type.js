@@ -1,44 +1,46 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
 // Configuration
 const ISSUE_TYPES = {
   driver: {
-    sidebarPath: 'src/components/layouts/app-sidebar.tsx',
-    menuSection: 'driverId',
-    contextType: 'driver'
+    sidebarPath: "src/components/layouts/app-sidebar.tsx",
+    menuSection: "driverId",
+    contextType: "driver",
   },
   equipment: {
-    sidebarPath: 'src/components/layouts/app-sidebar.tsx', 
-    menuSection: 'equipmentId',
-    contextType: 'equipment'
-  }
+    sidebarPath: "src/components/layouts/app-sidebar.tsx",
+    menuSection: "equipmentId",
+    contextType: "equipment",
+  },
 };
 
 function generateIssueType(issueTypeName, entityType, fieldDefinitions) {
   const capitalizedName = issueTypeName.charAt(0).toUpperCase() + issueTypeName.slice(1);
-  const snakeName = issueTypeName.toLowerCase().replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-  
+  const snakeName = issueTypeName
+    .toLowerCase()
+    .replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+
   console.log(`🚀 Generating ${capitalizedName} Issue Type for ${entityType}...`);
-  
+
   // 1. Generate Prisma Schema Addition
   generatePrismaSchema(issueTypeName, snakeName, fieldDefinitions);
-  
+
   // 2. Generate API Routes
   generateAPIRoutes(issueTypeName, snakeName, capitalizedName, fieldDefinitions);
-  
+
   // 3. Generate React Components
   generateReactComponents(issueTypeName, snakeName, capitalizedName, entityType, fieldDefinitions);
-  
+
   // 4. Generate Main Page
   generateMainPage(issueTypeName, snakeName, capitalizedName, entityType);
-  
+
   // 5. Update Sidebar Navigation
   updateSidebarNavigation(issueTypeName, snakeName, entityType);
-  
+
   console.log(`✅ ${capitalizedName} Issue Type generated successfully!`);
   console.log(`\n📋 Next steps:`);
   console.log(`1. Run: npx prisma db push`);
@@ -47,44 +49,44 @@ function generateIssueType(issueTypeName, entityType, fieldDefinitions) {
 }
 
 function generatePrismaSchema(issueTypeName, snakeName, fieldDefinitions) {
-  console.log('📊 Generating Prisma schema...');
-  
+  console.log("📊 Generating Prisma schema...");
+
   const capitalizedName = issueTypeName.charAt(0).toUpperCase() + issueTypeName.slice(1);
-  
+
   const enumDefinitions = fieldDefinitions
-    .filter(field => field.type === 'ENUM')
-    .map(field => {
+    .filter((field) => field.type === "ENUM")
+    .map((field) => {
       const enumName = `${capitalizedName}${field.name.charAt(0).toUpperCase() + field.name.slice(1)}`;
-      const values = field.values.map(v => `  ${v.replace(/\s+/g, '_')}`).join('\n');
+      const values = field.values.map((v) => `  ${v.replace(/\s+/g, "_")}`).join("\n");
       return `enum ${enumName} {\n${values}\n}`;
     })
-    .join('\n\n');
-  
+    .join("\n\n");
+
   const modelFields = fieldDefinitions
-    .filter(field => !['createdAt', 'updatedAt', 'issueId'].includes(field.name))
-    .map(field => {
+    .filter((field) => !["createdAt", "updatedAt", "issueId"].includes(field.name))
+    .map((field) => {
       let prismaType = field.type;
-      let nullable = field.required ? '' : '?';
-      let defaultValue = field.default ? ` @default(${field.default})` : '';
-      
-      if (field.type === 'ENUM') {
+      let nullable = field.required ? "" : "?";
+      let defaultValue = field.default ? ` @default(${field.default})` : "";
+
+      if (field.type === "ENUM") {
         prismaType = `${capitalizedName}${field.name.charAt(0).toUpperCase() + field.name.slice(1)}`;
-      } else if (field.type === 'VARCHAR') {
-        prismaType = 'String';
-      } else if (field.type === 'TEXT') {
-        prismaType = 'String';
-      } else if (field.type === 'INT') {
-        prismaType = 'Int';
-      } else if (field.type === 'BOOLEAN') {
-        prismaType = 'Boolean';
-      } else if (field.type === 'TIMESTAMP') {
-        prismaType = 'DateTime';
+      } else if (field.type === "VARCHAR") {
+        prismaType = "String";
+      } else if (field.type === "TEXT") {
+        prismaType = "String";
+      } else if (field.type === "INT") {
+        prismaType = "Int";
+      } else if (field.type === "BOOLEAN") {
+        prismaType = "Boolean";
+      } else if (field.type === "TIMESTAMP") {
+        prismaType = "DateTime";
       }
-      
+
       return `  ${field.name}        ${prismaType}${nullable}${defaultValue}`;
     })
-    .join('\n');
-  
+    .join("\n");
+
   const schemaAddition = `
 // Add these to your schema.prisma file:
 
@@ -102,29 +104,41 @@ ${modelFields}
 // Add this to your issue model:
 // ${snakeName}_issue   ${snakeName}_issue?
 `;
-  
+
   fs.writeFileSync(`generated/${snakeName}_schema.prisma`, schemaAddition);
 }
 
 function generateAPIRoutes(issueTypeName, snakeName, capitalizedName, fieldDefinitions) {
-  console.log('🔌 Generating API routes...');
-  
+  console.log("🔌 Generating API routes...");
+
   // Main route file
   const mainRouteTemplate = `import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
-import { ${fieldDefinitions.filter(f => f.type === 'ENUM').map(f => `${capitalizedName}${f.name.charAt(0).toUpperCase() + f.name.slice(1)}`).join(', ')} } from '@prisma/client'
+import { ${fieldDefinitions
+    .filter((f) => f.type === "ENUM")
+    .map((f) => `${capitalizedName}${f.name.charAt(0).toUpperCase() + f.name.slice(1)}`)
+    .join(", ")} } from '@prisma/client'
 
 interface ${capitalizedName}IssueData {
-  ${fieldDefinitions.map(field => {
-    let tsType = field.type === 'VARCHAR' || field.type === 'TEXT' ? 'string' : 
-                 field.type === 'INT' ? 'number' :
-                 field.type === 'BOOLEAN' ? 'boolean' :
-                 field.type === 'TIMESTAMP' ? 'string' :
-                 field.type === 'ENUM' ? 'string' : 'any';
-    return `${field.name}${field.required ? '' : '?'}: ${tsType}`;
-  }).join('\n  ')}
+  ${fieldDefinitions
+    .map((field) => {
+      let tsType =
+        field.type === "VARCHAR" || field.type === "TEXT"
+          ? "string"
+          : field.type === "INT"
+            ? "number"
+            : field.type === "BOOLEAN"
+              ? "boolean"
+              : field.type === "TIMESTAMP"
+                ? "string"
+                : field.type === "ENUM"
+                  ? "string"
+                  : "any";
+      return `${field.name}${field.required ? "" : "?"}: ${tsType}`;
+    })
+    .join("\n  ")}
   title?: string
   description?: string
   dueDate?: string
@@ -175,7 +189,10 @@ export async function POST(request: NextRequest) {
     const body: ${capitalizedName}IssueData = await request.json()
     
     // Validate required fields
-    const requiredFields = [${fieldDefinitions.filter(f => f.required && !['createdAt', 'updatedAt', 'issueId'].includes(f.name)).map(f => `'${f.name}'`).join(', ')}]
+    const requiredFields = [${fieldDefinitions
+      .filter((f) => f.required && !["createdAt", "updatedAt", "issueId"].includes(f.name))
+      .map((f) => `'${f.name}'`)
+      .join(", ")}]
     for (const field of requiredFields) {
       if (!body[field as keyof ${capitalizedName}IssueData]) {
         return Response.json({ error: \`Missing required field: \${field}\` }, { status: 400 })
@@ -213,15 +230,18 @@ export async function POST(request: NextRequest) {
     const ${snakeName}Issue = await db.${snakeName}_issue.create({
       data: {
         issueId: issue.id,
-        ${fieldDefinitions.filter(f => !['createdAt', 'updatedAt', 'issueId'].includes(f.name)).map(field => {
-          if (field.type === 'ENUM') {
-            return `${field.name}: body.${field.name} ? body.${field.name} as ${capitalizedName}${field.name.charAt(0).toUpperCase() + field.name.slice(1)} : undefined`;
-          } else if (field.type === 'TIMESTAMP') {
-            return `${field.name}: body.${field.name} ? new Date(body.${field.name}) : undefined`;
-          } else {
-            return `${field.name}: body.${field.name}${field.default ? ` ?? ${field.default}` : ''}`;
-          }
-        }).join(',\n        ')}
+        ${fieldDefinitions
+          .filter((f) => !["createdAt", "updatedAt", "issueId"].includes(f.name))
+          .map((field) => {
+            if (field.type === "ENUM") {
+              return `${field.name}: body.${field.name} ? body.${field.name} as ${capitalizedName}${field.name.charAt(0).toUpperCase() + field.name.slice(1)} : undefined`;
+            } else if (field.type === "TIMESTAMP") {
+              return `${field.name}: body.${field.name} ? new Date(body.${field.name}) : undefined`;
+            } else {
+              return `${field.name}: body.${field.name}${field.default ? ` ?? ${field.default}` : ""}`;
+            }
+          })
+          .join(",\n        ")}
       },
       include: {
         issue: true
@@ -236,19 +256,25 @@ export async function POST(request: NextRequest) {
 }`;
 
   fs.writeFileSync(`generated/api_${snakeName}_issues_route.ts`, mainRouteTemplate);
-  
+
   // Individual issue route
   const individualRouteTemplate = `// Similar pattern for [id]/route.ts - GET, PUT, DELETE operations`;
   fs.writeFileSync(`generated/api_${snakeName}_issues_[id]_route.ts`, individualRouteTemplate);
-  
+
   // Renewal route
   const renewalRouteTemplate = `// Renewal route template for ${snakeName} issues`;
   fs.writeFileSync(`generated/api_${snakeName}_issues_renew_route.ts`, renewalRouteTemplate);
 }
 
-function generateReactComponents(issueTypeName, snakeName, capitalizedName, entityType, fieldDefinitions) {
-  console.log('⚛️ Generating React components...');
-  
+function generateReactComponents(
+  issueTypeName,
+  snakeName,
+  capitalizedName,
+  entityType,
+  fieldDefinitions,
+) {
+  console.log("⚛️ Generating React components...");
+
   // Form component template
   const formTemplate = `"use client"
 import { useState } from 'react'
@@ -276,13 +302,15 @@ export default function ${capitalizedName}IssueForm({ partyId, ${snakeName}Issue
   const [error, setError] = useState<string | null>(null)
   
   const [formData, setFormData] = useState({
-    ${fieldDefinitions.map(field => {
-      if (field.type === 'TIMESTAMP') {
-        return `${field.name}: ${snakeName}Issue?.${field.name} ? new Date(${snakeName}Issue.${field.name}) : null`;
-      } else {
-        return `${field.name}: ${snakeName}Issue?.${field.name} || ${field.default || "''"}`;
-      }
-    }).join(',\n    ')},
+    ${fieldDefinitions
+      .map((field) => {
+        if (field.type === "TIMESTAMP") {
+          return `${field.name}: ${snakeName}Issue?.${field.name} ? new Date(${snakeName}Issue.${field.name}) : null`;
+        } else {
+          return `${field.name}: ${snakeName}Issue?.${field.name} || ${field.default || "''"}`;
+        }
+      })
+      .join(",\n    ")},
     title: ${snakeName}Issue?.issue?.title || '',
     description: ${snakeName}Issue?.issue?.description || ''
   })
@@ -300,9 +328,12 @@ export default function ${capitalizedName}IssueForm({ partyId, ${snakeName}Issue
       const payload = {
         ...formData,
         partyId: partyId || ${snakeName}Issue?.issue?.partyId,
-        ${fieldDefinitions.filter(f => f.type === 'TIMESTAMP').map(f => 
-          `${f.name}: formData.${f.name} ? formData.${f.name}.toISOString() : undefined`
-        ).join(',\n        ')}
+        ${fieldDefinitions
+          .filter((f) => f.type === "TIMESTAMP")
+          .map(
+            (f) => `${f.name}: formData.${f.name} ? formData.${f.name}.toISOString() : undefined`,
+          )
+          .join(",\n        ")}
       }
 
       const url = ${snakeName}Issue 
@@ -362,15 +393,15 @@ export default function ${capitalizedName}IssueForm({ partyId, ${snakeName}Issue
 }`;
 
   fs.writeFileSync(`generated/${snakeName}-issue-form.tsx`, formTemplate);
-  
-  // Renewal form template  
+
+  // Renewal form template
   const renewalTemplate = `// Renewal form template for ${capitalizedName}`;
   fs.writeFileSync(`generated/${snakeName}-renewal-form.tsx`, renewalTemplate);
 }
 
 function generateMainPage(issueTypeName, snakeName, capitalizedName, entityType) {
-  console.log('📄 Generating main page...');
-  
+  console.log("📄 Generating main page...");
+
   const pageTemplate = `"use client"
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -454,8 +485,8 @@ export default function ${capitalizedName}IssuesPage() {
 }
 
 function updateSidebarNavigation(issueTypeName, snakeName, entityType) {
-  console.log('🔗 Generating sidebar navigation update...');
-  
+  console.log("🔗 Generating sidebar navigation update...");
+
   const sidebarUpdate = `
 // Add this to your app-sidebar.tsx in the ${entityType} section:
 
@@ -473,34 +504,40 @@ function updateSidebarNavigation(issueTypeName, snakeName, entityType) {
 // CLI Interface
 if (require.main === module) {
   const args = process.argv.slice(2);
-  
+
   if (args.length < 2) {
-    console.log('Usage: node generate-issue-type.js <issueTypeName> <entityType> [configFile]');
-    console.log('Example: node generate-issue-type.js inspection driver inspection-fields.json');
+    console.log("Usage: node generate-issue-type.js <issueTypeName> <entityType> [configFile]");
+    console.log("Example: node generate-issue-type.js inspection driver inspection-fields.json");
     process.exit(1);
   }
-  
+
   const [issueTypeName, entityType, configFile] = args;
-  
+
   // Create output directory
-  if (!fs.existsSync('generated')) {
-    fs.mkdirSync('generated');
+  if (!fs.existsSync("generated")) {
+    fs.mkdirSync("generated");
   }
-  
+
   // Load field definitions from config file or use defaults
   let fieldDefinitions = [];
   if (configFile && fs.existsSync(configFile)) {
-    const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+    const config = JSON.parse(fs.readFileSync(configFile, "utf8"));
     fieldDefinitions = config.fields || config; // Support both nested and flat structure
   } else {
-    console.log('⚠️ No config file provided. Using minimal defaults.');
+    console.log("⚠️ No config file provided. Using minimal defaults.");
     fieldDefinitions = [
-      { name: 'status', type: 'ENUM', values: ['Active', 'Inactive'], required: false, default: 'Active' },
-      { name: 'notes', type: 'TEXT', required: false }
+      {
+        name: "status",
+        type: "ENUM",
+        values: ["Active", "Inactive"],
+        required: false,
+        default: "Active",
+      },
+      { name: "notes", type: "TEXT", required: false },
     ];
   }
-  
+
   generateIssueType(issueTypeName, entityType, fieldDefinitions);
 }
 
-module.exports = { generateIssueType }; 
+module.exports = { generateIssueType };

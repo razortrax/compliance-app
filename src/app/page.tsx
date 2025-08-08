@@ -1,25 +1,33 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs"
-import { SmartRedirect } from "@/components/routing/smart-redirect"
-import { DashboardQuickAccess } from "@/components/dashboard/dashboard-quick-access"
-import Header from "@/components/layout/header"
-import { Building, Users, Shield, Truck, CheckCircle, ArrowRight, LayoutDashboard } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { SmartRedirect } from "@/components/routing/smart-redirect";
+import { DashboardQuickAccess } from "@/components/dashboard/dashboard-quick-access";
+import Header from "@/components/layout/header";
+import {
+  Building,
+  Users,
+  Shield,
+  Truck,
+  CheckCircle,
+  ArrowRight,
+  LayoutDashboard,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header with sign-in button */}
       <Header />
-      
+
       {/* Smart redirect for signed-in users */}
       <SignedIn>
         <SmartRedirect />
       </SignedIn>
-      
+
       <div className="container mx-auto px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
@@ -27,7 +35,7 @@ export default function LandingPage() {
             Fleet Compliance Made Simple
           </Badge>
           <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
-            DOT Compliance Made Simple with{' '}
+            DOT Compliance Made Simple with{" "}
             <Image
               src="/fleetrax-logo.png"
               alt="Fleetrax"
@@ -38,8 +46,8 @@ export default function LandingPage() {
             />
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Streamline your fleet's compliance tracking, automate expiration notifications, 
-            and manage inspections and accidents with our intelligent platform.
+            Streamline your fleet's compliance tracking, automate expiration notifications, and
+            manage inspections and accidents with our intelligent platform.
           </p>
         </div>
 
@@ -120,7 +128,7 @@ export default function LandingPage() {
                       Advanced reporting & analytics
                     </li>
                   </ul>
-                  
+
                   <SignUpButton mode="modal" forceRedirectUrl="/complete-profile?role=master">
                     <Button className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
                       Start as Fleet Manager
@@ -160,7 +168,7 @@ export default function LandingPage() {
                       Standard reporting
                     </li>
                   </ul>
-                  
+
                   <SignUpButton mode="modal" forceRedirectUrl="/complete-profile?role=organization">
                     <Button className="w-full bg-green-600 hover:bg-green-700" size="sm">
                       Start as Organization
@@ -177,9 +185,7 @@ export default function LandingPage() {
                     <Shield className="h-6 w-6" />
                   </div>
                   <CardTitle className="text-lg">Compliance Consultant</CardTitle>
-                  <CardDescription className="text-sm">
-                    Serve multiple clients
-                  </CardDescription>
+                  <CardDescription className="text-sm">Serve multiple clients</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="text-sm text-muted-foreground space-y-1 mb-4">
@@ -200,7 +206,7 @@ export default function LandingPage() {
                       Consultant tools
                     </li>
                   </ul>
-                  
+
                   <SignUpButton mode="modal" forceRedirectUrl="/complete-profile?role=consultant">
                     <Button className="w-full bg-purple-600 hover:bg-purple-700" size="sm">
                       Start as Consultant
@@ -213,7 +219,7 @@ export default function LandingPage() {
 
             <div className="text-center mt-8">
               <p className="text-sm text-muted-foreground">
-                Not sure which option is right for you? 
+                Not sure which option is right for you?
                 <span className="ml-1 text-blue-600 underline cursor-pointer text-sm">
                   Contact us for guidance
                 </span>
@@ -247,5 +253,5 @@ export default function LandingPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

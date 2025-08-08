@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Upload,
   FileText,
@@ -33,217 +33,217 @@ import {
   Paperclip,
   CheckCircle,
   AlertTriangle,
-  Clock
-} from 'lucide-react'
+  Clock,
+} from "lucide-react";
 
 interface Attachment {
-  id: string
-  fileName: string
-  fileType: string
-  fileSize: number
-  uploadedAt: string
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
   uploadedBy?: {
     party: {
       person: {
-        firstName: string
-        lastName: string
-      }
-    }
-  }
-  attachmentType: string
-  description?: string
-  url?: string
+        firstName: string;
+        lastName: string;
+      };
+    };
+  };
+  attachmentType: string;
+  description?: string;
+  url?: string;
 }
 
 interface CAFAttachmentsProps {
-  cafId: string
-  cafStatus: string
-  isReadOnly?: boolean
-  onAttachmentAdded?: () => void
+  cafId: string;
+  cafStatus: string;
+  isReadOnly?: boolean;
+  onAttachmentAdded?: () => void;
 }
 
-export default function CAFAttachments({ 
-  cafId, 
-  cafStatus, 
+export default function CAFAttachments({
+  cafId,
+  cafStatus,
   isReadOnly = false,
-  onAttachmentAdded 
+  onAttachmentAdded,
 }: CAFAttachmentsProps) {
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadFormData, setUploadFormData] = useState({
-    attachmentType: 'DOCUMENTATION',
-    description: '',
-    selectedFile: null as File | null
-  })
-  const fileInputRef = useRef<HTMLInputElement>(null)
+    attachmentType: "DOCUMENTATION",
+    description: "",
+    selectedFile: null as File | null,
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchAttachments()
-  }, [cafId])
+    fetchAttachments();
+  }, [cafId]);
 
   const fetchAttachments = async () => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/attachments?cafId=${cafId}`)
+      setLoading(true);
+      const response = await fetch(`/api/attachments?cafId=${cafId}`);
       if (response.ok) {
-        const data = await response.json()
-        setAttachments(data)
+        const data = await response.json();
+        setAttachments(data);
       }
     } catch (error) {
-      console.error('Error fetching attachments:', error)
+      console.error("Error fetching attachments:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB')
-        return
+        alert("File size must be less than 10MB");
+        return;
       }
 
       // Validate file type
       const allowedTypes = [
-        'application/pdf',
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain'
-      ]
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+      ];
 
       if (!allowedTypes.includes(file.type)) {
-        alert('Unsupported file type. Please upload PDF, images, Word documents, or text files.')
-        return
+        alert("Unsupported file type. Please upload PDF, images, Word documents, or text files.");
+        return;
       }
 
-      setUploadFormData(prev => ({ ...prev, selectedFile: file }))
+      setUploadFormData((prev) => ({ ...prev, selectedFile: file }));
     }
-  }
+  };
 
   const handleUpload = async () => {
-    if (!uploadFormData.selectedFile) return
+    if (!uploadFormData.selectedFile) return;
 
-    setUploading(true)
+    setUploading(true);
     try {
-      const formData = new FormData()
-      formData.append('file', uploadFormData.selectedFile)
-      formData.append('cafId', cafId)
-      formData.append('attachmentType', uploadFormData.attachmentType)
-      formData.append('description', uploadFormData.description)
+      const formData = new FormData();
+      formData.append("file", uploadFormData.selectedFile);
+      formData.append("cafId", cafId);
+      formData.append("attachmentType", uploadFormData.attachmentType);
+      formData.append("description", uploadFormData.description);
 
-      const response = await fetch('/api/attachments', {
-        method: 'POST',
-        body: formData
-      })
+      const response = await fetch("/api/attachments", {
+        method: "POST",
+        body: formData,
+      });
 
       if (response.ok) {
-        await fetchAttachments()
-        setShowUploadDialog(false)
+        await fetchAttachments();
+        setShowUploadDialog(false);
         setUploadFormData({
-          attachmentType: 'DOCUMENTATION',
-          description: '',
-          selectedFile: null
-        })
+          attachmentType: "DOCUMENTATION",
+          description: "",
+          selectedFile: null,
+        });
         if (fileInputRef.current) {
-          fileInputRef.current.value = ''
+          fileInputRef.current.value = "";
         }
-        onAttachmentAdded?.()
+        onAttachmentAdded?.();
       } else {
-        const error = await response.json()
-        alert(`Upload failed: ${error.message || 'Unknown error'}`)
+        const error = await response.json();
+        alert(`Upload failed: ${error.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error('Error uploading file:', error)
-      alert('Upload failed. Please try again.')
+      console.error("Error uploading file:", error);
+      alert("Upload failed. Please try again.");
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   const handleDownload = async (attachment: Attachment) => {
     try {
-      const response = await fetch(`/api/attachments/${attachment.id}/download`)
+      const response = await fetch(`/api/attachments/${attachment.id}/download`);
       if (response.ok) {
-        const blob = await response.blob()
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = attachment.fileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = attachment.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       }
     } catch (error) {
-      console.error('Error downloading file:', error)
-      alert('Download failed. Please try again.')
+      console.error("Error downloading file:", error);
+      alert("Download failed. Please try again.");
     }
-  }
+  };
 
   const handleDelete = async (attachmentId: string) => {
-    if (!confirm('Are you sure you want to delete this attachment?')) return
+    if (!confirm("Are you sure you want to delete this attachment?")) return;
 
     try {
       const response = await fetch(`/api/attachments/${attachmentId}`, {
-        method: 'DELETE'
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
-        await fetchAttachments()
+        await fetchAttachments();
       } else {
-        alert('Failed to delete attachment.')
+        alert("Failed to delete attachment.");
       }
     } catch (error) {
-      console.error('Error deleting attachment:', error)
-      alert('Delete failed. Please try again.')
+      console.error("Error deleting attachment:", error);
+      alert("Delete failed. Please try again.");
     }
-  }
+  };
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) {
-      return <Image className="h-5 w-5 text-blue-500" />
-    } else if (fileType === 'application/pdf') {
-      return <FileText className="h-5 w-5 text-red-500" />
+    if (fileType.startsWith("image/")) {
+      return <Image className="h-5 w-5 text-blue-500" />;
+    } else if (fileType === "application/pdf") {
+      return <FileText className="h-5 w-5 text-red-500" />;
     } else {
-      return <Paperclip className="h-5 w-5 text-gray-500" />
+      return <Paperclip className="h-5 w-5 text-gray-500" />;
     }
-  }
+  };
 
   const getAttachmentTypeColor = (type: string) => {
     switch (type) {
-      case 'DOCUMENTATION':
-        return 'bg-blue-100 text-blue-800'
-      case 'SIGNATURE':
-        return 'bg-green-100 text-green-800'
-      case 'PHOTO':
-        return 'bg-purple-100 text-purple-800'
-      case 'COMPLETION_EVIDENCE':
-        return 'bg-orange-100 text-orange-800'
+      case "DOCUMENTATION":
+        return "bg-blue-100 text-blue-800";
+      case "SIGNATURE":
+        return "bg-green-100 text-green-800";
+      case "PHOTO":
+        return "bg-purple-100 text-purple-800";
+      case "COMPLETION_EVIDENCE":
+        return "bg-orange-100 text-orange-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   const canUpload = () => {
-    if (isReadOnly) return false
+    if (isReadOnly) return false;
     // Allow uploads for any status except CANCELLED
-    return cafStatus !== 'CANCELLED'
-  }
+    return cafStatus !== "CANCELLED";
+  };
 
   if (loading) {
     return (
@@ -257,7 +257,7 @@ export default function CAFAttachments({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -296,7 +296,9 @@ export default function CAFAttachments({
                     <Label htmlFor="attachmentType">Document Type</Label>
                     <Select
                       value={uploadFormData.attachmentType}
-                      onValueChange={(value) => setUploadFormData(prev => ({ ...prev, attachmentType: value }))}
+                      onValueChange={(value) =>
+                        setUploadFormData((prev) => ({ ...prev, attachmentType: value }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -315,21 +317,23 @@ export default function CAFAttachments({
                     <Textarea
                       id="description"
                       value={uploadFormData.description}
-                      onChange={(e) => setUploadFormData(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={(e) =>
+                        setUploadFormData((prev) => ({ ...prev, description: e.target.value }))
+                      }
                       placeholder="Brief description of this document..."
                       rows={3}
                     />
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setShowUploadDialog(false)}
                       disabled={uploading}
                     >
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleUpload}
                       disabled={!uploadFormData.selectedFile || uploading}
                     >
@@ -357,31 +361,31 @@ export default function CAFAttachments({
           <div className="text-center py-8 text-gray-500">
             <Paperclip className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <p>No documents attached</p>
-            {canUpload() && (
-              <p className="text-sm">Upload documents to support this CAF</p>
-            )}
+            {canUpload() && <p className="text-sm">Upload documents to support this CAF</p>}
           </div>
         ) : (
           <div className="space-y-3">
             {attachments.map((attachment) => (
-              <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div
+                key={attachment.id}
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+              >
                 <div className="flex items-center gap-3 flex-1">
                   {getFileIcon(attachment.fileType)}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium truncate">{attachment.fileName}</p>
                       <Badge className={getAttachmentTypeColor(attachment.attachmentType)}>
-                        {attachment.attachmentType.replace('_', ' ')}
+                        {attachment.attachmentType.replace("_", " ")}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>{formatFileSize(attachment.fileSize)}</span>
-                      <span>
-                        Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
-                      </span>
+                      <span>Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}</span>
                       {attachment.uploadedBy && (
                         <span>
-                          by {attachment.uploadedBy.party.person.firstName} {attachment.uploadedBy.party.person.lastName}
+                          by {attachment.uploadedBy.party.person.firstName}{" "}
+                          {attachment.uploadedBy.party.person.lastName}
                         </span>
                       )}
                     </div>
@@ -391,11 +395,7 @@ export default function CAFAttachments({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload(attachment)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => handleDownload(attachment)}>
                     <Download className="h-4 w-4" />
                   </Button>
                   {!isReadOnly && (
@@ -415,5 +415,5 @@ export default function CAFAttachments({
         )}
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

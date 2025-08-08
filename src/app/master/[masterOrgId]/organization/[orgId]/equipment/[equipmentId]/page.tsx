@@ -1,16 +1,23 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { buildStandardNavigation } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { EquipmentForm } from '@/components/equipment/equipment-form'
-import { 
-  Truck, 
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { buildStandardNavigation } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { EquipmentForm } from "@/components/equipment/equipment-form";
+import {
+  Truck,
   Edit,
   FileText,
   AlertCircle,
@@ -21,121 +28,122 @@ import {
   Settings,
   Shield,
   AlertTriangle,
-  Plus
-} from 'lucide-react'
-import Link from 'next/link'
+  Plus,
+} from "lucide-react";
+import Link from "next/link";
 
 interface Equipment {
-  id: string
-  vehicleType: string
-  make?: string
-  model?: string
-  year?: number
-  vinNumber?: string
-  plateNumber?: string
-  registrationExpiry?: string
+  id: string;
+  vehicleType: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  vinNumber?: string;
+  plateNumber?: string;
+  registrationExpiry?: string;
   party?: {
-    id: string
-  }
+    id: string;
+  };
   organization?: {
-    id: string
-    name: string
-  }
+    id: string;
+    name: string;
+  };
   location?: {
-    id: string
-    name: string
-  }
+    id: string;
+    name: string;
+  };
 }
 
 interface Organization {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface MasterOrg {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface PageData {
-  masterOrg: MasterOrg
-  organization: Organization
-  equipment: Equipment
+  masterOrg: MasterOrg;
+  organization: Organization;
+  equipment: Equipment;
 }
 
 export default function MasterEquipmentDetailPage() {
-  const params = useParams()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
-  const equipmentId = params.equipmentId as string
-  
-  const [data, setData] = useState<PageData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [showEditForm, setShowEditForm] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const params = useParams();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
+  const equipmentId = params.equipmentId as string;
+
+  const [data, setData] = useState<PageData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (equipmentId) {
-      fetchData()
-      fetchUserRole()
+      fetchData();
+      fetchUserRole();
     }
-  }, [equipmentId, masterOrgId, orgId])
+  }, [equipmentId, masterOrgId, orgId]);
 
   const fetchUserRole = async () => {
     try {
-      const response = await fetch('/api/user/role')
+      const response = await fetch("/api/user/role");
       if (response.ok) {
-        const data = await response.json()
-        setUserRole(data.role?.roleType || null)
+        const data = await response.json();
+        setUserRole(data.role?.roleType || null);
       }
     } catch (error) {
-      console.error('Error fetching user role:', error)
+      console.error("Error fetching user role:", error);
     }
-  }
+  };
 
   const fetchData = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      const response = await fetch(`/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}`)
-      
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}`,
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch equipment details')
+        throw new Error("Failed to fetch equipment details");
       }
-      
-      const pageData = await response.json()
-      setData(pageData)
-      
+
+      const pageData = await response.json();
+      setData(pageData);
     } catch (error) {
-      console.error('Error fetching equipment:', error)
-      setError(error instanceof Error ? error.message : 'An unknown error occurred')
+      console.error("Error fetching equipment:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const getExpirationStatus = (expirationDate?: string) => {
-    if (!expirationDate) return { status: 'unknown', daysUntil: null, color: 'text-gray-500' }
-    
-    const expiry = new Date(expirationDate)
-    const today = new Date()
-    const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    
+    if (!expirationDate) return { status: "unknown", daysUntil: null, color: "text-gray-500" };
+
+    const expiry = new Date(expirationDate);
+    const today = new Date();
+    const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
     if (daysUntil < 0) {
-      return { status: 'expired', daysUntil, color: 'text-red-600' }
+      return { status: "expired", daysUntil, color: "text-red-600" };
     } else if (daysUntil <= 30) {
-      return { status: 'expiring', daysUntil, color: 'text-orange-600' }
+      return { status: "expiring", daysUntil, color: "text-orange-600" };
     } else {
-      return { status: 'current', daysUntil, color: 'text-green-600' }
+      return { status: "current", daysUntil, color: "text-green-600" };
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <AppLayout
-        name={data?.masterOrg?.name || 'Loading...'}
+        name={data?.masterOrg?.name || "Loading..."}
         sidebarMenu="equipment"
         className="p-6"
       >
@@ -146,16 +154,12 @@ export default function MasterEquipmentDetailPage() {
           </div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (error) {
     return (
-      <AppLayout
-        name={data?.masterOrg?.name || 'Error'}
-        sidebarMenu="equipment"
-        className="p-6"
-      >
+      <AppLayout name={data?.masterOrg?.name || "Error"} sidebarMenu="equipment" className="p-6">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-500" />
           <h3 className="text-lg font-semibold mb-2">Failed to Load Equipment</h3>
@@ -163,26 +167,22 @@ export default function MasterEquipmentDetailPage() {
           <Button onClick={fetchData}>Try Again</Button>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   if (!data) {
     return (
-      <AppLayout
-        name="Not Found"
-        sidebarMenu="equipment"
-        className="p-6"
-      >
+      <AppLayout name="Not Found" sidebarMenu="equipment" className="p-6">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-500" />
           <h3 className="text-lg font-semibold mb-2">Equipment Not Found</h3>
           <p className="text-gray-600">The requested equipment could not be found.</p>
         </div>
       </AppLayout>
-    )
+    );
   }
 
-  const registrationStatus = getExpirationStatus(data.equipment.registrationExpiry)
+  const registrationStatus = getExpirationStatus(data.equipment.registrationExpiry);
 
   return (
     <AppLayout
@@ -213,16 +213,14 @@ export default function MasterEquipmentDetailPage() {
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>Edit Equipment</DialogTitle>
-                  <DialogDescription>
-                    Update equipment information and details
-                  </DialogDescription>
+                  <DialogDescription>Update equipment information and details</DialogDescription>
                 </DialogHeader>
                 <EquipmentForm
                   organizationId={orgId}
                   equipment={data.equipment as any}
                   onSuccess={() => {
-                    setShowEditForm(false)
-                    fetchData()
+                    setShowEditForm(false);
+                    fetchData();
                   }}
                   onCancel={() => setShowEditForm(false)}
                 />
@@ -233,7 +231,9 @@ export default function MasterEquipmentDetailPage() {
 
         {/* Equipment Issues - Quick Access Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href={`/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`}>
+          <Link
+            href={`/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`}
+          >
             <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -251,7 +251,9 @@ export default function MasterEquipmentDetailPage() {
             </Card>
           </Link>
 
-          <Link href={`/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/accidents`}>
+          <Link
+            href={`/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/accidents`}
+          >
             <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -286,7 +288,7 @@ export default function MasterEquipmentDetailPage() {
                   <label className="text-sm font-medium text-gray-500">Vehicle Type</label>
                   <p className="text-sm font-medium">{data.equipment.vehicleType}</p>
                 </div>
-                
+
                 {data.equipment.make && (
                   <div>
                     <label className="text-sm font-medium text-gray-500">Make</label>
@@ -352,23 +354,22 @@ export default function MasterEquipmentDetailPage() {
                       <p className="text-sm">
                         {new Date(data.equipment.registrationExpiry).toLocaleDateString()}
                       </p>
-                      {registrationStatus.status === 'current' && (
+                      {registrationStatus.status === "current" && (
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       )}
-                      {registrationStatus.status === 'expiring' && (
+                      {registrationStatus.status === "expiring" && (
                         <AlertCircle className="h-4 w-4 text-orange-600" />
                       )}
-                      {registrationStatus.status === 'expired' && (
+                      {registrationStatus.status === "expired" && (
                         <AlertCircle className="h-4 w-4 text-red-600" />
                       )}
                     </div>
                     <p className={`text-xs ${registrationStatus.color}`}>
-                      {registrationStatus.status === 'expired' 
+                      {registrationStatus.status === "expired"
                         ? `Expired ${Math.abs(registrationStatus.daysUntil!)} days ago`
-                        : registrationStatus.status === 'expiring'
-                        ? `Expires in ${registrationStatus.daysUntil} days`
-                        : `${registrationStatus.daysUntil} days remaining`
-                      }
+                        : registrationStatus.status === "expiring"
+                          ? `Expires in ${registrationStatus.daysUntil} days`
+                          : `${registrationStatus.daysUntil} days remaining`}
                     </p>
                   </div>
                 )}
@@ -447,5 +448,5 @@ export default function MasterEquipmentDetailPage() {
         </div>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

@@ -1,53 +1,59 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, CheckCircle, Database, RefreshCw } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle, Database, RefreshCw } from "lucide-react";
 
 export function StatusCheck() {
-  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking')
-  const [error, setError] = useState<string>('')
-  const [lastCheck, setLastCheck] = useState<Date>(new Date())
+  const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "error">("checking");
+  const [error, setError] = useState<string>("");
+  const [lastCheck, setLastCheck] = useState<Date>(new Date());
 
   const checkDatabase = async () => {
-    setDbStatus('checking')
+    setDbStatus("checking");
     try {
-      const response = await fetch('/api/organizations/count')
+      const response = await fetch("/api/organizations/count");
       if (response.ok) {
-        setDbStatus('connected')
-        setError('')
+        setDbStatus("connected");
+        setError("");
       } else {
-        setDbStatus('error')
-        setError(`API Error: ${response.status}`)
+        setDbStatus("error");
+        setError(`API Error: ${response.status}`);
       }
     } catch (err) {
-      setDbStatus('error')
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setDbStatus("error");
+      setError(err instanceof Error ? err.message : "Unknown error");
     }
-    setLastCheck(new Date())
-  }
+    setLastCheck(new Date());
+  };
 
   useEffect(() => {
-    checkDatabase()
-  }, [])
+    checkDatabase();
+  }, []);
 
   const getStatusIcon = () => {
     switch (dbStatus) {
-      case 'checking': return <RefreshCw className="h-4 w-4 animate-spin" />
-      case 'connected': return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'error': return <AlertCircle className="h-4 w-4 text-red-600" />
+      case "checking":
+        return <RefreshCw className="h-4 w-4 animate-spin" />;
+      case "connected":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
     }
-  }
+  };
 
   const getStatusBadge = () => {
     switch (dbStatus) {
-      case 'checking': return <Badge variant="outline">Checking...</Badge>
-      case 'connected': return <Badge className="bg-green-100 text-green-800 border-green-200">Connected</Badge>
-      case 'error': return <Badge variant="destructive">Disconnected</Badge>
+      case "checking":
+        return <Badge variant="outline">Checking...</Badge>;
+      case "connected":
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Connected</Badge>;
+      case "error":
+        return <Badge variant="destructive">Disconnected</Badge>;
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -59,26 +65,20 @@ export function StatusCheck() {
           </div>
           {getStatusBadge()}
         </div>
-        <CardDescription>
-          Database connectivity and API health
-        </CardDescription>
+        <CardDescription>Database connectivity and API health</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2">
           {getStatusIcon()}
           <span className="text-sm">
-            {dbStatus === 'connected' && 'Database connected successfully'}
-            {dbStatus === 'checking' && 'Checking database connection...'}
-            {dbStatus === 'error' && 'Database connection failed'}
+            {dbStatus === "connected" && "Database connected successfully"}
+            {dbStatus === "checking" && "Checking database connection..."}
+            {dbStatus === "error" && "Database connection failed"}
           </span>
         </div>
-        
-        {error && (
-          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-            {error}
-          </div>
-        )}
-        
+
+        {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             Last checked: {lastCheck.toLocaleTimeString()}
@@ -90,5 +90,5 @@ export function StatusCheck() {
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

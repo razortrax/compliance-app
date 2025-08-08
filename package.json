@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "ts-node": "ts-node"
+    "ts-node": "ts-node",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@clerk/nextjs": "^6.28.1",

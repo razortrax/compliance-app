@@ -1,31 +1,31 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { LayoutDashboard, ArrowRight, Building } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from 'next/navigation'
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LayoutDashboard, ArrowRight, Building } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function DashboardQuickAccess() {
-  const router = useRouter()
+  const router = useRouter();
   const handleDashboardClick = async () => {
     try {
-      const response = await fetch('/api/user/profile')
+      const response = await fetch("/api/user/profile");
       if (response.ok) {
-        const { masterOrganization } = await response.json()
+        const { masterOrganization } = await response.json();
         if (masterOrganization?.id) {
-          router.push(`/master/${masterOrganization.id}`)
+          router.push(`/master/${masterOrganization.id}`);
         } else {
-          router.push('/complete-profile')
+          router.push("/complete-profile");
         }
       } else {
-        router.push('/complete-profile')
+        router.push("/complete-profile");
       }
     } catch (error) {
-      console.error('Error navigating to dashboard:', error)
-      router.push('/complete-profile')
+      console.error("Error navigating to dashboard:", error);
+      router.push("/complete-profile");
     }
-  }
+  };
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -40,8 +40,8 @@ export function DashboardQuickAccess() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700" 
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700"
             size="sm"
             onClick={handleDashboardClick}
           >
@@ -71,5 +71,5 @@ export function DashboardQuickAccess() {
         </Card>
       </Link>
     </div>
-  )
-} 
+  );
+}

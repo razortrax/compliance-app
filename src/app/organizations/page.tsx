@@ -1,34 +1,34 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function OrganizationsRedirect() {
-  const router = useRouter()
-  
+  const router = useRouter();
+
   useEffect(() => {
     // Fetch user's master organization and redirect
     const redirectToMaster = async () => {
       try {
-        const response = await fetch('/api/user/profile')
+        const response = await fetch("/api/user/profile");
         if (response.ok) {
-          const { masterOrganization } = await response.json()
+          const { masterOrganization } = await response.json();
           if (masterOrganization?.id) {
-            router.replace(`/master/${masterOrganization.id}/organization`)
+            router.replace(`/master/${masterOrganization.id}/organization`);
           } else {
-            router.replace('/complete-profile')
+            router.replace("/complete-profile");
           }
         } else {
-          router.replace('/complete-profile')
+          router.replace("/complete-profile");
         }
       } catch (error) {
-        console.error('Error redirecting to master:', error)
-        router.replace('/complete-profile')
+        console.error("Error redirecting to master:", error);
+        router.replace("/complete-profile");
       }
-    }
-    
-    redirectToMaster()
-  }, [router])
+    };
+
+    redirectToMaster();
+  }, [router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -37,5 +37,5 @@ export default function OrganizationsRedirect() {
         <p className="text-gray-600">Taking you to your organizations</p>
       </div>
     </div>
-  )
-} 
+  );
+}

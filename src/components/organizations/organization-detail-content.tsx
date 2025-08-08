@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useUser } from '@clerk/nextjs'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { useMasterOrg } from "@/hooks/use-master-org";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { 
-  Building2, 
-  MapPin, 
-  Users, 
+import {
+  Building2,
+  MapPin,
+  Users,
   Truck,
   Edit,
   Save,
@@ -26,107 +26,114 @@ import {
   Package,
   Mail,
   CheckCircle,
-  XCircle
-} from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { OrganizationAddOns } from './organization-add-ons'
-import { EmptyState } from "@/components/ui/empty-state"
-import { PageHeader } from "@/components/ui/page-header"
-import { LocationForm } from "@/components/locations/location-form"
-import { StaffForm } from "@/components/staff/staff-form"
-import { SectionHeader } from "@/components/ui/section-header"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ActivityLog } from "@/components/ui/activity-log"
+  XCircle,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { OrganizationAddOns } from "./organization-add-ons";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { LocationForm } from "@/components/locations/location-form";
+import { StaffForm } from "@/components/staff/staff-form";
+import { SectionHeader } from "@/components/ui/section-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ActivityLog } from "@/components/ui/activity-log";
 
 interface ExtendedOrganization {
-  id: string
-  name: string
-  dotNumber?: string | null
-  einNumber?: string | null
-  phone?: string | null
-  address?: string | null
-  city?: string | null
-  state?: string | null
-  zipCode?: string | null
+  id: string;
+  name: string;
+  dotNumber?: string | null;
+  einNumber?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
   party?: {
-    id: string
-    status: string
-  }
+    id: string;
+    status: string;
+  };
 }
 
 interface Location {
-  id: string
-  name: string
-  locationType: string
-  address: string
-  city: string
-  state: string
-  zipCode: string
-  phone?: string | null
-  email?: string | null
-  isMainLocation?: boolean
+  id: string;
+  name: string;
+  locationType: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone?: string | null;
+  email?: string | null;
+  isMainLocation?: boolean;
   _count?: {
-    equipment: number
-    role: number
-  }
+    equipment: number;
+    role: number;
+  };
 }
 
 interface OrganizationDetailContentProps {
-  organizationId: string
-  navigationContext: 'direct' | 'master'
-  masterOrgId?: string
+  organizationId: string;
+  navigationContext: "direct" | "master";
+  masterOrgId?: string;
 }
 
-export function OrganizationDetailContent({ 
-  organizationId, 
+export function OrganizationDetailContent({
+  organizationId,
   navigationContext,
-  masterOrgId 
+  masterOrgId,
 }: OrganizationDetailContentProps) {
-  const router = useRouter()
-  const { user } = useUser()
-  const { masterOrg } = useMasterOrg()
+  const router = useRouter();
+  const { user } = useUser();
+  const { masterOrg } = useMasterOrg();
 
-  const [organization, setOrganization] = useState<ExtendedOrganization | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [editedOrg, setEditedOrg] = useState<ExtendedOrganization | null>(null)
-  const [activeTab, setActiveTab] = useState('details')
+  const [organization, setOrganization] = useState<ExtendedOrganization | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editedOrg, setEditedOrg] = useState<ExtendedOrganization | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
   const [kpis, setKpis] = useState({
     driversCount: 0,
     equipmentCount: 0,
     expiringIssues: 0,
     roadsideInspections: 0,
-    accidents: 0
-  })
-  const [staff, setStaff] = useState<any[]>([])
-  const [drivers, setDrivers] = useState<any[]>([])
-  const [equipment, setEquipment] = useState<any[]>([])
-  const [locationsLoading, setLocationsLoading] = useState(false)
-  const [showLocationForm, setShowLocationForm] = useState(false)
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null)
-  const [locations, setLocations] = useState<Location[]>([])
-  
+    accidents: 0,
+  });
+  const [staff, setStaff] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [equipment, setEquipment] = useState<any[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [showLocationForm, setShowLocationForm] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [locations, setLocations] = useState<Location[]>([]);
+
   // Staff management state
-  const [showStaffForm, setShowStaffForm] = useState(false)
-  const [editingStaff, setEditingStaff] = useState<any>(null)
-  const [selectedStaff, setSelectedStaff] = useState<any>(null)
+  const [showStaffForm, setShowStaffForm] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [selectedStaff, setSelectedStaff] = useState<any>(null);
 
   // Location management state
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
-  const [selectedLocationTab, setSelectedLocationTab] = useState('details')
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedLocationTab, setSelectedLocationTab] = useState("details");
 
   const fetchOrganization = async () => {
     try {
-      setIsLoading(true)
-      const response = await fetch(`/api/organizations/${organizationId}`)
+      setIsLoading(true);
+      const response = await fetch(`/api/organizations/${organizationId}`);
       if (response.ok) {
-        const data = await response.json()
-        setOrganization(data)
-        setEditedOrg(data)
+        const data = await response.json();
+        setOrganization(data);
+        setEditedOrg(data);
 
         // Fetch related data
         await Promise.all([
@@ -134,75 +141,75 @@ export function OrganizationDetailContent({
           fetchStaff(organizationId),
           fetchLocations(),
           fetchEquipment(),
-          fetchDrivers()
-        ])
+          fetchDrivers(),
+        ]);
       }
     } catch (error) {
-      console.error('Error fetching organization:', error)
+      console.error("Error fetching organization:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const fetchKPIs = async (orgId: string) => {
     try {
       // KPIs will be updated by fetchDrivers and fetchEquipment
       // This function is kept for potential future direct API calls
     } catch (error) {
-      console.error('Error fetching KPIs:', error)
+      console.error("Error fetching KPIs:", error);
     }
-  }
+  };
 
   const fetchStaff = async (orgId: string) => {
     try {
-      const response = await fetch(`/api/staff?organizationId=${orgId}`)
+      const response = await fetch(`/api/staff?organizationId=${orgId}`);
       if (response.ok) {
-        const data = await response.json()
-        setStaff(data)
+        const data = await response.json();
+        setStaff(data);
       }
     } catch (error) {
-      console.error('Error fetching staff:', error)
+      console.error("Error fetching staff:", error);
     }
-  }
+  };
 
   const fetchLocations = async () => {
     try {
-      setLocationsLoading(true)
-      const response = await fetch(`/api/organizations/${organizationId}/locations`)
+      setLocationsLoading(true);
+      const response = await fetch(`/api/organizations/${organizationId}/locations`);
       if (response.ok) {
-        const data = await response.json()
-        setLocations(data)
+        const data = await response.json();
+        setLocations(data);
       }
     } catch (error) {
-      console.error('Error fetching locations:', error)
+      console.error("Error fetching locations:", error);
     } finally {
-      setLocationsLoading(false)
+      setLocationsLoading(false);
     }
-  }
+  };
 
   const fetchEquipment = async () => {
     try {
-      const response = await fetch(`/api/equipment?organizationId=${organizationId}`)
+      const response = await fetch(`/api/equipment?organizationId=${organizationId}`);
       if (response.ok) {
-        const data = await response.json()
-        setEquipment(data)
+        const data = await response.json();
+        setEquipment(data);
       }
     } catch (error) {
-      console.error('Error fetching equipment:', error)
+      console.error("Error fetching equipment:", error);
     }
-  }
+  };
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=driver`)
+      const response = await fetch(`/api/persons?organizationId=${organizationId}&roleType=driver`);
       if (response.ok) {
-        const data = await response.json()
-        setDrivers(data)
+        const data = await response.json();
+        setDrivers(data);
       }
     } catch (error) {
-      console.error('Error fetching drivers:', error)
+      console.error("Error fetching drivers:", error);
     }
-  }
+  };
 
   // Update KPIs whenever drivers or equipment arrays change
   useEffect(() => {
@@ -211,70 +218,70 @@ export function OrganizationDetailContent({
       equipmentCount: equipment.length,
       expiringIssues: 0,
       roadsideInspections: 0,
-      accidents: 0
-    })
-  }, [drivers.length, equipment.length])
+      accidents: 0,
+    });
+  }, [drivers.length, equipment.length]);
 
   useEffect(() => {
-    fetchOrganization()
-  }, [organizationId])
+    fetchOrganization();
+  }, [organizationId]);
 
   const handleEdit = () => {
-    setIsEditing(true)
-  }
+    setIsEditing(true);
+  };
 
   const handleCancel = () => {
-    setIsEditing(false)
-    setEditedOrg(organization)
-  }
+    setIsEditing(false);
+    setEditedOrg(organization);
+  };
 
   const handleSave = async () => {
-    if (!editedOrg) return
-    
+    if (!editedOrg) return;
+
     try {
-      setIsSaving(true)
+      setIsSaving(true);
       const response = await fetch(`/api/organizations/${organizationId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedOrg)
-      })
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedOrg),
+      });
 
       if (response.ok) {
-        const updated = await response.json()
-        setOrganization(updated)
-        setIsEditing(false)
+        const updated = await response.json();
+        setOrganization(updated);
+        setIsEditing(false);
       }
     } catch (error) {
-      console.error('Error saving organization:', error)
+      console.error("Error saving organization:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleBack = () => {
-    if (navigationContext === 'master' && masterOrgId) {
-      router.push(`/master/${masterOrgId}`)
+    if (navigationContext === "master" && masterOrgId) {
+      router.push(`/master/${masterOrgId}`);
     } else {
-      router.push('/organizations')
+      router.push("/organizations");
     }
-  }
+  };
 
   const handleViewLocation = (location: Location) => {
-    if (navigationContext === 'master' && masterOrgId) {
-      router.push(`/master/${masterOrgId}/organization/${organizationId}/locations/${location.id}`)
+    if (navigationContext === "master" && masterOrgId) {
+      router.push(`/master/${masterOrgId}/organization/${organizationId}/locations/${location.id}`);
     } else {
-      router.push(`/organizations/${organizationId}/locations/${location.id}`)
+      router.push(`/organizations/${organizationId}/locations/${location.id}`);
     }
-  }
+  };
 
   const handleCloseLocationForm = () => {
-    setShowLocationForm(false)
-    setEditingLocation(null)
-  }
+    setShowLocationForm(false);
+    setEditingLocation(null);
+  };
 
   if (isLoading || !organization) {
     return (
-      <AppLayout name={masterOrg?.name || 'Loading...'}>
+      <AppLayout name={masterOrg?.name || "Loading..."}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
@@ -282,45 +289,54 @@ export function OrganizationDetailContent({
           </div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
-  const topNav = navigationContext === 'master' ? [
-    { 
-      label: 'Master', 
-      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
-      isActive: false
-    },
-    { 
-      label: 'Organization', 
-      href: masterOrgId ? `/master/${masterOrgId}/organization/${organizationId}` : `/organizations/${organizationId}`,
-      isActive: true
-    },
-    { 
-      label: 'Drivers', 
-      href: masterOrgId ? `/master/${masterOrgId}/organization/${organizationId}/drivers` : `/organizations/${organizationId}/drivers`,
-      isActive: false
-    },
-    { 
-      label: 'Equipment', 
-      href: masterOrgId ? `/master/${masterOrgId}/organization/${organizationId}/equipment` : `/organizations/${organizationId}/equipment`,
-      isActive: false
-    }
-  ] : [
-    { 
-      label: 'Organizations', 
-      href: '/organizations',
-      isActive: false
-    },
-    { 
-      label: organization.name, 
-      href: `/organizations/${organizationId}`,
-      isActive: true
-    }
-  ]
+  const topNav =
+    navigationContext === "master"
+      ? [
+          {
+            label: "Master",
+            href: masterOrg?.id ? `/master/${masterOrg.id}` : "/dashboard",
+            isActive: false,
+          },
+          {
+            label: "Organization",
+            href: masterOrgId
+              ? `/master/${masterOrgId}/organization/${organizationId}`
+              : `/organizations/${organizationId}`,
+            isActive: true,
+          },
+          {
+            label: "Drivers",
+            href: masterOrgId
+              ? `/master/${masterOrgId}/organization/${organizationId}/drivers`
+              : `/organizations/${organizationId}/drivers`,
+            isActive: false,
+          },
+          {
+            label: "Equipment",
+            href: masterOrgId
+              ? `/master/${masterOrgId}/organization/${organizationId}/equipment`
+              : `/organizations/${organizationId}/equipment`,
+            isActive: false,
+          },
+        ]
+      : [
+          {
+            label: "Organizations",
+            href: "/organizations",
+            isActive: false,
+          },
+          {
+            label: organization.name,
+            href: `/organizations/${organizationId}`,
+            isActive: true,
+          },
+        ];
 
   return (
-    <AppLayout name={masterOrg?.name || 'Fleetrax'} topNav={topNav} className="p-6">
+    <AppLayout name={masterOrg?.name || "Fleetrax"} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -344,20 +360,13 @@ export function OrganizationDetailContent({
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                >
+                <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleSave}
-                  disabled={isSaving}
-                >
+                <Button onClick={handleSave} disabled={isSaving}>
                   <Save className="h-4 w-4 mr-2" />
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? "Saving..." : "Save"}
                 </Button>
               </div>
             )}
@@ -369,10 +378,20 @@ export function OrganizationDetailContent({
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="locations">
-              Locations {locations.length > 0 && <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">{locations.length}</span>}
+              Locations{" "}
+              {locations.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">
+                  {locations.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="staff">
-              Staff {staff.length > 0 && <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">{staff.length}</span>}
+              Staff{" "}
+              {staff.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">
+                  {staff.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="others">
               Others <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">0</span>
@@ -386,9 +405,7 @@ export function OrganizationDetailContent({
             <Card>
               <CardHeader>
                 <CardTitle>Overview</CardTitle>
-                <CardDescription>
-                  Key metrics and counts for {organization.name}
-                </CardDescription>
+                <CardDescription>Key metrics and counts for {organization.name}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -405,7 +422,9 @@ export function OrganizationDetailContent({
                     <div className="text-sm text-gray-600">Expiring Issues</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{kpis.roadsideInspections}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {kpis.roadsideInspections}
+                    </div>
                     <div className="text-sm text-gray-600">Roadside Issues</div>
                   </div>
                   <div className="text-center">
@@ -422,13 +441,9 @@ export function OrganizationDetailContent({
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Organization Information</CardTitle>
-                    <CardDescription>
-                      Basic details and contact information
-                    </CardDescription>
+                    <CardDescription>Basic details and contact information</CardDescription>
                   </div>
-                  <StatusBadge 
-                    status={organization.party?.status as any || 'active'} 
-                  />
+                  <StatusBadge status={(organization.party?.status as any) || "active"} />
                 </div>
               </CardHeader>
               <CardContent>
@@ -437,8 +452,10 @@ export function OrganizationDetailContent({
                     <Label>Organization Name</Label>
                     {isEditing ? (
                       <Input
-                        value={editedOrg?.name || ''}
-                        onChange={(e) => setEditedOrg(prev => prev ? {...prev, name: e.target.value} : null)}
+                        value={editedOrg?.name || ""}
+                        onChange={(e) =>
+                          setEditedOrg((prev) => (prev ? { ...prev, name: e.target.value } : null))
+                        }
                       />
                     ) : (
                       <p className="text-gray-900">{organization.name}</p>
@@ -449,8 +466,12 @@ export function OrganizationDetailContent({
                     <Label>DOT Number</Label>
                     {isEditing ? (
                       <Input
-                        value={editedOrg?.dotNumber || ''}
-                        onChange={(e) => setEditedOrg(prev => prev ? {...prev, dotNumber: e.target.value} : null)}
+                        value={editedOrg?.dotNumber || ""}
+                        onChange={(e) =>
+                          setEditedOrg((prev) =>
+                            prev ? { ...prev, dotNumber: e.target.value } : null,
+                          )
+                        }
                       />
                     ) : (
                       <p className="text-gray-900">{organization.dotNumber}</p>
@@ -461,11 +482,15 @@ export function OrganizationDetailContent({
                     <Label>EIN Number</Label>
                     {isEditing ? (
                       <Input
-                        value={editedOrg?.einNumber || ''}
-                        onChange={(e) => setEditedOrg(prev => prev ? {...prev, einNumber: e.target.value} : null)}
+                        value={editedOrg?.einNumber || ""}
+                        onChange={(e) =>
+                          setEditedOrg((prev) =>
+                            prev ? { ...prev, einNumber: e.target.value } : null,
+                          )
+                        }
                       />
                     ) : (
-                      <p className="text-gray-900">{organization.einNumber || 'Not provided'}</p>
+                      <p className="text-gray-900">{organization.einNumber || "Not provided"}</p>
                     )}
                   </div>
 
@@ -473,11 +498,13 @@ export function OrganizationDetailContent({
                     <Label>Phone</Label>
                     {isEditing ? (
                       <Input
-                        value={editedOrg?.phone || ''}
-                        onChange={(e) => setEditedOrg(prev => prev ? {...prev, phone: e.target.value} : null)}
+                        value={editedOrg?.phone || ""}
+                        onChange={(e) =>
+                          setEditedOrg((prev) => (prev ? { ...prev, phone: e.target.value } : null))
+                        }
                       />
                     ) : (
-                      <p className="text-gray-900">{organization.phone || 'Not provided'}</p>
+                      <p className="text-gray-900">{organization.phone || "Not provided"}</p>
                     )}
                   </div>
 
@@ -485,21 +512,29 @@ export function OrganizationDetailContent({
                     <Label>Address</Label>
                     {isEditing ? (
                       <Textarea
-                        value={[
-                          editedOrg?.address,
-                          editedOrg?.city,
-                          editedOrg?.state,
-                          editedOrg?.zipCode
-                        ].filter(Boolean).join('\n') || ''}
+                        value={
+                          [
+                            editedOrg?.address,
+                            editedOrg?.city,
+                            editedOrg?.state,
+                            editedOrg?.zipCode,
+                          ]
+                            .filter(Boolean)
+                            .join("\n") || ""
+                        }
                         onChange={(e) => {
-                          const lines = e.target.value.split('\n')
-                          setEditedOrg(prev => prev ? {
-                            ...prev,
-                            address: lines[0] || '',
-                            city: lines[1] || '',
-                            state: lines[2] || '',
-                            zipCode: lines[3] || ''
-                          } : null)
+                          const lines = e.target.value.split("\n");
+                          setEditedOrg((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  address: lines[0] || "",
+                                  city: lines[1] || "",
+                                  state: lines[2] || "",
+                                  zipCode: lines[3] || "",
+                                }
+                              : null,
+                          );
                         }}
                       />
                     ) : (
@@ -526,9 +561,7 @@ export function OrganizationDetailContent({
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Locations</CardTitle>
-                    <CardDescription>
-                      Manage organization locations and facilities
-                    </CardDescription>
+                    <CardDescription>Manage organization locations and facilities</CardDescription>
                   </div>
                   <Button onClick={() => setShowLocationForm(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -559,12 +592,15 @@ export function OrganizationDetailContent({
                               <div className="flex items-center gap-2">
                                 <h3 className="font-semibold">{location.name}</h3>
                                 {location.isMainLocation && (
-                                  <Badge variant="secondary" className="text-xs">Main</Badge>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Main
+                                  </Badge>
                                 )}
                               </div>
                               <p className="text-sm text-gray-600">{location.locationType}</p>
                               <p className="text-sm text-gray-500">
-                                {location.address}, {location.city}, {location.state} {location.zipCode}
+                                {location.address}, {location.city}, {location.state}{" "}
+                                {location.zipCode}
                               </p>
                             </div>
                           </div>
@@ -587,7 +623,7 @@ export function OrganizationDetailContent({
                     description="Add your first location to get started"
                     action={{
                       label: "Add Location",
-                      onClick: () => setShowLocationForm(true)
+                      onClick: () => setShowLocationForm(true),
                     }}
                   />
                 )}
@@ -609,7 +645,7 @@ export function OrganizationDetailContent({
                     </Button>
                   </div>
                   <p className="text-sm text-gray-600">
-                    {staff.length} staff member{staff.length !== 1 ? 's' : ''}
+                    {staff.length} staff member{staff.length !== 1 ? "s" : ""}
                   </p>
                 </div>
 
@@ -628,7 +664,7 @@ export function OrganizationDetailContent({
                       <Card
                         key={member.id}
                         className={`cursor-pointer transition-colors hover:bg-gray-50 ${
-                          selectedStaff?.id === member.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                          selectedStaff?.id === member.id ? "ring-2 ring-blue-500 bg-blue-50" : ""
                         }`}
                         onClick={() => setSelectedStaff(member)}
                       >
@@ -647,10 +683,14 @@ export function OrganizationDetailContent({
                             </div>
                             <div className="flex flex-col gap-1">
                               {member.canSignCAFs && (
-                                <Badge variant="default" className="text-xs">CAF Signer</Badge>
+                                <Badge variant="default" className="text-xs">
+                                  CAF Signer
+                                </Badge>
                               )}
                               {member.canApproveCAFs && (
-                                <Badge variant="secondary" className="text-xs">CAF Approver</Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  CAF Approver
+                                </Badge>
                               )}
                             </div>
                           </div>
@@ -670,15 +710,12 @@ export function OrganizationDetailContent({
                       <div>
                         <div className="text-sm text-gray-500 mb-1">{organization?.name}</div>
                         <h1 className="text-2xl font-bold text-gray-900">
-                          {selectedStaff.party?.person?.firstName} {selectedStaff.party?.person?.lastName}
+                          {selectedStaff.party?.person?.firstName}{" "}
+                          {selectedStaff.party?.person?.lastName}
                         </h1>
                       </div>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowStaffForm(true)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setShowStaffForm(true)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </Button>
@@ -694,15 +731,21 @@ export function OrganizationDetailContent({
                         <CardContent className="space-y-4">
                           <div>
                             <label className="text-sm font-medium text-gray-500">Employee ID</label>
-                            <p className="text-gray-900">{selectedStaff.employeeId || 'Not assigned'}</p>
+                            <p className="text-gray-900">
+                              {selectedStaff.employeeId || "Not assigned"}
+                            </p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-500">Position</label>
-                            <p className="text-gray-900">{selectedStaff.position || 'Not specified'}</p>
+                            <p className="text-gray-900">
+                              {selectedStaff.position || "Not specified"}
+                            </p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-500">Department</label>
-                            <p className="text-gray-900">{selectedStaff.department || 'Not specified'}</p>
+                            <p className="text-gray-900">
+                              {selectedStaff.department || "Not specified"}
+                            </p>
                           </div>
                         </CardContent>
                       </Card>
@@ -748,7 +791,9 @@ export function OrganizationDetailContent({
                               <div>
                                 <p className="font-medium text-gray-900">Can Sign CAFs</p>
                                 <p className="text-sm text-gray-500">
-                                  {selectedStaff.canSignCAFs ? 'Authorized to sign corrective action forms' : 'Not authorized to sign CAFs'}
+                                  {selectedStaff.canSignCAFs
+                                    ? "Authorized to sign corrective action forms"
+                                    : "Not authorized to sign CAFs"}
                                 </p>
                               </div>
                             </div>
@@ -761,7 +806,9 @@ export function OrganizationDetailContent({
                               <div>
                                 <p className="font-medium text-gray-900">Can Approve CAFs</p>
                                 <p className="text-sm text-gray-500">
-                                  {selectedStaff.canApproveCAFs ? 'Authorized to approve corrective action forms' : 'Not authorized to approve CAFs'}
+                                  {selectedStaff.canApproveCAFs
+                                    ? "Authorized to approve corrective action forms"
+                                    : "Not authorized to approve CAFs"}
                                 </p>
                               </div>
                             </div>
@@ -775,7 +822,7 @@ export function OrganizationDetailContent({
                           <CardTitle className="text-lg">Add Ons</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <ActivityLog 
+                          <ActivityLog
                             personId={selectedStaff.party?.person?.id}
                             title="Staff Add Ons"
                             showAddButton={true}
@@ -914,8 +961,8 @@ export function OrganizationDetailContent({
 
           {/* Stuff Tab */}
           <TabsContent value="stuff" className="space-y-6">
-            <OrganizationAddOns 
-              organizationId={organizationId} 
+            <OrganizationAddOns
+              organizationId={organizationId}
               organizationName={organization.name}
             />
           </TabsContent>
@@ -925,22 +972,19 @@ export function OrganizationDetailContent({
         <Dialog open={showLocationForm} onOpenChange={handleCloseLocationForm}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>
-                {editingLocation ? 'Edit Location' : 'Add New Location'}
-              </DialogTitle>
+              <DialogTitle>{editingLocation ? "Edit Location" : "Add New Location"}</DialogTitle>
               <DialogDescription>
-                {editingLocation 
-                  ? `Update details for ${editingLocation.name}` 
-                  : `Add a new location to ${organization.name}`
-                }
+                {editingLocation
+                  ? `Update details for ${editingLocation.name}`
+                  : `Add a new location to ${organization.name}`}
               </DialogDescription>
             </DialogHeader>
             <LocationForm
               organizationId={organizationId}
               location={editingLocation}
               onSuccess={() => {
-                handleCloseLocationForm()
-                fetchLocations()
+                handleCloseLocationForm();
+                fetchLocations();
               }}
               onCancel={handleCloseLocationForm}
             />
@@ -952,31 +996,30 @@ export function OrganizationDetailContent({
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>
-                {editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
+                {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
               </DialogTitle>
               <DialogDescription>
-                {editingStaff 
-                  ? `Update details for ${editingStaff.person?.firstName} ${editingStaff.person?.lastName}` 
-                  : `Add a new staff member to ${organization.name}`
-                }
+                {editingStaff
+                  ? `Update details for ${editingStaff.person?.firstName} ${editingStaff.person?.lastName}`
+                  : `Add a new staff member to ${organization.name}`}
               </DialogDescription>
             </DialogHeader>
             <StaffForm
               organizationId={organizationId}
               staff={editingStaff}
               onSuccess={() => {
-                setShowStaffForm(false)
-                setEditingStaff(null)
-                fetchStaff(organizationId)
+                setShowStaffForm(false);
+                setEditingStaff(null);
+                fetchStaff(organizationId);
               }}
               onCancel={() => {
-                setShowStaffForm(false)
-                setEditingStaff(null)
+                setShowStaffForm(false);
+                setEditingStaff(null);
               }}
             />
           </DialogContent>
         </Dialog>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

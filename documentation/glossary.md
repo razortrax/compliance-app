@@ -1,6 +1,6 @@
 # Glossary
 
-*Updated: January 25, 2025*
+_Updated: January 25, 2025_
 
 ## Compliance Terminology
 
@@ -122,4 +122,4 @@
 
 ---
 
-*This glossary reflects the current implemented system and established patterns. Update as new features are developed.*
+_This glossary reflects the current implemented system and established patterns. Update as new features are developed._

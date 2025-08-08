@@ -79,4 +79,3 @@ ComplianceApp is a cloud-based compliance management platform that supports orga
 - Status transitions tested with unit tests
 - End-to-end scenarios tested with Playwright
 - Manual testing in dev/staging environments
-

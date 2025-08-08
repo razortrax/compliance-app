@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useUser } from '@clerk/nextjs'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { useMasterOrg } from '@/hooks/use-master-org'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { 
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { useMasterOrg } from "@/hooks/use-master-org";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
   ArrowLeft,
   Clipboard,
   Brain,
@@ -18,46 +18,46 @@ import {
   TrendingUp,
   Zap,
   Calendar,
-  AlertTriangle
-} from "lucide-react"
+  AlertTriangle,
+} from "lucide-react";
 
 interface Organization {
-  id: string
-  name: string
-  dotNumber?: string | null
+  id: string;
+  name: string;
+  dotNumber?: string | null;
 }
 
 export default function OrganizationAuditPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { user } = useUser()
-  const { masterOrg } = useMasterOrg()
-  const masterOrgId = params.masterOrgId as string
-  const orgId = params.orgId as string
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useUser();
+  const { masterOrg } = useMasterOrg();
+  const masterOrgId = params.masterOrgId as string;
+  const orgId = params.orgId as string;
 
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch organization data
   useEffect(() => {
     const fetchOrganization = async () => {
       try {
-        const response = await fetch(`/api/organizations/${orgId}`)
+        const response = await fetch(`/api/organizations/${orgId}`);
         if (response.ok) {
-          const data = await response.json()
-          setOrganization(data)
+          const data = await response.json();
+          setOrganization(data);
         }
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        console.error("Error fetching organization:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
     if (orgId) {
-      fetchOrganization()
+      fetchOrganization();
     }
-  }, [orgId])
+  }, [orgId]);
 
   if (isLoading) {
     return (
@@ -68,45 +68,41 @@ export default function OrganizationAuditPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Correct static top navigation - NEVER make these dynamic!
   const topNav = [
-    { 
-      label: 'Master', 
-      href: masterOrg?.id ? `/master/${masterOrg.id}` : '/dashboard',
-      isActive: false
+    {
+      label: "Master",
+      href: masterOrg?.id ? `/master/${masterOrg.id}` : "/dashboard",
+      isActive: false,
     },
-    { 
-      label: 'Organization', 
+    {
+      label: "Organization",
       href: `/organizations/${orgId}`,
-      isActive: true
+      isActive: true,
     },
-    { 
-      label: 'Drivers', 
+    {
+      label: "Drivers",
       href: `/organizations/${orgId}/drivers`,
-      isActive: false
+      isActive: false,
     },
-    { 
-      label: 'Equipment', 
+    {
+      label: "Equipment",
       href: `/organizations/${orgId}/equipment`,
-      isActive: false
-    }
-  ]
+      isActive: false,
+    },
+  ];
 
   return (
-    <AppLayout
-      name={masterOrg?.name || 'Master'}
-      topNav={topNav}
-      className="p-6"
-    >
+    <AppLayout name={masterOrg?.name || "Master"} topNav={topNav} className="p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header with organization name */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => router.push(`/master/${masterOrgId}/organization/${orgId}`)}
             >
@@ -126,10 +122,13 @@ export default function OrganizationAuditPage() {
               </div>
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">AI-Powered Audit Preparation</h2>
-            <Badge variant="secondary" className="mb-4">Coming Soon</Badge>
+            <Badge variant="secondary" className="mb-4">
+              Coming Soon
+            </Badge>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Advanced artificial intelligence to analyze your compliance records and prepare your organization 
-              for successful DOT audits with comprehensive documentation and strategic recommendations.
+              Advanced artificial intelligence to analyze your compliance records and prepare your
+              organization for successful DOT audits with comprehensive documentation and strategic
+              recommendations.
             </p>
           </CardContent>
         </Card>
@@ -145,8 +144,8 @@ export default function OrganizationAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                AI review of all roadside inspections, accidents, driver records, and equipment maintenance 
-                to identify potential compliance gaps and strengths.
+                AI review of all roadside inspections, accidents, driver records, and equipment
+                maintenance to identify potential compliance gaps and strengths.
               </p>
             </CardContent>
           </Card>
@@ -160,7 +159,7 @@ export default function OrganizationAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Automatically generate audit-ready documentation packages with compliance summaries, 
+                Automatically generate audit-ready documentation packages with compliance summaries,
                 corrective action records, and performance metrics.
               </p>
             </CardContent>
@@ -175,8 +174,8 @@ export default function OrganizationAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Receive targeted recommendations for improving safety scores, addressing recurring issues, 
-                and demonstrating commitment to compliance excellence.
+                Receive targeted recommendations for improving safety scores, addressing recurring
+                issues, and demonstrating commitment to compliance excellence.
               </p>
             </CardContent>
           </Card>
@@ -190,7 +189,7 @@ export default function OrganizationAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Dynamic audit preparation that updates as new incidents, inspections, and compliance 
+                Dynamic audit preparation that updates as new incidents, inspections, and compliance
                 activities are recorded in the system.
               </p>
             </CardContent>
@@ -205,7 +204,7 @@ export default function OrganizationAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Advanced scoring algorithms that predict audit outcomes and highlight areas of 
+                Advanced scoring algorithms that predict audit outcomes and highlight areas of
                 strength and improvement opportunities.
               </p>
             </CardContent>
@@ -220,7 +219,7 @@ export default function OrganizationAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Proactive scheduling and preparation timeline management to ensure your organization 
+                Proactive scheduling and preparation timeline management to ensure your organization
                 is always audit-ready with minimal stress.
               </p>
             </CardContent>
@@ -247,7 +246,7 @@ export default function OrganizationAuditPage() {
                 <div>
                   <h4 className="font-medium text-gray-900">Audit List Management</h4>
                   <p className="text-sm text-gray-600">
-                    Master list of organization audits on the left with detailed views on the right, 
+                    Master list of organization audits on the left with detailed views on the right,
                     including historical audit results and trending data.
                   </p>
                 </div>
@@ -260,7 +259,7 @@ export default function OrganizationAuditPage() {
                 <div>
                   <h4 className="font-medium text-gray-900">New Audit Preparation Wizard</h4>
                   <p className="text-sm text-gray-600">
-                    Guided process that uses AI to analyze current compliance status and generate 
+                    Guided process that uses AI to analyze current compliance status and generate
                     comprehensive preparation strategies for upcoming audits.
                   </p>
                 </div>
@@ -273,8 +272,9 @@ export default function OrganizationAuditPage() {
                 <div>
                   <h4 className="font-medium text-gray-900">Intelligent Documentation Engine</h4>
                   <p className="text-sm text-gray-600">
-                    AI-powered system that reviews roadside inspections, accidents, driver and equipment 
-                    records to generate audit documentation and messaging for successful results.
+                    AI-powered system that reviews roadside inspections, accidents, driver and
+                    equipment records to generate audit documentation and messaging for successful
+                    results.
                   </p>
                 </div>
               </div>
@@ -286,7 +286,7 @@ export default function OrganizationAuditPage() {
                 <div>
                   <h4 className="font-medium text-gray-900">Predictive Risk Assessment</h4>
                   <p className="text-sm text-gray-600">
-                    Machine learning algorithms that identify patterns in violations and incidents 
+                    Machine learning algorithms that identify patterns in violations and incidents
                     to predict potential audit focus areas and recommend proactive measures.
                   </p>
                 </div>
@@ -303,9 +303,9 @@ export default function OrganizationAuditPage() {
               <div>
                 <h4 className="font-medium text-yellow-900 mb-2">Development Status</h4>
                 <p className="text-sm text-yellow-800 mb-4">
-                  The AI-powered audit system will be developed after all driver and equipment issue 
-                  management features are complete. This ensures a comprehensive compliance foundation 
-                  before implementing advanced audit preparation tools.
+                  The AI-powered audit system will be developed after all driver and equipment issue
+                  management features are complete. This ensures a comprehensive compliance
+                  foundation before implementing advanced audit preparation tools.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">Phase 1: Driver Issues Complete ✓</Badge>
@@ -318,5 +318,5 @@ export default function OrganizationAuditPage() {
         </Card>
       </div>
     </AppLayout>
-  )
-} 
+  );
+}

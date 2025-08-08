@@ -1,111 +1,154 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Plus, FileText, Phone, Link, Shield, CheckSquare, Edit, Trash2,
-  CalendarIcon, Filter, X, Tag, Eye, EyeOff
-} from 'lucide-react'
-import { format } from 'date-fns'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import {
+  Plus,
+  FileText,
+  Phone,
+  Link,
+  Shield,
+  CheckSquare,
+  Edit,
+  Trash2,
+  CalendarIcon,
+  Filter,
+  X,
+  Tag,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { format } from "date-fns";
 
 // Activity types with icons and colors
 const ACTIVITY_TYPES = {
-  note: { 
-    icon: FileText, 
-    label: 'Note', 
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
-    description: 'General notes and observations'
+  note: {
+    icon: FileText,
+    label: "Note",
+    color: "bg-blue-100 text-blue-800 border-blue-200",
+    description: "General notes and observations",
   },
-  communication: { 
-    icon: Phone, 
-    label: 'Communication', 
-    color: 'bg-green-100 text-green-800 border-green-200',
-    description: 'Phone calls, emails, meetings'
+  communication: {
+    icon: Phone,
+    label: "Communication",
+    color: "bg-green-100 text-green-800 border-green-200",
+    description: "Phone calls, emails, meetings",
   },
-  url: { 
-    icon: Link, 
-    label: 'URL', 
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    description: 'Links to portals, documentation'
+  url: {
+    icon: Link,
+    label: "URL",
+    color: "bg-purple-100 text-purple-800 border-purple-200",
+    description: "Links to portals, documentation",
   },
-  credential: { 
-    icon: Shield, 
-    label: 'Credential', 
-    color: 'bg-red-100 text-red-800 border-red-200',
-    description: 'Login information (encrypted)'
+  credential: {
+    icon: Shield,
+    label: "Credential",
+    color: "bg-red-100 text-red-800 border-red-200",
+    description: "Login information (encrypted)",
   },
-  attachment: { 
-    icon: FileText, 
-    label: 'File', 
-    color: 'bg-gray-100 text-gray-800 border-gray-200',
-    description: 'Documents, images, certificates'
+  attachment: {
+    icon: FileText,
+    label: "File",
+    color: "bg-gray-100 text-gray-800 border-gray-200",
+    description: "Documents, images, certificates",
   },
-  task: { 
-    icon: CheckSquare, 
-    label: 'Task', 
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
-    description: 'Follow-up items, reminders'
-  }
-}
+  task: {
+    icon: CheckSquare,
+    label: "Task",
+    color: "bg-orange-100 text-orange-800 border-orange-200",
+    description: "Follow-up items, reminders",
+  },
+};
 
 // Default system tags - organizations can add custom ones later
 const DEFAULT_TAGS = [
   // General
-  'urgent', 'high-priority', 'follow-up', 'reminder', 'important',
+  "urgent",
+  "high-priority",
+  "follow-up",
+  "reminder",
+  "important",
   // Communication specific
-  'phone', 'email', 'meeting', 'voicemail', 'text',
-  // DOT/Compliance specific  
-  'dot', 'dmv', 'inspection', 'violation', 'renewal', 'license', 'training',
+  "phone",
+  "email",
+  "meeting",
+  "voicemail",
+  "text",
+  // DOT/Compliance specific
+  "dot",
+  "dmv",
+  "inspection",
+  "violation",
+  "renewal",
+  "license",
+  "training",
   // Status tags
-  'pending', 'completed', 'in-progress', 'cancelled', 'approved', 'rejected'
-]
+  "pending",
+  "completed",
+  "in-progress",
+  "cancelled",
+  "approved",
+  "rejected",
+];
 
 interface ActivityLog {
-  id: string
-  activityType: string
-  title: string
-  content: string
-  tags: string[]
-  createdBy: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  activityType: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
   // Optional fields based on activity type
-  fileName?: string
-  fileSize?: number
-  filePath?: string
-  username?: string
-  portalUrl?: string
-  dueDate?: string
-  isCompleted?: boolean
-  priority?: string
+  fileName?: string;
+  fileSize?: number;
+  filePath?: string;
+  username?: string;
+  portalUrl?: string;
+  dueDate?: string;
+  isCompleted?: boolean;
+  priority?: string;
 }
 
 interface ActivityLogProps {
   // Entity context - can connect to any entity
-  issueId?: string
-  organizationId?: string
-  personId?: string
-  equipmentId?: string
-  locationId?: string
-  cafId?: string
-  
+  issueId?: string;
+  organizationId?: string;
+  personId?: string;
+  equipmentId?: string;
+  locationId?: string;
+  cafId?: string;
+
   // UI configuration
-  title?: string
-  allowedTypes?: string[]
-  showEntityLabel?: boolean
-  compact?: boolean
-  maxHeight?: string
-  showAddButton?: boolean
+  title?: string;
+  allowedTypes?: string[];
+  showEntityLabel?: boolean;
+  compact?: boolean;
+  maxHeight?: string;
+  showAddButton?: boolean;
 }
 
 export function ActivityLog({
@@ -120,82 +163,82 @@ export function ActivityLog({
   showEntityLabel = false,
   compact = false,
   maxHeight = "400px",
-  showAddButton = true
+  showAddButton = true,
 }: ActivityLogProps) {
-  const [activities, setActivities] = useState<ActivityLog[]>([])
-  const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+
   // New activity form state
   const [newActivity, setNewActivity] = useState({
-    activityType: 'note',
-    title: '',
-    content: '',
+    activityType: "note",
+    title: "",
+    content: "",
     tags: [] as string[],
     dueDate: null as Date | null,
-    priority: 'medium',
-    username: '',
-    password: '',
-    portalUrl: ''
-  })
+    priority: "medium",
+    username: "",
+    password: "",
+    portalUrl: "",
+  });
 
-  const [availableTags, setAvailableTags] = useState<string[]>(DEFAULT_TAGS)
-  const [tagInput, setTagInput] = useState('')
-  const [showTagInput, setShowTagInput] = useState(false)
-
-  useEffect(() => {
-    fetchActivities()
-  }, [issueId, organizationId, personId, equipmentId, locationId, cafId])
+  const [availableTags, setAvailableTags] = useState<string[]>(DEFAULT_TAGS);
+  const [tagInput, setTagInput] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
 
   useEffect(() => {
-    filterActivities()
-  }, [activities, selectedTags, selectedTypes])
+    fetchActivities();
+  }, [issueId, organizationId, personId, equipmentId, locationId, cafId]);
+
+  useEffect(() => {
+    filterActivities();
+  }, [activities, selectedTags, selectedTypes]);
 
   const fetchActivities = async () => {
     try {
-      setLoading(true)
-      
+      setLoading(true);
+
       // Build query params based on entity context
-      const params = new URLSearchParams()
-      if (issueId) params.append('issueId', issueId)
-      if (organizationId) params.append('organizationId', organizationId)  
-      if (personId) params.append('personId', personId)
-      if (equipmentId) params.append('equipmentId', equipmentId)
-      if (locationId) params.append('locationId', locationId)
-      if (cafId) params.append('cafId', cafId)
-      
-      const response = await fetch(`/api/activity-log?${params}`)
+      const params = new URLSearchParams();
+      if (issueId) params.append("issueId", issueId);
+      if (organizationId) params.append("organizationId", organizationId);
+      if (personId) params.append("personId", personId);
+      if (equipmentId) params.append("equipmentId", equipmentId);
+      if (locationId) params.append("locationId", locationId);
+      if (cafId) params.append("cafId", cafId);
+
+      const response = await fetch(`/api/activity-log?${params}`);
       if (response.ok) {
-        const data = await response.json()
-        setActivities(data)
+        const data = await response.json();
+        setActivities(data);
       }
     } catch (error) {
-      console.error('Error fetching activities:', error)
+      console.error("Error fetching activities:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filterActivities = () => {
-    let filtered = activities
+    let filtered = activities;
 
     // Filter by selected types
     if (selectedTypes.length > 0) {
-      filtered = filtered.filter(activity => selectedTypes.includes(activity.activityType))
+      filtered = filtered.filter((activity) => selectedTypes.includes(activity.activityType));
     }
 
     // Filter by selected tags
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(activity => 
-        selectedTags.some(tag => activity.tags.includes(tag))
-      )
+      filtered = filtered.filter((activity) =>
+        selectedTags.some((tag) => activity.tags.includes(tag)),
+      );
     }
 
-    setFilteredActivities(filtered)
-  }
+    setFilteredActivities(filtered);
+  };
 
   const handleAddActivity = async () => {
     try {
@@ -211,96 +254,91 @@ export function ActivityLog({
         ...(locationId && { locationId }),
         ...(cafId && { cafId }),
         // Activity-specific fields
-        ...(newActivity.activityType === 'task' && {
+        ...(newActivity.activityType === "task" && {
           dueDate: newActivity.dueDate?.toISOString(),
-          priority: newActivity.priority
+          priority: newActivity.priority,
         }),
-        ...(newActivity.activityType === 'credential' && {
+        ...(newActivity.activityType === "credential" && {
           username: newActivity.username,
           password: newActivity.password, // Will be encrypted on backend
-          portalUrl: newActivity.portalUrl
-        })
-      }
+          portalUrl: newActivity.portalUrl,
+        }),
+      };
 
-      const response = await fetch('/api/activity-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activityData)
-      })
+      const response = await fetch("/api/activity-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(activityData),
+      });
 
       if (response.ok) {
-        const newActivityRecord = await response.json()
-        setActivities(prev => [newActivityRecord, ...prev])
-        
+        const newActivityRecord = await response.json();
+        setActivities((prev) => [newActivityRecord, ...prev]);
+
         // Reset form
         setNewActivity({
-          activityType: 'note',
-          title: '',
-          content: '',
+          activityType: "note",
+          title: "",
+          content: "",
           tags: [],
           dueDate: null,
-          priority: 'medium',
-          username: '',
-          password: '',
-          portalUrl: ''
-        })
-        setIsAddDialogOpen(false)
+          priority: "medium",
+          username: "",
+          password: "",
+          portalUrl: "",
+        });
+        setIsAddDialogOpen(false);
       }
     } catch (error) {
-      console.error('Error adding activity:', error)
+      console.error("Error adding activity:", error);
     }
-  }
+  };
 
   const addTag = (tag: string) => {
     if (tag && !newActivity.tags.includes(tag)) {
-      setNewActivity(prev => ({
+      setNewActivity((prev) => ({
         ...prev,
-        tags: [...prev.tags, tag]
-      }))
+        tags: [...prev.tags, tag],
+      }));
     }
-    setTagInput('')
-    setShowTagInput(false)
-  }
+    setTagInput("");
+    setShowTagInput(false);
+  };
 
   const removeTag = (tagToRemove: string) => {
-    setNewActivity(prev => ({
+    setNewActivity((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }))
-  }
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
 
   const toggleTagFilter = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    )
-  }
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  };
 
   const toggleTypeFilter = (type: string) => {
-    setSelectedTypes(prev => 
-      prev.includes(type) 
-        ? prev.filter(t => t !== type)
-        : [...prev, type]
-    )
-  }
+    setSelectedTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  };
 
   const getActivityIcon = (activityType: string) => {
-    const config = ACTIVITY_TYPES[activityType as keyof typeof ACTIVITY_TYPES]
-    if (!config) return FileText
-    return config.icon
-  }
+    const config = ACTIVITY_TYPES[activityType as keyof typeof ACTIVITY_TYPES];
+    if (!config) return FileText;
+    return config.icon;
+  };
 
   const getActivityColor = (activityType: string) => {
-    const config = ACTIVITY_TYPES[activityType as keyof typeof ACTIVITY_TYPES]
-    return config?.color || 'bg-gray-100 text-gray-800 border-gray-200'
-  }
+    const config = ACTIVITY_TYPES[activityType as keyof typeof ACTIVITY_TYPES];
+    return config?.color || "bg-gray-100 text-gray-800 border-gray-200";
+  };
 
   // Get unique tags from existing activities for filter options
-  const allTags = Array.from(new Set([
-    ...DEFAULT_TAGS,
-    ...activities.flatMap(activity => activity.tags)
-  ])).sort()
+  const allTags = Array.from(
+    new Set([...DEFAULT_TAGS, ...activities.flatMap((activity) => activity.tags)]),
+  ).sort();
 
   return (
     <Card className={compact ? "border-0 shadow-none" : ""}>
@@ -311,7 +349,7 @@ export function ActivityLog({
             {title}
             <Badge variant="secondary">{activities.length}</Badge>
           </CardTitle>
-          
+
           <div className="flex items-center gap-2">
             {/* Filter Controls */}
             <Popover>
@@ -332,23 +370,23 @@ export function ActivityLog({
                   <div>
                     <Label className="text-sm font-medium">Activity Types</Label>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {allowedTypes.map(type => {
-                        const config = ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES]
-                        const Icon = config?.icon || FileText
+                      {allowedTypes.map((type) => {
+                        const config = ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES];
+                        const Icon = config?.icon || FileText;
                         return (
                           <Badge
                             key={type}
                             variant={selectedTypes.includes(type) ? "default" : "outline"}
                             className={cn(
                               "cursor-pointer flex items-center gap-1",
-                              selectedTypes.includes(type) && config?.color
+                              selectedTypes.includes(type) && config?.color,
                             )}
                             onClick={() => toggleTypeFilter(type)}
                           >
                             <Icon className="h-3 w-3" />
                             {config?.label || type}
                           </Badge>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -357,7 +395,7 @@ export function ActivityLog({
                   <div>
                     <Label className="text-sm font-medium">Tags</Label>
                     <div className="flex flex-wrap gap-1 mt-2 max-h-32 overflow-y-auto">
-                      {allTags.map(tag => (
+                      {allTags.map((tag) => (
                         <Badge
                           key={tag}
                           variant={selectedTags.includes(tag) ? "default" : "outline"}
@@ -373,12 +411,12 @@ export function ActivityLog({
 
                   {/* Clear Filters */}
                   {(selectedTags.length > 0 || selectedTypes.length > 0) && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => {
-                        setSelectedTags([])
-                        setSelectedTypes([])
+                        setSelectedTags([]);
+                        setSelectedTypes([]);
                       }}
                       className="w-full"
                     >
@@ -402,22 +440,24 @@ export function ActivityLog({
                   <DialogHeader>
                     <DialogTitle>Add Activity</DialogTitle>
                   </DialogHeader>
-                  
+
                   <div className="space-y-4">
                     {/* Activity Type Selection */}
                     <div className="grid grid-cols-3 gap-2">
-                      {allowedTypes.map(type => {
-                        const config = ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES]
-                        const Icon = config?.icon || FileText
+                      {allowedTypes.map((type) => {
+                        const config = ACTIVITY_TYPES[type as keyof typeof ACTIVITY_TYPES];
+                        const Icon = config?.icon || FileText;
                         return (
                           <Button
                             key={type}
                             variant={newActivity.activityType === type ? "default" : "outline"}
                             className={cn(
                               "h-auto flex-col gap-2 p-4",
-                              newActivity.activityType === type && config?.color
+                              newActivity.activityType === type && config?.color,
                             )}
-                            onClick={() => setNewActivity(prev => ({ ...prev, activityType: type }))}
+                            onClick={() =>
+                              setNewActivity((prev) => ({ ...prev, activityType: type }))
+                            }
                           >
                             <Icon className="h-5 w-5" />
                             <div className="text-center">
@@ -427,7 +467,7 @@ export function ActivityLog({
                               </div>
                             </div>
                           </Button>
-                        )
+                        );
                       })}
                     </div>
 
@@ -437,7 +477,9 @@ export function ActivityLog({
                       <Input
                         id="title"
                         value={newActivity.title}
-                        onChange={(e) => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
+                        onChange={(e) =>
+                          setNewActivity((prev) => ({ ...prev, title: e.target.value }))
+                        }
                         placeholder="Brief title or subject"
                       />
                     </div>
@@ -445,33 +487,44 @@ export function ActivityLog({
                     {/* Content */}
                     <div>
                       <Label htmlFor="content">
-                        {newActivity.activityType === 'url' ? 'URL' : 
-                         newActivity.activityType === 'credential' ? 'Portal URL' : 'Content'}
+                        {newActivity.activityType === "url"
+                          ? "URL"
+                          : newActivity.activityType === "credential"
+                            ? "Portal URL"
+                            : "Content"}
                       </Label>
                       <Textarea
                         id="content"
                         value={newActivity.content}
-                        onChange={(e) => setNewActivity(prev => ({ ...prev, content: e.target.value }))}
+                        onChange={(e) =>
+                          setNewActivity((prev) => ({ ...prev, content: e.target.value }))
+                        }
                         placeholder={
-                          newActivity.activityType === 'note' ? "Your notes..." :
-                          newActivity.activityType === 'communication' ? "Details of the communication..." :
-                          newActivity.activityType === 'url' ? "https://example.com" :
-                          newActivity.activityType === 'task' ? "Task description..." :
-                          "Details..."
+                          newActivity.activityType === "note"
+                            ? "Your notes..."
+                            : newActivity.activityType === "communication"
+                              ? "Details of the communication..."
+                              : newActivity.activityType === "url"
+                                ? "https://example.com"
+                                : newActivity.activityType === "task"
+                                  ? "Task description..."
+                                  : "Details..."
                         }
                         rows={3}
                       />
                     </div>
 
                     {/* Credential-specific fields */}
-                    {newActivity.activityType === 'credential' && (
+                    {newActivity.activityType === "credential" && (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="username">Username</Label>
                           <Input
                             id="username"
                             value={newActivity.username}
-                            onChange={(e) => setNewActivity(prev => ({ ...prev, username: e.target.value }))}
+                            onChange={(e) =>
+                              setNewActivity((prev) => ({ ...prev, username: e.target.value }))
+                            }
                             placeholder="Portal username"
                           />
                         </div>
@@ -481,7 +534,9 @@ export function ActivityLog({
                             id="password"
                             type="password"
                             value={newActivity.password}
-                            onChange={(e) => setNewActivity(prev => ({ ...prev, password: e.target.value }))}
+                            onChange={(e) =>
+                              setNewActivity((prev) => ({ ...prev, password: e.target.value }))
+                            }
                             placeholder="Portal password"
                           />
                         </div>
@@ -489,7 +544,7 @@ export function ActivityLog({
                     )}
 
                     {/* Task-specific fields */}
-                    {newActivity.activityType === 'task' && (
+                    {newActivity.activityType === "task" && (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Due Date</Label>
@@ -499,18 +554,22 @@ export function ActivityLog({
                                 variant="outline"
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
-                                  !newActivity.dueDate && "text-muted-foreground"
+                                  !newActivity.dueDate && "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {newActivity.dueDate ? format(newActivity.dueDate, "PPP") : "Pick due date"}
+                                {newActivity.dueDate
+                                  ? format(newActivity.dueDate, "PPP")
+                                  : "Pick due date"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
                               <Calendar
                                 mode="single"
                                 selected={newActivity.dueDate || undefined}
-                                onSelect={(date) => setNewActivity(prev => ({ ...prev, dueDate: date || null }))}
+                                onSelect={(date) =>
+                                  setNewActivity((prev) => ({ ...prev, dueDate: date || null }))
+                                }
                                 initialFocus
                               />
                             </PopoverContent>
@@ -518,9 +577,11 @@ export function ActivityLog({
                         </div>
                         <div>
                           <Label htmlFor="priority">Priority</Label>
-                          <Select 
-                            value={newActivity.priority} 
-                            onValueChange={(value) => setNewActivity(prev => ({ ...prev, priority: value }))}
+                          <Select
+                            value={newActivity.priority}
+                            onValueChange={(value) =>
+                              setNewActivity((prev) => ({ ...prev, priority: value }))
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -542,17 +603,21 @@ export function ActivityLog({
                       <div className="space-y-2">
                         {/* Selected tags */}
                         <div className="flex flex-wrap gap-1">
-                          {newActivity.tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {newActivity.tags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
                               {tag}
-                              <X 
-                                className="h-3 w-3 cursor-pointer" 
+                              <X
+                                className="h-3 w-3 cursor-pointer"
                                 onClick={() => removeTag(tag)}
                               />
                             </Badge>
                           ))}
                         </div>
-                        
+
                         {/* Add tag controls */}
                         <div className="flex gap-2">
                           {showTagInput ? (
@@ -561,17 +626,23 @@ export function ActivityLog({
                                 value={tagInput}
                                 onChange={(e) => setTagInput(e.target.value)}
                                 placeholder="Enter tag name"
-                                onKeyPress={(e) => e.key === 'Enter' && addTag(tagInput)}
+                                onKeyPress={(e) => e.key === "Enter" && addTag(tagInput)}
                                 className="flex-1"
                               />
-                              <Button size="sm" onClick={() => addTag(tagInput)}>Add</Button>
-                              <Button size="sm" variant="outline" onClick={() => setShowTagInput(false)}>
+                              <Button size="sm" onClick={() => addTag(tagInput)}>
+                                Add
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setShowTagInput(false)}
+                              >
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : (
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => setShowTagInput(true)}
                             >
@@ -580,10 +651,10 @@ export function ActivityLog({
                             </Button>
                           )}
                         </div>
-                        
+
                         {/* Quick tag buttons */}
                         <div className="flex flex-wrap gap-1">
-                          {DEFAULT_TAGS.slice(0, 8).map(tag => (
+                          {DEFAULT_TAGS.slice(0, 8).map((tag) => (
                             <Badge
                               key={tag}
                               variant="outline"
@@ -603,9 +674,7 @@ export function ActivityLog({
                       <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={handleAddActivity}>
-                        Add Activity
-                      </Button>
+                      <Button onClick={handleAddActivity}>Add Activity</Button>
                     </div>
                   </div>
                 </DialogContent>
@@ -618,9 +687,7 @@ export function ActivityLog({
       <CardContent className={compact ? "pt-0" : ""}>
         <div className={cn("space-y-3", `max-h-[${maxHeight}] overflow-y-auto`)}>
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading activities...
-            </div>
+            <div className="text-center py-8 text-muted-foreground">Loading activities...</div>
           ) : filteredActivities.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {activities.length === 0 ? (
@@ -638,20 +705,25 @@ export function ActivityLog({
               )}
             </div>
           ) : (
-            filteredActivities.map(activity => {
-              const Icon = getActivityIcon(activity.activityType)
-              const config = ACTIVITY_TYPES[activity.activityType as keyof typeof ACTIVITY_TYPES]
-              
+            filteredActivities.map((activity) => {
+              const Icon = getActivityIcon(activity.activityType);
+              const config = ACTIVITY_TYPES[activity.activityType as keyof typeof ACTIVITY_TYPES];
+
               return (
-                <div key={activity.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                <div
+                  key={activity.id}
+                  className="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "p-2 rounded-lg flex-shrink-0",
-                      getActivityColor(activity.activityType)
-                    )}>
+                    <div
+                      className={cn(
+                        "p-2 rounded-lg flex-shrink-0",
+                        getActivityColor(activity.activityType),
+                      )}
+                    >
                       <Icon className="h-4 w-4" />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
@@ -661,35 +733,38 @@ export function ActivityLog({
                           </p>
                         </div>
                         <div className="text-xs text-muted-foreground flex-shrink-0">
-                          {format(new Date(activity.createdAt), 'MMM dd, HH:mm')}
+                          {format(new Date(activity.createdAt), "MMM dd, HH:mm")}
                         </div>
                       </div>
-                      
+
                       {/* Tags */}
                       {activity.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {activity.tags.map(tag => (
+                          {activity.tags.map((tag) => (
                             <Badge key={tag} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
                           ))}
                         </div>
                       )}
-                      
+
                       {/* Activity-specific content */}
-                      {activity.activityType === 'credential' && activity.username && (
+                      {activity.activityType === "credential" && activity.username && (
                         <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
                           <div>Username: {activity.username}</div>
                           {activity.portalUrl && <div>Portal: {activity.portalUrl}</div>}
                         </div>
                       )}
-                      
-                      {activity.activityType === 'task' && activity.dueDate && (
+
+                      {activity.activityType === "task" && activity.dueDate && (
                         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                           <CalendarIcon className="h-3 w-3" />
-                          Due: {format(new Date(activity.dueDate), 'MMM dd, yyyy')}
-                          {activity.priority && activity.priority !== 'medium' && (
-                            <Badge variant={activity.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-xs">
+                          Due: {format(new Date(activity.dueDate), "MMM dd, yyyy")}
+                          {activity.priority && activity.priority !== "medium" && (
+                            <Badge
+                              variant={activity.priority === "urgent" ? "destructive" : "secondary"}
+                              className="text-xs"
+                            >
                               {activity.priority}
                             </Badge>
                           )}
@@ -698,11 +773,11 @@ export function ActivityLog({
                     </div>
                   </div>
                 </div>
-              )
+              );
             })
           )}
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

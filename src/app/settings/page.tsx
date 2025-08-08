@@ -1,116 +1,118 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Building, Users, MapPin, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Building, Users, MapPin, Save, AlertCircle, CheckCircle } from "lucide-react";
 
 const roleConfig = {
   master: {
-    title: 'Master Manager',
-    description: 'Manage multiple organizations with full administrative control',
+    title: "Master Manager",
+    description: "Manage multiple organizations with full administrative control",
     icon: Building,
-    color: 'bg-blue-100 text-blue-600'
+    color: "bg-blue-100 text-blue-600",
   },
   organization: {
-    title: 'Organization Manager', 
-    description: 'Manage your organization, drivers, and equipment',
+    title: "Organization Manager",
+    description: "Manage your organization, drivers, and equipment",
     icon: Users,
-    color: 'bg-green-100 text-green-600'
+    color: "bg-green-100 text-green-600",
   },
   location: {
-    title: 'Location Manager',
-    description: 'Manage drivers and equipment at your specific location',
+    title: "Location Manager",
+    description: "Manage drivers and equipment at your specific location",
     icon: MapPin,
-    color: 'bg-orange-100 text-orange-600'
-  }
-}
+    color: "bg-orange-100 text-orange-600",
+  },
+};
 
 interface UserProfile {
-  firstName?: string
-  lastName?: string
-  role?: string
-  organizationName?: string
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  organizationName?: string;
 }
 
 export default function SettingsPage() {
-  const { user, isLoaded } = useUser()
-  const [profile, setProfile] = useState<UserProfile>({})
-  const [organizationName, setOrganizationName] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isLoaded } = useUser();
+  const [profile, setProfile] = useState<UserProfile>({});
+  const [organizationName, setOrganizationName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isLoaded) {
-      fetchProfile()
+      fetchProfile();
     }
-  }, [isLoaded])
+  }, [isLoaded]);
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/user/profile')
+      const response = await fetch("/api/user/profile");
       if (response.ok) {
-        const data = await response.json()
-        setProfile(data)
+        const data = await response.json();
+        setProfile(data);
         // Get organization name from the organizations array
         if (data.organizations && data.organizations.length > 0) {
-          setOrganizationName(data.organizations[0].name)
+          setOrganizationName(data.organizations[0].name);
         }
       }
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error("Error fetching profile:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSaveOrganization = async () => {
-    setIsSubmitting(true)
-    setMessage(null)
+    setIsSubmitting(true);
+    setMessage(null);
 
     try {
-      const response = await fetch('/api/user/update-organization', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationName })
-      })
+      const response = await fetch("/api/user/update-organization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationName }),
+      });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Organization name updated successfully!' })
-        fetchProfile() // Refresh profile
+        setMessage({ type: "success", text: "Organization name updated successfully!" });
+        fetchProfile(); // Refresh profile
       } else {
-        const data = await response.json()
-        setMessage({ type: 'error', text: data.error || 'Failed to update organization name' })
+        const data = await response.json();
+        setMessage({ type: "error", text: data.error || "Failed to update organization name" });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'An error occurred while updating' })
+      setMessage({ type: "error", text: "An error occurred while updating" });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
-    )
+    );
   }
 
-  const config = roleConfig[profile.role as keyof typeof roleConfig] || roleConfig.organization
-  const IconComponent = config.icon
+  const config = roleConfig[profile.role as keyof typeof roleConfig] || roleConfig.organization;
+  const IconComponent = config.icon;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Account Settings</h1>
-          <p className="text-muted-foreground mt-2">Manage your account and organization information</p>
+          <p className="text-muted-foreground mt-2">
+            Manage your account and organization information
+          </p>
         </div>
 
         {/* User Information Card */}
@@ -129,18 +131,19 @@ export default function SettingsPage() {
               <div>
                 <Label>First Name</Label>
                 <div className="p-2 bg-gray-50 rounded text-sm text-muted-foreground">
-                  {profile.firstName || 'Not set'}
+                  {profile.firstName || "Not set"}
                 </div>
               </div>
               <div>
                 <Label>Last Name</Label>
                 <div className="p-2 bg-gray-50 rounded text-sm text-muted-foreground">
-                  {profile.lastName || 'Not set'}
+                  {profile.lastName || "Not set"}
                 </div>
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              To update your name or email, use the "Manage Account" option in the account menu above.
+              To update your name or email, use the "Manage Account" option in the account menu
+              above.
             </div>
           </CardContent>
         </Card>
@@ -152,19 +155,21 @@ export default function SettingsPage() {
               <IconComponent className="h-5 w-5" />
               Management Role
             </CardTitle>
-            <CardDescription>
-              Your management level and permissions
-            </CardDescription>
+            <CardDescription>Your management level and permissions</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${config.color}`}>
+              <div
+                className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${config.color}`}
+              >
                 <IconComponent className="h-6 w-6" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="font-medium">{config.title}</p>
-                  <Badge variant="secondary" className="text-xs">Permanent</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Permanent
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{config.description}</p>
               </div>
@@ -180,32 +185,34 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building className="h-5 w-5" />
-              {profile.role === 'master' ? 'Company Information' : 'Organization Information'}
+              {profile.role === "master" ? "Company Information" : "Organization Information"}
             </CardTitle>
             <CardDescription>
-              Update your {profile.role === 'master' ? 'company' : 'organization'} details
+              Update your {profile.role === "master" ? "company" : "organization"} details
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="organizationName">
-                {profile.role === 'master' ? 'Company Name' : 'Organization Name'}
+                {profile.role === "master" ? "Company Name" : "Organization Name"}
               </Label>
               <Input
                 id="organizationName"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
-                placeholder={`Enter ${profile.role === 'master' ? 'company' : 'organization'} name`}
+                placeholder={`Enter ${profile.role === "master" ? "company" : "organization"} name`}
               />
             </div>
 
             {message && (
-              <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
-                message.type === 'success' 
-                  ? 'bg-green-50 border border-green-200 text-green-600'
-                  : 'bg-red-50 border border-red-200 text-red-600'
-              }`}>
-                {message.type === 'success' ? (
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+                  message.type === "success"
+                    ? "bg-green-50 border border-green-200 text-green-600"
+                    : "bg-red-50 border border-red-200 text-red-600"
+                }`}
+              >
+                {message.type === "success" ? (
                   <CheckCircle className="h-4 w-4 flex-shrink-0" />
                 ) : (
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -214,7 +221,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            <Button 
+            <Button
               onClick={handleSaveOrganization}
               disabled={isSubmitting || !organizationName.trim()}
               className="w-full"
@@ -235,5 +242,5 @@ export default function SettingsPage() {
         </Card>
       </div>
     </div>
-  )
-} 
+  );
+}

@@ -1,50 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { masterOrgId: string; orgId: string } }
+  { params }: { params: { masterOrgId: string; orgId: string } },
 ) {
   try {
-    const { userId } = await auth()
-    
+    const { userId } = await auth();
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { orgId } = params
+    const { orgId } = params;
 
     // Simplified authorization - just verify organization exists
     const organization = await db.organization.findUnique({
-      where: { id: orgId }
-    })
+      where: { id: orgId },
+    });
 
     if (!organization) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     // Get all active drivers for this organization (simplified query)
     const driverRoles = await db.role.findMany({
       where: {
         organizationId: orgId,
-        roleType: 'driver',
-        isActive: true
+        roleType: "driver",
+        isActive: true,
       },
       include: {
         party: {
           include: {
-            person: true
-          }
-        }
-      }
-    })
+            person: true,
+          },
+        },
+      },
+    });
 
     // 5. Transform driver data with compliance summary
     const driversWithCompliance = await Promise.all(
       driverRoles.map(async (role) => {
-        const driver = role.party?.person
-        if (!driver) return null
+        const driver = role.party?.person;
+        if (!driver) return null;
 
         // Get compliance issues counts for this driver
         const [licenseCount, mvrCount, trainingCount, physicalCount] = await Promise.all([
@@ -53,126 +53,128 @@ export async function GET(
               issue: {
                 party: {
                   person: {
-                    id: driver.id
-                  }
+                    id: driver.id,
+                  },
                 },
-                status: 'open'
-              }
-            }
+                status: "open",
+              },
+            },
           }),
           db.mvr_issue.count({
             where: {
               issue: {
                 party: {
                   person: {
-                    id: driver.id
-                  }
+                    id: driver.id,
+                  },
                 },
-                status: 'open'
+                status: "open",
               },
-              status: 'Active'
-            }
+              status: "Active",
+            },
           }),
           db.training_issue.count({
             where: {
               issue: {
                 party: {
                   person: {
-                    id: driver.id
-                  }
+                    id: driver.id,
+                  },
                 },
-                status: 'open'
-              }
-            }
+                status: "open",
+              },
+            },
           }),
           db.physical_issue.count({
             where: {
               issue: {
                 party: {
                   person: {
-                    id: driver.id
-                  }
+                    id: driver.id,
+                  },
                 },
-                status: 'open'
-              }
-            }
-          })
-        ])
+                status: "open",
+              },
+            },
+          }),
+        ]);
 
         // Get expiring issues count (expires within 30 days)
-        const thirtyDaysFromNow = new Date()
-        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-        const [expiringLicenses, expiringMvrs, expiringTraining, expiringPhysicals] = await Promise.all([
-          db.license_issue.count({
-            where: {
-              issue: {
-                party: {
-                  person: {
-                    id: driver.id
-                  }
+        const [expiringLicenses, expiringMvrs, expiringTraining, expiringPhysicals] =
+          await Promise.all([
+            db.license_issue.count({
+              where: {
+                issue: {
+                  party: {
+                    person: {
+                      id: driver.id,
+                    },
+                  },
+                  status: "open",
                 },
-                status: 'open'
-              },
-              expirationDate: {
-                lte: thirtyDaysFromNow,
-                gte: new Date()
-              }
-            }
-          }),
-          db.mvr_issue.count({
-            where: {
-              issue: {
-                party: {
-                  person: {
-                    id: driver.id
-                  }
+                expirationDate: {
+                  lte: thirtyDaysFromNow,
+                  gte: new Date(),
                 },
-                status: 'open'
               },
-              status: 'Active',
-              expirationDate: {
-                lte: thirtyDaysFromNow,
-                gte: new Date()
-              }
-            }
-          }),
-          db.training_issue.count({
-            where: {
-              issue: {
-                party: {
-                  person: {
-                    id: driver.id
-                  }
+            }),
+            db.mvr_issue.count({
+              where: {
+                issue: {
+                  party: {
+                    person: {
+                      id: driver.id,
+                    },
+                  },
+                  status: "open",
                 },
-                status: 'open'
-              },
-              expirationDate: {
-                lte: thirtyDaysFromNow,
-                gte: new Date()
-              }
-            }
-          }),
-          db.physical_issue.count({
-            where: {
-              issue: {
-                party: {
-                  person: {
-                    id: driver.id
-                  }
+                status: "Active",
+                expirationDate: {
+                  lte: thirtyDaysFromNow,
+                  gte: new Date(),
                 },
-                status: 'open'
               },
-              expirationDate: {
-                lte: thirtyDaysFromNow,
-                gte: new Date()
-              }
-            }
-          })
-        ])
+            }),
+            db.training_issue.count({
+              where: {
+                issue: {
+                  party: {
+                    person: {
+                      id: driver.id,
+                    },
+                  },
+                  status: "open",
+                },
+                expirationDate: {
+                  lte: thirtyDaysFromNow,
+                  gte: new Date(),
+                },
+              },
+            }),
+            db.physical_issue.count({
+              where: {
+                issue: {
+                  party: {
+                    person: {
+                      id: driver.id,
+                    },
+                  },
+                  status: "open",
+                },
+                expirationDate: {
+                  lte: thirtyDaysFromNow,
+                  gte: new Date(),
+                },
+              },
+            }),
+          ]);
 
-        const totalExpiringIssues = expiringLicenses + expiringMvrs + expiringTraining + expiringPhysicals
-        const totalActiveIssues = licenseCount + mvrCount + trainingCount + physicalCount
+        const totalExpiringIssues =
+          expiringLicenses + expiringMvrs + expiringTraining + expiringPhysicals;
+        const totalActiveIssues = licenseCount + mvrCount + trainingCount + physicalCount;
 
         return {
           id: driver.id,
@@ -195,27 +197,32 @@ export async function GET(
             mvrCount,
             trainingCount,
             physicalCount,
-            status: totalExpiringIssues > 0 ? 'warning' : 'compliant'
-          }
-        }
-      })
-    )
+            status: totalExpiringIssues > 0 ? "warning" : "compliant",
+          },
+        };
+      }),
+    );
 
     // Filter out null drivers (in case of data inconsistencies)
-    const validDrivers = driversWithCompliance.filter((d): d is NonNullable<typeof d> => d !== null)
+    const validDrivers = driversWithCompliance.filter(
+      (d): d is NonNullable<typeof d> => d !== null,
+    );
 
     // 6. Calculate summary statistics
-    const totalDrivers = validDrivers.length
-    const driversWithIssues = validDrivers.filter(d => d.compliance.expiringIssues > 0).length
-    const complianceRate = totalDrivers > 0 ? ((totalDrivers - driversWithIssues) / totalDrivers * 100) : 100
+    const totalDrivers = validDrivers.length;
+    const driversWithIssues = validDrivers.filter((d) => d.compliance.expiringIssues > 0).length;
+    const complianceRate =
+      totalDrivers > 0 ? ((totalDrivers - driversWithIssues) / totalDrivers) * 100 : 100;
 
-    console.log(`📊 Org ${orgId}: Found ${totalDrivers} drivers, ${driversWithIssues} with expiring issues`)
+    console.log(
+      `📊 Org ${orgId}: Found ${totalDrivers} drivers, ${driversWithIssues} with expiring issues`,
+    );
 
     return NextResponse.json({
       organization: {
         id: organization.id,
         name: organization.name,
-        dotNumber: organization.dotNumber
+        dotNumber: organization.dotNumber,
       },
       drivers: validDrivers,
       summary: {
@@ -223,15 +230,11 @@ export async function GET(
         driversWithIssues,
         complianceRate: Math.round(complianceRate),
         totalActiveIssues: validDrivers.reduce((sum, d) => sum + d.compliance.totalActiveIssues, 0),
-        totalExpiringIssues: validDrivers.reduce((sum, d) => sum + d.compliance.expiringIssues, 0)
-      }
-    })
-
+        totalExpiringIssues: validDrivers.reduce((sum, d) => sum + d.compliance.expiringIssues, 0),
+      },
+    });
   } catch (error) {
-    console.error('Error fetching organization drivers:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error("Error fetching organization drivers:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

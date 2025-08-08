@@ -1,36 +1,42 @@
-'use client'
+"use client";
 
 // EXAMPLE: Converting MVR Issues page to use Unified Add-On System
 // This shows the dramatic simplification achieved with the unified components
 
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import { AppLayout } from '@/components/layouts/app-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { EmptyState } from '@/components/ui/empty-state'
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { AppLayout } from "@/components/layouts/app-layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // NEW UNIFIED COMPONENTS
-import UnifiedAddonModal from '@/components/ui/unified-addon-modal'
-import UnifiedAddonDisplay from '@/components/ui/unified-addon-display'
-import { useUnifiedAddons } from '@/hooks/use-unified-addons'
+import UnifiedAddonModal from "@/components/ui/unified-addon-modal";
+import UnifiedAddonDisplay from "@/components/ui/unified-addon-display";
+import { useUnifiedAddons } from "@/hooks/use-unified-addons";
 
 // Existing components
-import MvrIssueForm from '@/components/mvr_issues/mvr-issue-form'
-import { MvrRenewalForm } from '@/components/mvr_issues/mvr-renewal-form'
-import { ActivityLog } from '@/components/ui/activity-log'
+import MvrIssueForm from "@/components/mvr_issues/mvr-issue-form";
+import { MvrRenewalForm } from "@/components/mvr_issues/mvr-renewal-form";
+import { ActivityLog } from "@/components/ui/activity-log";
 
 // BEFORE: 150+ lines of addon management code
 // AFTER: 20 lines with unified system
 
 export default function MvrIssuesPageUnified() {
-  const params = useParams()
-  const [mvrIssues, setMvrIssues] = useState([])
-  const [selectedIssue, setSelectedIssue] = useState(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [attachments, setAttachments] = useState([])
+  const params = useParams();
+  const [mvrIssues, setMvrIssues] = useState([]);
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [attachments, setAttachments] = useState([]);
 
   // NEW: Single hook replaces 50+ lines of addon state management
   const {
@@ -44,94 +50,97 @@ export default function MvrIssuesPageUnified() {
     openEditModal,
     closeModal,
     handleSubmit,
-    modalTitle
+    modalTitle,
   } = useUnifiedAddons({
-    issueType: 'mvr',
-    issueId: selectedIssue?.id || '',
+    issueType: "mvr",
+    issueId: selectedIssue?.id || "",
     // Optional: customize for specific needs
     customDisplayConfig: {
-      displayMode: 'compact', // Override default 'list' mode
-      allowEdit: true,        // Enable editing
-      allowDelete: true       // Enable deletion
-    }
-  })
+      displayMode: "compact", // Override default 'list' mode
+      allowEdit: true, // Enable editing
+      allowDelete: true, // Enable deletion
+    },
+  });
 
   // Load data
   useEffect(() => {
-    fetchMvrIssues()
-  }, [])
+    fetchMvrIssues();
+  }, []);
 
   useEffect(() => {
     if (selectedIssue) {
-      fetchAttachments(selectedIssue.id)
+      fetchAttachments(selectedIssue.id);
     }
-  }, [selectedIssue])
+  }, [selectedIssue]);
 
   const fetchMvrIssues = async () => {
     try {
-      const response = await fetch('/api/mvr_issues')
-      const data = await response.json()
-      setMvrIssues(data)
-      if (data.length > 0) setSelectedIssue(data[0])
+      const response = await fetch("/api/mvr_issues");
+      const data = await response.json();
+      setMvrIssues(data);
+      if (data.length > 0) setSelectedIssue(data[0]);
     } catch (error) {
-      console.error('Error fetching MVR issues:', error)
+      console.error("Error fetching MVR issues:", error);
     }
-  }
+  };
 
   const fetchAttachments = async (issueId: string) => {
     try {
-      const response = await fetch(`/api/attachments?issueId=${issueId}&issueType=mvr_issue`)
-      const data = await response.json()
-      setAttachments(data)
+      const response = await fetch(`/api/attachments?issueId=${issueId}&issueType=mvr_issue`);
+      const data = await response.json();
+      setAttachments(data);
     } catch (error) {
-      console.error('Error fetching attachments:', error)
+      console.error("Error fetching attachments:", error);
     }
-  }
+  };
 
   // NEW: Simplified addon handlers
   const handleAddonSubmit = async (formData: any) => {
     try {
-      await handleSubmit(formData)
-      await fetchAttachments(selectedIssue.id) // Refresh list
-      closeModal()
+      await handleSubmit(formData);
+      await fetchAttachments(selectedIssue.id); // Refresh list
+      closeModal();
     } catch (error) {
-      console.error('Error saving addon:', error)
+      console.error("Error saving addon:", error);
     }
-  }
+  };
 
   const handleAddonView = (addon: any) => {
     // Handle viewing addon
-    console.log('Viewing addon:', addon)
-  }
+    console.log("Viewing addon:", addon);
+  };
 
   const handleAddonDownload = (addon: any) => {
     if (addon.url) {
-      window.open(addon.url, '_blank')
+      window.open(addon.url, "_blank");
     }
-  }
+  };
 
   const handleAddonEdit = (addon: any) => {
-    openEditModal(addon)
-  }
+    openEditModal(addon);
+  };
 
   const handleAddonDelete = async (addon: any) => {
-    if (confirm('Are you sure you want to delete this addon?')) {
+    if (confirm("Are you sure you want to delete this addon?")) {
       try {
-        await fetch(`/api/attachments/${addon.id}`, { method: 'DELETE' })
-        await fetchAttachments(selectedIssue.id) // Refresh list
+        await fetch(`/api/attachments/${addon.id}`, { method: "DELETE" });
+        await fetchAttachments(selectedIssue.id); // Refresh list
       } catch (error) {
-        console.error('Error deleting addon:', error)
+        console.error("Error deleting addon:", error);
       }
     }
-  }
+  };
 
   return (
     <AppLayout
       sidebarMenu="organization"
       topNav={[
-        { title: 'Master', href: `/master/${params.masterOrgId}` },
-        { title: 'Organization', href: `/master/${params.masterOrgId}/organization/${params.orgId}` },
-        { title: 'MVR Issues', isActive: true }
+        { title: "Master", href: `/master/${params.masterOrgId}` },
+        {
+          title: "Organization",
+          href: `/master/${params.masterOrgId}/organization/${params.orgId}`,
+        },
+        { title: "MVR Issues", isActive: true },
       ]}
     >
       <div className="flex h-full">
@@ -150,8 +159,8 @@ export default function MvrIssuesPageUnified() {
                 <MvrIssueForm
                   onSubmit={async (data) => {
                     // Handle MVR issue creation
-                    await fetchMvrIssues()
-                    setIsAddDialogOpen(false)
+                    await fetchMvrIssues();
+                    setIsAddDialogOpen(false);
                   }}
                 />
               </DialogContent>
@@ -169,7 +178,9 @@ export default function MvrIssuesPageUnified() {
                 <Card
                   key={issue.id}
                   className={`cursor-pointer transition-colors ${
-                    selectedIssue?.id === issue.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                    selectedIssue?.id === issue.id
+                      ? "bg-blue-50 border-blue-200"
+                      : "hover:bg-gray-50"
                   }`}
                   onClick={() => setSelectedIssue(issue)}
                 >
@@ -179,7 +190,7 @@ export default function MvrIssuesPageUnified() {
                         <p className="font-medium">{issue.title}</p>
                         <p className="text-sm text-gray-600">{issue.driverName}</p>
                       </div>
-                      <Badge variant={issue.status === 'active' ? 'default' : 'secondary'}>
+                      <Badge variant={issue.status === "active" ? "default" : "secondary"}>
                         {issue.status}
                       </Badge>
                     </div>
@@ -256,10 +267,7 @@ export default function MvrIssuesPageUnified() {
                   <CardTitle>Activity Log</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ActivityLog
-                    entityType="mvr_issue"
-                    entityId={selectedIssue.id}
-                  />
+                  <ActivityLog entityType="mvr_issue" entityId={selectedIssue.id} />
                 </CardContent>
               </Card>
             </div>
@@ -284,16 +292,20 @@ export default function MvrIssuesPageUnified() {
         allowUrlWithCredentials={modalConfig.allowUrlWithCredentials}
         defaultType={modalConfig.defaultType}
         isSubmitting={isSubmitting}
-        editData={editingAddon ? {
-          type: editingAddon.attachmentType,
-          title: editingAddon.fileName || '',
-          description: editingAddon.description || '',
-          noteContent: editingAddon.noteContent || '',
-          url: editingAddon.url || ''
-        } : undefined}
+        editData={
+          editingAddon
+            ? {
+                type: editingAddon.attachmentType,
+                title: editingAddon.fileName || "",
+                description: editingAddon.description || "",
+                noteContent: editingAddon.noteContent || "",
+                url: editingAddon.url || "",
+              }
+            : undefined
+        }
       />
     </AppLayout>
-  )
+  );
 }
 
 /*
@@ -336,4 +348,4 @@ BENEFITS:
 ✅ Easy to add new addon types or contexts
 ✅ Reduced testing surface area
 ✅ Better performance through code reuse
-*/ 
+*/

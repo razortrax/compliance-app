@@ -1,28 +1,22 @@
-import React from 'react'
-import { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import React from "react";
+import { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
-  icon: LucideIcon
-  title: string
-  description: string
+  icon: LucideIcon;
+  title: string;
+  description: string;
   action?: {
-    label: string
-    onClick: () => void
-    icon?: LucideIcon
-  }
-  className?: string
+    label: string;
+    onClick: () => void;
+    icon?: LucideIcon;
+  };
+  className?: string;
 }
 
-export function EmptyState({ 
-  icon: Icon, 
-  title, 
-  description, 
-  action,
-  className 
-}: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <Card className={cn("border-dashed", className)}>
       <CardContent className="flex flex-col items-center justify-center py-12">
@@ -37,5 +31,5 @@ export function EmptyState({
         )}
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

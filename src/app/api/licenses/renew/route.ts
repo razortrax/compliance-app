@@ -1,29 +1,29 @@
-import { NextRequest } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
+import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
 interface LicenseRenewalData {
-  previousLicenseId: string // Required: which license we're renewing
-  startDate?: string        // New start date (defaults to old expiration)
-  expirationDate: string    // Required: new expiration date  
-  renewalDate?: string      // Renewal/processing date (defaults to today)
-  notes?: string           // Optional: updated notes
-  title?: string           // Optional: updated title
-  description?: string     // Optional: updated description
+  previousLicenseId: string; // Required: which license we're renewing
+  startDate?: string; // New start date (defaults to old expiration)
+  expirationDate: string; // Required: new expiration date
+  renewalDate?: string; // Renewal/processing date (defaults to today)
+  notes?: string; // Optional: updated notes
+  title?: string; // Optional: updated title
+  description?: string; // Optional: updated description
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId } = await auth();
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: LicenseRenewalData = await request.json()
-    
+    const body: LicenseRenewalData = await request.json();
+
     // Validate required fields
     if (!body.previousLicenseId || !body.expirationDate) {
-      return Response.json({ error: 'Missing required fields for renewal' }, { status: 400 })
+      return Response.json({ error: "Missing required fields for renewal" }, { status: 400 });
     }
 
     // Check if user has access to the party (get from existing license)
@@ -40,30 +40,30 @@ export async function POST(request: NextRequest) {
                   include: {
                     party: {
                       include: {
-                        organization: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                        organization: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!existingLicense) {
-      return Response.json({ error: 'License to renew not found' }, { status: 404 })
+      return Response.json({ error: "License to renew not found" }, { status: 404 });
     }
 
-    const party = existingLicense.issue.party
+    const party = existingLicense.issue.party;
 
     // Access control check - support Master, Organization, and Location managers
-    let hasAccess = false
-    
+    let hasAccess = false;
+
     // 1. Check direct ownership first
     if (party.userId === userId) {
-      hasAccess = true
+      hasAccess = true;
     }
 
     if (!hasAccess) {
@@ -71,31 +71,31 @@ export async function POST(request: NextRequest) {
       const driverRole = await db.role.findFirst({
         where: {
           partyId: party.id,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
       if (driverRole) {
         // 2. Check if user is a Master consultant who manages this organization
         const userMasterOrg = await db.organization.findFirst({
           where: {
-            party: { userId: userId }
-          }
-        })
+            party: { userId: userId },
+          },
+        });
 
         if (userMasterOrg) {
           // Check if master org manages the driver's organization
           const masterRole = await db.role.findFirst({
             where: {
-              roleType: 'master',
+              roleType: "master",
               partyId: userMasterOrg.partyId,
               organizationId: driverRole.organizationId,
-              isActive: true
-            }
-          })
+              isActive: true,
+            },
+          });
 
           if (masterRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -105,13 +105,13 @@ export async function POST(request: NextRequest) {
             where: {
               party: { userId: userId },
               organizationId: driverRole.organizationId,
-              roleType: { in: ['organization_manager', 'owner', 'consultant'] },
-              isActive: true
-            }
-          })
+              roleType: { in: ["organization_manager", "owner", "consultant"] },
+              isActive: true,
+            },
+          });
 
           if (orgManagerRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
 
@@ -121,20 +121,20 @@ export async function POST(request: NextRequest) {
             where: {
               party: { userId: userId },
               locationId: driverRole.locationId,
-              roleType: 'location_manager',
-              isActive: true
-            }
-          })
+              roleType: "location_manager",
+              isActive: true,
+            },
+          });
 
           if (locationManagerRole) {
-            hasAccess = true
+            hasAccess = true;
           }
         }
       }
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return Response.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Perform renewal in a transaction
@@ -148,26 +148,26 @@ export async function POST(request: NextRequest) {
               party: {
                 include: {
                   person: true,
-                  organization: true
-                }
-              }
-            }
-          }
-        }
-      })
+                  organization: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
       if (!existingLicense) {
-        throw new Error('Previous license not found')
+        throw new Error("Previous license not found");
       }
 
       // 2. Mark the old license as renewed/inactive
       await tx.issue.update({
         where: { id: existingLicense.issueId },
         data: {
-          status: 'RENEWED',
-          resolvedAt: new Date()
-        }
-      })
+          status: "RENEWED",
+          resolvedAt: new Date(),
+        },
+      });
 
       // 3. Create new issue (duplicating most data from the old one)
       const newIssue = await tx.issue.create({
@@ -175,14 +175,16 @@ export async function POST(request: NextRequest) {
           id: `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           updatedAt: new Date(),
           issueType: existingLicense.issue.issueType, // Duplicate from old
-          status: 'active', // New status
+          status: "active", // New status
           priority: existingLicense.issue.priority, // Duplicate from old
           partyId: existingLicense.issue.partyId, // Same party
-          title: body.title || `${existingLicense.licenseType} - ${existingLicense.licenseNumber} (Renewed)`,
+          title:
+            body.title ||
+            `${existingLicense.licenseType} - ${existingLicense.licenseNumber} (Renewed)`,
           description: body.description || existingLicense.issue.description,
-          dueDate: new Date(body.expirationDate) // New expiration date
-        }
-      })
+          dueDate: new Date(body.expirationDate), // New expiration date
+        },
+      });
 
       // 4. Create the new license issue (duplicating all data, updating only dates)
       const newLicenseIssue = await tx.license_issue.create({
@@ -199,7 +201,7 @@ export async function POST(request: NextRequest) {
           // Update only the dates
           startDate: body.startDate ? new Date(body.startDate) : null,
           expirationDate: new Date(body.expirationDate),
-          renewalDate: body.renewalDate ? new Date(body.renewalDate) : new Date() // Default to today
+          renewalDate: body.renewalDate ? new Date(body.renewalDate) : new Date(), // Default to today
         },
         include: {
           issue: {
@@ -207,20 +209,20 @@ export async function POST(request: NextRequest) {
               party: {
                 include: {
                   person: true,
-                  organization: true
-                }
-              }
-            }
-          }
-        }
-      })
+                  organization: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-      return newLicenseIssue
-    })
+      return newLicenseIssue;
+    });
 
-    return Response.json(result, { status: 201 })
+    return Response.json(result, { status: 201 });
   } catch (error) {
-    console.error('Error renewing license:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error renewing license:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-} 
+}

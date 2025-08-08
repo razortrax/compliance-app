@@ -5,6 +5,7 @@
 **Status:** Phase 1B Complete - DVER Automation Foundation
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Business Requirements](#business-requirements)
 3. [Workflow & User Experience](#workflow--user-experience)
@@ -26,6 +27,7 @@
 Roadside Inspections (RINS) represent a critical compliance management feature that handles DOT roadside inspection incidents. Unlike other driver issues that track expiration dates, RINS are **reactive, incident-based records** that document inspection events, violations, and required corrective actions.
 
 ### Key Differentiators
+
 - **Incident-based** (not expiration tracking)
 - **Multi-party relationships** (driver, equipment, violations)
 - **Complex violation workflows** with out-of-service tracking
@@ -38,6 +40,7 @@ Roadside Inspections (RINS) represent a critical compliance management feature t
 ## Business Requirements
 
 ### Primary Use Cases
+
 1. **Manual DVER Entry** - Input Driver/Vehicle Examination Reports from roadside inspections
 2. **Violation Documentation** - Record specific DOT violations with inspector comments
 3. **Out-of-Service Management** - Track equipment/driver OOS status and remedy dates
@@ -45,6 +48,7 @@ Roadside Inspections (RINS) represent a critical compliance management feature t
 5. **Compliance Reporting** - Organization-level view of inspection history and trends
 
 ### Stakeholder Needs
+
 - **Compliance Managers** - Quick overview of inspection incidents and violation trends
 - **Safety Directors** - Detailed violation analysis and corrective action status
 - **Drivers** - Access to their inspection history and required actions
@@ -52,6 +56,7 @@ Roadside Inspections (RINS) represent a critical compliance management feature t
 - **Consultants** - Multi-organization inspection management
 
 ### Regulatory Context
+
 - **49 CFR Part 350-399** - Federal Motor Carrier Safety Regulations
 - **CVSA Standards** - Commercial Vehicle Safety Alliance inspection procedures
 - **State DOT Requirements** - Varies by jurisdiction
@@ -62,17 +67,21 @@ Roadside Inspections (RINS) represent a critical compliance management feature t
 ## Workflow & User Experience
 
 ### 1. Inspection Initiation
+
 **Current (Phase 1A):** Organization-level only
+
 - Navigate to Organization → Roadside Inspections
 - Click "Add Roadside Inspection"
 - Form auto-populates organization context
 
 **Future (Phase 1B+):** Multiple entry points
+
 - **Driver Page** → Driver-specific RINS with auto-populated driver
 - **Equipment Page** → Equipment-specific RINS with auto-populated equipment
 - **Location Page** → Location-filtered RINS options
 
 ### 2. DVER Data Entry
+
 ```
 Inspector Information:
 ├── Report Number (optional)
@@ -94,12 +103,15 @@ Inspection Details:
 ```
 
 ### 3. Driver & Equipment Selection
+
 - **Driver Selection** - Dropdown with organization drivers (auto-selected from context)
 - **Equipment Selection** - Multi-select with live search, displays as "Unit 1, Unit 2..."
 - **Equipment Details** - Automatically populated (make, model, year, VIN, plate)
 
 ### 4. Violation Management
+
 #### Live Search System
+
 ```
 Search Process:
 ├── Type 2+ characters in violation search
@@ -110,6 +122,7 @@ Search Process:
 ```
 
 #### Detailed Violation Entry
+
 ```
 For Each Violation:
 ├── Auto-populated: Code, Description, Severity, Type
@@ -123,6 +136,7 @@ For Each Violation:
 ```
 
 ### 5. Form Validation & Submission
+
 - **Required Fields** - Driver, Equipment, Inspector details, Date
 - **Violation Validation** - Inspector comments required for all violations
 - **OOS Validation** - OOS date required when violation marked out-of-service
@@ -135,6 +149,7 @@ For Each Violation:
 ### Core Models
 
 #### `roadside_inspection_issue`
+
 ```sql
 id                  String    @id @default(cuid())
 issueId             String    @unique -- FK to base issue
@@ -160,6 +175,7 @@ entryMethod         EntryMethod @default(Manual_Entry)
 ```
 
 #### `rins_equipment_involvement`
+
 ```sql
 id              String    @id @default(cuid())
 rinsId          String    -- FK to roadside_inspection_issue
@@ -177,6 +193,7 @@ oosSticker      String?
 ```
 
 #### `rins_violation`
+
 ```sql
 id                  String              @id @default(cuid())
 rinsId              String              -- FK to roadside_inspection_issue
@@ -196,6 +213,7 @@ citationNumber      String?             -- If citation issued
 ```
 
 ### Enums
+
 ```sql
 enum RinsLevel {
   Level_I, Level_II, Level_III, Level_IV, Level_V, Level_VI
@@ -227,9 +245,11 @@ enum ViolationSeverity {
 ## Implementation Phases
 
 ### ✅ Phase 1A: Basic RINS Entry (COMPLETE)
+
 **Timeline:** Completed January 27, 2025
 
 **Deliverables:**
+
 - [x] Organization-level RINS page with master-detail layout
 - [x] Complete DVER data entry form
 - [x] Driver and equipment selection with auto-population
@@ -242,6 +262,7 @@ enum ViolationSeverity {
 - [x] Contextual navigation and header integration
 
 **Key Features:**
+
 - Manual DVER entry from organization level
 - Comprehensive violation database with live search
 - Equipment details preservation for historical accuracy
@@ -249,9 +270,11 @@ enum ViolationSeverity {
 - Inspector comment requirements for all violations
 
 ### 🔄 Phase 1B: Access Control & CAF Assignment (COMPLETED ✅)
+
 **Timeline:** Q1 2025 - COMPLETED January 2025
 
 **Deliverables:**
+
 - [x] Driver-level RINS access with proper context
 - [x] Equipment-level RINS access
 - [x] Location-level RINS filtering
@@ -260,18 +283,21 @@ enum ViolationSeverity {
 - [x] Basic CAF generation workflow
 
 **Dependencies:**
+
 - [x] Organization staff/role model completion
 - [x] Role-based access control refinement
 
 ### 🔄 Phase 1B: DVER Automation Foundation (COMPLETED ✅)
+
 **Timeline:** January 2025 - COMPLETED
 
 **Overview:**
 Driver/Vehicle Examination Report (DVER) automation system with OCR processing and auto-population of RSIN records. This revolutionary feature allows users to upload DVER documents and automatically extract inspection data to create roadside inspection records.
 
 **Deliverables:**
+
 - [x] **DVER Upload Modal** - Sophisticated file upload interface with processing stages
-- [x] **OCR Integration** - AWS Textract, Google Vision, Azure Form Recognizer support  
+- [x] **OCR Integration** - AWS Textract, Google Vision, Azure Form Recognizer support
 - [x] **Smart Field Mapping** - Automated extraction of DVER form fields using pattern recognition
 - [x] **Data Validation** - Business rule validation and data cleaning
 - [x] **Auto-RSIN Creation** - Automatic generation of RSIN records from DVER data
@@ -280,6 +306,7 @@ Driver/Vehicle Examination Report (DVER) automation system with OCR processing a
 - [x] **Equipment Integration** - Link violations to specific equipment units
 
 **Technical Implementation:**
+
 - **DVER Document Interface:** Complete data structure for all DVER fields
 - **DVERProcessor Class:** Configurable OCR processing with preprocessing (deskew, noise reduction, contrast enhancement)
 - **Field Mapping System:** Pattern-based extraction using keywords and positions
@@ -288,6 +315,7 @@ Driver/Vehicle Examination Report (DVER) automation system with OCR processing a
 - **Violation Mapping:** Automatic severity classification and OOS detection
 
 **Key Features:**
+
 - **📱 Drag & Drop Upload:** Modern file upload interface with progress tracking
 - **🔍 OCR Processing:** Real-time document processing with confidence scoring
 - **⚡ Auto-Population:** Complete RSIN record creation from uploaded DVER
@@ -296,21 +324,25 @@ Driver/Vehicle Examination Report (DVER) automation system with OCR processing a
 - **✅ Validation:** Business rule validation with error handling
 
 **Current Status:**
+
 - **Upload Modal:** Fully functional with stage-based processing UI
 - **OCR Backend:** Complete with multiple provider support (AWS, Google, Azure)
 - **Auto-Creation:** Working integration with unified incident system
 - **Field Mapping:** Comprehensive DVER form field recognition
 
 **Integration Points:**
+
 - **Roadside Inspections Page:** "Upload DVER" button triggers automated workflow
 - **Unified Incident System:** Automatic RSIN creation with proper data mapping
 - **Equipment Management:** Links violations to existing equipment records
 - **Violation Database:** Integrates with violation code lookup system
 
 ### 🔄 Phase 1C: CAF Automation & Digital Signatures (COMPLETED ✅)
+
 **Timeline:** Q2 2025 - COMPLETED January 2025
 
 **Deliverables:**
+
 - [x] Automated CAF generation from violations
 - [x] Digital signature workflow for CAF completion
 - [x] CAF tracking and status management
@@ -318,6 +350,7 @@ Driver/Vehicle Examination Report (DVER) automation system with OCR processing a
 - [x] CAF completion validation and documentation
 
 **Implementation Details:**
+
 - **Database Models:** Added `staff`, `corrective_action_form`, `caf_signature` tables
 - **Auto-Generation:** Smart CAF creation based on violation type and severity
 - **Staff Assignment:** Intelligent assignment based on violation category and staff roles
@@ -327,16 +360,19 @@ Driver/Vehicle Examination Report (DVER) automation system with OCR processing a
 - **Frontend Integration:** CAF management interface in RINS details
 
 **Dependencies:**
+
 - [x] Digital signature infrastructure
 - [x] Email notification system (API foundation)
 
 ### 🔄 Phase 2: Enhanced Activity Log Integration (NEXT PHASE)
+
 **Timeline:** Q2 2025
 
 **Overview:**
 Integration of DVER automation with the Enhanced Activity Log System to provide comprehensive file management, communication tracking, and document storage for roadside inspections.
 
 **Planned Deliverables:**
+
 - [ ] **Enhanced Activity Log Integration** - Replace simple file uploads with sophisticated activity tracking
 - [ ] **DVER File Management** - Store original DVER documents using Activity Log attachment system
 - [ ] **Communication Tracking** - Log inspector communications, follow-ups, and case management
@@ -345,6 +381,7 @@ Integration of DVER automation with the Enhanced Activity Log System to provide 
 - [ ] **Tag-Based Organization** - Use Activity Log tags for inspection classification (routine, targeted, etc.)
 
 **Integration Features:**
+
 - **📝 Activity Tracking:** Log DVER upload, processing stages, and auto-creation events
 - **📎 File Attachments:** Store original DVER PDFs and processed images in Activity Log
 - **📞 Communication Log:** Track inspector follow-ups, clarifications, and case communications
@@ -353,9 +390,11 @@ Integration of DVER automation with the Enhanced Activity Log System to provide 
 - **🔗 URL Management:** Store links to FMCSA portals, violation references, and related documentation
 
 ### 🔄 Phase 3: Advanced FMCSA Integration (FUTURE)
+
 **Timeline:** Q3-Q4 2025
 
 **Deliverables:**
+
 - [ ] FMCSA DataQs portal integration
 - [ ] Automated violation trend analysis
 - [ ] Predictive maintenance recommendations
@@ -367,6 +406,7 @@ Integration of DVER automation with the Enhanced Activity Log System to provide 
 ## Technical Architecture
 
 ### API Design
+
 ```
 Base Path: /api/roadside_inspections
 
@@ -378,6 +418,7 @@ DELETE /:id                 # Soft delete inspection
 ```
 
 ### Data Flow
+
 ```
 Form Submission → Validation → API Route → Database Transaction:
 ├── Create/Update roadside_inspection_issue
@@ -389,6 +430,7 @@ Form Submission → Validation → API Route → Database Transaction:
 ```
 
 ### Access Control (RBAC)
+
 ```
 Access Hierarchy:
 ├── Direct Ownership (party.userId === currentUserId)
@@ -399,6 +441,7 @@ Access Hierarchy:
 ```
 
 ### State Management
+
 ```
 Frontend State:
 ├── selectedInspection (master-detail UI)
@@ -414,9 +457,11 @@ Frontend State:
 ## Violation Management System
 
 ### Violation Database
+
 **Source:** 49 CFR Parts 390-399 (Federal Motor Carrier Safety Regulations)
 
 **Categories:**
+
 - **390.x** - General Company/Administrative (4 violations)
 - **391.x** - Driver Qualification (6 violations)
 - **392.x** - Driver Performance/Behavior (8 violations)
@@ -426,17 +471,20 @@ Frontend State:
 **Total:** 40+ common violations with complete metadata
 
 ### Search Algorithm
+
 ```javascript
 function searchViolations(query) {
-  return VIOLATION_CODES.filter(violation => 
-    violation.code.toLowerCase().includes(query) ||
-    violation.description.toLowerCase().includes(query) ||
-    violation.section.toLowerCase().includes(query)
-  ).slice(0, 10) // Performance limit
+  return VIOLATION_CODES.filter(
+    (violation) =>
+      violation.code.toLowerCase().includes(query) ||
+      violation.description.toLowerCase().includes(query) ||
+      violation.section.toLowerCase().includes(query),
+  ).slice(0, 10); // Performance limit
 }
 ```
 
 ### Violation Metadata
+
 ```javascript
 interface ViolationCode {
   code: string          // "392.2A"
@@ -448,6 +496,7 @@ interface ViolationCode {
 ```
 
 ### Out-of-Service Workflow
+
 1. **Violation Selection** → Auto-sets OOS if violation severity is "OUT_OF_SERVICE"
 2. **OOS Toggle** → Enables OOS date fields
 3. **OOS Date** → Required, defaults to inspection date
@@ -459,6 +508,7 @@ interface ViolationCode {
 ## API Endpoints
 
 ### List Inspections
+
 ```http
 GET /api/roadside_inspections?partyId={id}&organizationId={id}
 
@@ -479,6 +529,7 @@ Response:
 ```
 
 ### Create Inspection
+
 ```http
 POST /api/roadside_inspections
 
@@ -506,6 +557,7 @@ Request Body:
 ```
 
 ### Get Inspection Details
+
 ```http
 GET /api/roadside_inspections/{id}
 
@@ -549,52 +601,57 @@ Response:
 ## DVER Automation System
 
 ### Overview
+
 The Driver/Vehicle Examination Report (DVER) automation system represents a revolutionary advancement in roadside inspection data entry. Built on sophisticated OCR technology and intelligent field mapping, this system automatically converts physical DVER documents into digital RSIN records with minimal manual intervention.
 
 ### Architecture Components
 
 #### **DVERProcessor Class**
+
 Core processing engine with configurable OCR providers:
 
 ```typescript
 interface DVERProcessor {
   // OCR Provider Configuration
-  provider: 'AWS_TEXTRACT' | 'GOOGLE_VISION' | 'AZURE_FORM_RECOGNIZER'
-  confidence_threshold: number
-  
+  provider: "AWS_TEXTRACT" | "GOOGLE_VISION" | "AZURE_FORM_RECOGNIZER";
+  confidence_threshold: number;
+
   // Image Preprocessing
   preprocessing: {
-    deskew: boolean           // Correct document orientation
-    noise_reduction: boolean  // Remove scan artifacts
-    contrast_enhancement: boolean // Improve text clarity
-  }
+    deskew: boolean; // Correct document orientation
+    noise_reduction: boolean; // Remove scan artifacts
+    contrast_enhancement: boolean; // Improve text clarity
+  };
 }
 ```
 
 #### **Field Mapping System**
+
 Pattern-based extraction using keyword recognition:
 
 ```typescript
 const DVER_FIELD_MAPPINGS = {
   // Header Information
-  report_number: { keywords: ['Report', 'Number', 'USP'] },
-  inspection_date: { keywords: ['Date', 'Inspection'] },
-  inspector_name: { keywords: ['Inspector', 'Name', 'Officer'] },
-  
+  report_number: { keywords: ["Report", "Number", "USP"] },
+  inspection_date: { keywords: ["Date", "Inspection"] },
+  inspector_name: { keywords: ["Inspector", "Name", "Officer"] },
+
   // Equipment Sections (repeating)
   unit_sections: {
-    keywords: ['Unit', 'Vehicle', 'Equipment'],
+    keywords: ["Unit", "Vehicle", "Equipment"],
     fields: {
-      unit_type: ['Type', 'TT', 'TLR'],
-      make: ['Make', 'Manufacturer'],
-      vin: ['VIN', 'Serial']
-    }
-  }
-}
+      unit_type: ["Type", "TT", "TLR"],
+      make: ["Make", "Manufacturer"],
+      vin: ["VIN", "Serial"],
+    },
+  },
+};
 ```
 
 #### **Data Validation Engine**
+
 Business rule validation and data cleaning:
+
 - **Required Field Defaults** - Auto-populate missing required fields
 - **Format Standardization** - Normalize dates, phone numbers, license formats
 - **Cross-Reference Validation** - Verify violation codes against database
@@ -603,6 +660,7 @@ Business rule validation and data cleaning:
 ### Current Implementation Status
 
 #### **✅ Completed Features**
+
 - **Upload Interface:** Drag & drop modal with real-time processing stages
 - **OCR Processing:** Multi-provider support with confidence scoring
 - **Field Extraction:** Comprehensive DVER form field recognition
@@ -611,6 +669,7 @@ Business rule validation and data cleaning:
 - **Violation Processing:** Automatic severity classification and OOS detection
 
 #### **🔧 Technical Details**
+
 - **File Support:** PDF, JPEG, PNG, TIFF formats
 - **Processing Speed:** ~30-60 seconds per document
 - **Accuracy Rate:** 85-95% field extraction accuracy (varies by document quality)
@@ -618,6 +677,7 @@ Business rule validation and data cleaning:
 - **Violation Mapping:** 400+ violation code recognition patterns
 
 #### **🌐 Integration Points**
+
 - **Roadside Inspections Page:** "Upload DVER" button triggers workflow
 - **Unified Incident System:** Auto-creates RSIN with proper data mapping
 - **Equipment Management:** Links violations to existing fleet records
@@ -653,16 +713,19 @@ Business rule validation and data cleaning:
 ### Current Limitations
 
 #### **Form Upload Integration**
+
 - **Missing Feature:** RSIN create/edit forms don't have file upload capabilities
 - **Current Workaround:** Separate DVER upload modal creates complete RSIN
 - **User Experience Gap:** No drag & drop in manual entry forms
 
 #### **Document Management**
+
 - **Single Upload:** Currently processes one DVER at a time
 - **No Document Storage:** Original DVER files not preserved in current system
 - **Limited File Types:** No support for related documents (photos, amendments)
 
 #### **Communication Tracking**
+
 - **No Inspector Communication Log:** No system for tracking follow-up communications
 - **Missing Case Management:** No timeline view of inspection case progression
 - **Limited Collaboration:** No system for internal notes and case discussion
@@ -672,123 +735,133 @@ Business rule validation and data cleaning:
 ## Enhanced Activity Log Integration
 
 ### Integration Vision
+
 The Enhanced Activity Log System provides the perfect foundation for comprehensive DVER document management, communication tracking, and inspection case management. This integration will transform roadside inspections from simple data entry into complete case management workflows.
 
 ### Planned Integration Features
 
 #### **📎 Document Management**
+
 Transform DVER handling with sophisticated file management:
 
 ```typescript
 // DVER Document Activities
 const dverActivities = [
   {
-    type: 'attachment',
-    title: 'Original DVER Document',
-    content: 'Uploaded DVER Form MCS-63 from Inspection #INS-2025-001',
-    tags: ['dver', 'original', 'ocr-processed'],
-    fileName: 'DVER_INS-2025-001.pdf',
-    filePath: '/dver/2025/01/DVER_INS-2025-001.pdf'
+    type: "attachment",
+    title: "Original DVER Document",
+    content: "Uploaded DVER Form MCS-63 from Inspection #INS-2025-001",
+    tags: ["dver", "original", "ocr-processed"],
+    fileName: "DVER_INS-2025-001.pdf",
+    filePath: "/dver/2025/01/DVER_INS-2025-001.pdf",
   },
   {
-    type: 'note',
-    title: 'OCR Processing Results',
-    content: 'Successfully extracted 23 fields with 94% confidence. Manual review needed for Unit 2 VIN.',
-    tags: ['ocr', 'processing', 'review-needed']
-  }
-]
+    type: "note",
+    title: "OCR Processing Results",
+    content:
+      "Successfully extracted 23 fields with 94% confidence. Manual review needed for Unit 2 VIN.",
+    tags: ["ocr", "processing", "review-needed"],
+  },
+];
 ```
 
 #### **📞 Communication Tracking**
+
 Comprehensive inspector and case communication management:
 
 ```typescript
 // Inspector Communication Activities
 const communicationActivities = [
   {
-    type: 'communication',
-    title: 'Inspector Follow-up Call',
-    content: 'Spoke with Inspector Johnson about Unit 2 violations. Confirmed brake defect details.',
-    tags: ['phone', 'inspector', 'clarification', 'brake-violation'],
+    type: "communication",
+    title: "Inspector Follow-up Call",
+    content:
+      "Spoke with Inspector Johnson about Unit 2 violations. Confirmed brake defect details.",
+    tags: ["phone", "inspector", "clarification", "brake-violation"],
     activitySpecific: {
-      contactMethod: 'phone',
-      contactName: 'Inspector Johnson',
-      contactBadge: 'TX-4521'
-    }
+      contactMethod: "phone",
+      contactName: "Inspector Johnson",
+      contactBadge: "TX-4521",
+    },
   },
   {
-    type: 'task',
-    title: 'Request Amended DVER',
-    content: 'Need corrected DVER for Unit 2 - VIN was misread during OCR processing',
-    tags: ['follow-up', 'amendment', 'inspector-action'],
-    dueDate: '2025-02-05',
-    priority: 'high'
-  }
-]
+    type: "task",
+    title: "Request Amended DVER",
+    content: "Need corrected DVER for Unit 2 - VIN was misread during OCR processing",
+    tags: ["follow-up", "amendment", "inspector-action"],
+    dueDate: "2025-02-05",
+    priority: "high",
+  },
+];
 ```
 
 #### **🏷️ Smart Tagging System**
+
 Intelligent tag application based on inspection data:
 
 ```typescript
 // Auto-Generated Tags
 const autoTags = {
-  inspectionType: ['routine', 'targeted', 'compliance-review'],
-  violationSeverity: ['warning', 'citation', 'oos'],
-  equipmentType: ['tractor', 'trailer', 'combination'],
-  violationCategory: ['brake', 'lighting', 'driver-qualification'],
-  status: ['processing', 'under-review', 'completed', 'appealed']
-}
+  inspectionType: ["routine", "targeted", "compliance-review"],
+  violationSeverity: ["warning", "citation", "oos"],
+  equipmentType: ["tractor", "trailer", "combination"],
+  violationCategory: ["brake", "lighting", "driver-qualification"],
+  status: ["processing", "under-review", "completed", "appealed"],
+};
 ```
 
 #### **⏰ Timeline Management**
+
 Complete chronological case management:
 
 ```typescript
 // Inspection Case Timeline
 const timelineActivities = [
   {
-    timestamp: '2025-01-31 10:30',
-    type: 'attachment',
-    title: 'DVER Upload',
-    tags: ['dver', 'upload']
+    timestamp: "2025-01-31 10:30",
+    type: "attachment",
+    title: "DVER Upload",
+    tags: ["dver", "upload"],
   },
   {
-    timestamp: '2025-01-31 10:32',
-    type: 'note',
-    title: 'OCR Processing Complete',
-    tags: ['ocr', 'automated']
+    timestamp: "2025-01-31 10:32",
+    type: "note",
+    title: "OCR Processing Complete",
+    tags: ["ocr", "automated"],
   },
   {
-    timestamp: '2025-01-31 14:15',
-    type: 'communication',
-    title: 'Inspector Clarification',
-    tags: ['phone', 'inspector']
+    timestamp: "2025-01-31 14:15",
+    type: "communication",
+    title: "Inspector Clarification",
+    tags: ["phone", "inspector"],
   },
   {
-    timestamp: '2025-02-01 09:00',
-    type: 'task',
-    title: 'Legal Review Required',
-    tags: ['legal', 'review', 'oos']
-  }
-]
+    timestamp: "2025-02-01 09:00",
+    type: "task",
+    title: "Legal Review Required",
+    tags: ["legal", "review", "oos"],
+  },
+];
 ```
 
 ### Implementation Roadmap
 
 #### **Phase 2A: Basic Integration (Q2 2025)**
+
 - **DVER File Storage:** Store original DVER documents in Activity Log
 - **Processing Activities:** Log OCR processing stages and results
 - **Basic Communication:** Add inspector communication tracking
 - **Tag Framework:** Implement inspection-specific tag library
 
-#### **Phase 2B: Advanced Features (Q2 2025)**  
+#### **Phase 2B: Advanced Features (Q2 2025)**
+
 - **Form Integration:** Add file upload capabilities to RSIN create/edit forms
 - **Multi-Document:** Support related documents (photos, amendments, correspondence)
 - **Workflow Automation:** Auto-tag activities based on violation data
 - **Case Management:** Complete timeline view with filtering
 
 #### **Phase 2C: Collaboration Features (Q3 2025)**
+
 - **Internal Communications:** Staff-to-staff case discussion
 - **External Integration:** Inspector portal communications
 - **Document Versioning:** Track DVER amendments and corrections
@@ -797,9 +870,10 @@ const timelineActivities = [
 ### Technical Implementation Plan
 
 #### **Database Integration**
+
 ```sql
 -- Link RSIN records to Activity Log
-ALTER TABLE roadside_inspection_issue 
+ALTER TABLE roadside_inspection_issue
 ADD COLUMN primary_activity_log_id TEXT REFERENCES activity_log(id);
 
 -- Store DVER processing metadata
@@ -816,14 +890,15 @@ CREATE TABLE dver_processing_log (
 ```
 
 #### **Component Integration**
+
 ```typescript
 // Enhanced RSIN Form with Activity Log
 <RSINForm rsinId={rsin.id}>
-  <ActivityLog 
+  <ActivityLog
     issueId={rsin.issueId}
     allowedTypes={['attachment', 'communication', 'note', 'task']}
     defaultTags={[
-      'inspection', 
+      'inspection',
       rsin.inspectionLevel.toLowerCase(),
       rsin.overallResult.toLowerCase()
     ]}
@@ -832,51 +907,55 @@ CREATE TABLE dver_processing_log (
 ```
 
 #### **DVER Upload Enhancement**
+
 ```typescript
 // Enhanced DVER Upload with Activity Logging
 const handleDVERUpload = async (file: File) => {
   // 1. Create attachment activity for original DVER
   const dverActivity = await createActivity({
-    type: 'attachment',
-    title: 'DVER Document Upload',
+    type: "attachment",
+    title: "DVER Document Upload",
     file: file,
-    tags: ['dver', 'original', 'processing']
-  })
-  
+    tags: ["dver", "original", "processing"],
+  });
+
   // 2. Process DVER with OCR
-  const processedData = await processDVER(file)
-  
+  const processedData = await processDVER(file);
+
   // 3. Log processing results
   await createActivity({
-    type: 'note',
-    title: 'DVER Processing Complete',
+    type: "note",
+    title: "DVER Processing Complete",
     content: `Extracted ${processedData.fieldsCount} fields with ${processedData.confidence}% confidence`,
-    tags: ['ocr', 'automated', 'processing-complete']
-  })
-  
+    tags: ["ocr", "automated", "processing-complete"],
+  });
+
   // 4. Create RSIN with activity log reference
   const rsin = await createRSIN({
     ...processedData,
-    primaryActivityLogId: dverActivity.id
-  })
-}
+    primaryActivityLogId: dverActivity.id,
+  });
+};
 ```
 
 ### Benefits of Integration
 
 #### **For Users**
+
 - **Complete Case History:** Full timeline of inspection case from upload to resolution
 - **Document Organization:** All related files and communications in one place
 - **Smart Search:** Find inspections by tags, communication content, or document type
 - **Collaboration:** Internal team communication and case management
 
 #### **For Compliance Managers**
+
 - **Audit Trail:** Complete documentation of inspection handling process
 - **Performance Metrics:** Track DVER processing times and accuracy rates
 - **Communication History:** Full record of inspector interactions
 - **Workflow Optimization:** Identify bottlenecks in inspection processing
 
 #### **For System Administration**
+
 - **Unified Architecture:** Leverage existing Activity Log infrastructure
 - **Consistent UX:** Same interface patterns across all compliance areas
 - **Tag Management:** Organization-specific tags for inspection categorization
@@ -887,6 +966,7 @@ const handleDVERUpload = async (file: File) => {
 ## Future Enhancements
 
 ### OCR Integration (Phase 2)
+
 ```
 OCR Workflow:
 ├── Upload DVER PDF/Image
@@ -898,6 +978,7 @@ OCR Workflow:
 ```
 
 ### FMCSA DataQs Integration
+
 ```
 FMCSA API Workflow:
 ├── Query FMCSA DataQs portal by DOT number
@@ -909,12 +990,14 @@ FMCSA API Workflow:
 ```
 
 ### Predictive Analytics
+
 - **Violation Trends** - Identify recurring violation patterns
 - **Driver Risk Scoring** - Calculate risk scores based on inspection history
 - **Equipment Maintenance** - Predict maintenance needs from violation data
 - **Compliance Forecasting** - Project future compliance issues
 
 ### Mobile App Integration
+
 - **Field Entry** - Real-time DVER entry during inspections
 - **Photo Capture** - Equipment and violation documentation
 - **GPS Coordinates** - Automatic location tagging
@@ -925,18 +1008,21 @@ FMCSA API Workflow:
 ## Success Metrics
 
 ### Operational Metrics
+
 - **DVER Entry Time** - Target: <5 minutes per inspection
 - **Data Accuracy** - Target: >95% accurate equipment details
 - **Violation Documentation** - Target: 100% inspector comments completion
 - **User Adoption** - Target: 80% of inspections entered within 24 hours
 
 ### Compliance Metrics
+
 - **Inspection Response Time** - Time from inspection to DVER entry
 - **CAF Completion Rate** - Percentage of violations with completed CAFs
 - **OOS Resolution Time** - Time from OOS to back-in-service
 - **Violation Trends** - Month-over-month violation reduction
 
 ### Technical Metrics
+
 - **API Response Time** - Target: <500ms for inspection retrieval
 - **Form Validation Success** - Target: >90% successful submissions
 - **Search Performance** - Target: <100ms violation search response
@@ -949,42 +1035,49 @@ FMCSA API Workflow:
 ### January 27, 2025 - Phase 1A Implementation Decisions
 
 **Decision 1: Organization-Level Entry First**
+
 - **Context:** Multiple potential entry points (driver, equipment, organization, location)
 - **Decision:** Implement organization-level entry first, expand in Phase 1B
 - **Rationale:** Simplifies initial implementation while covering primary use case
 - **Impact:** Faster delivery, requires future enhancement for other contexts
 
 **Decision 2: Live Violation Search vs. Static List**
+
 - **Context:** How to handle 1000+ possible DOT violation codes
 - **Decision:** Implement live search with curated 40+ common violations
 - **Rationale:** Better UX than checkboxes, covers 80% of real-world violations
 - **Impact:** Requires violation database maintenance, excellent user experience
 
 **Decision 3: Equipment Details Storage Strategy**
+
 - **Context:** Equipment details may change over time, affecting historical accuracy
 - **Decision:** Store equipment details in `rins_equipment_involvement` at time of inspection
 - **Rationale:** Preserves historical accuracy for compliance and reporting
 - **Impact:** Larger database footprint, better data integrity
 
 **Decision 4: Out-of-Service Date Management**
+
 - **Context:** How to handle OOS dates for violations and equipment/drivers
 - **Decision:** Start with violation-level OOS dates, defer equipment/driver OOS tracking
 - **Rationale:** Simpler implementation, covers immediate compliance needs
 - **Impact:** May need future enhancement for comprehensive OOS management
 
 **Decision 5: Violation Comment Requirements**
+
 - **Context:** Should inspector comments be required for all violations?
 - **Decision:** Require inspector comments for all violations
 - **Rationale:** Essential for compliance documentation and future CAF generation
 - **Impact:** Enforces data quality, may slow data entry slightly
 
 **Decision 6: Form Validation Strategy**
+
 - **Context:** Client-side vs. server-side validation approach
 - **Decision:** Implement both client-side (UX) and server-side (security) validation
 - **Rationale:** Best user experience with robust data integrity
 - **Impact:** Additional development effort, better overall system reliability
 
 **Decision 7: RBAC Implementation**
+
 - **Context:** Access control complexity for multi-level organizations
 - **Decision:** Copy proven RBAC pattern from other issue types
 - **Rationale:** Consistent security model, faster implementation
@@ -992,4 +1085,4 @@ FMCSA API Workflow:
 
 ---
 
-**End of Document** 
+**End of Document**
