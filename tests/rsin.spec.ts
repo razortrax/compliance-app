@@ -39,6 +39,17 @@ test.describe("RSIN flow (guarded)", () => {
         .getByRole("heading", { name: /create roadside inspection/i })
         .or(page.getByText(/Create Roadside Inspection/i)),
     ).toBeVisible();
+    // Navigate through tabs to ensure form structure exists
+    const nextParties = page.getByRole("button", { name: /next: drivers & equipment/i });
+    if (await nextParties.count()) {
+      await nextParties.first().click();
+      await expect(page.getByText(/Driver Selection/i)).toBeVisible();
+      const nextViolations = page.getByRole("button", { name: /next: violations/i });
+      if (await nextViolations.count()) {
+        await nextViolations.first().click();
+        await expect(page.getByText(/Violation Search/i)).toBeVisible();
+      }
+    }
     // Close/cancel
     const cancel = page.getByRole("button", { name: /cancel/i });
     if (await cancel.count()) {

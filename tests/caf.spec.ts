@@ -26,6 +26,11 @@ test.describe("CAF flow (guarded)", () => {
       await expect(
         page.getByText(/CAF Details/i).or(page.getByRole("heading", { name: /CAF/i })),
       ).toBeVisible();
+      // If a sign/approve button exists, just assert it's visible (do not mutate data in E2E)
+      const signBtn = page.getByRole("button", { name: /sign|approve/i });
+      if (await signBtn.count()) {
+        await expect(signBtn.first()).toBeVisible();
+      }
       // Close the dialog if a close button exists
       const closeBtn = page.getByRole("button", { name: /close|cancel/i });
       if (await closeBtn.count()) {
