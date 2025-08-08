@@ -7,6 +7,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { masterOrgId: string; orgId: string; driverId: string } }
 ) {
+  const { masterOrgId, orgId, driverId } = params
   try {
     const authResult = await auth()
     const userId = authResult.userId
@@ -14,8 +15,6 @@ export async function GET(
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { masterOrgId, orgId, driverId } = params
 
     // Fetch all the contextual data in one query - Gold Standard pattern
     const [masterOrg, organization, driver, roadsideInspections] = await Promise.all([

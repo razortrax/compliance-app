@@ -435,13 +435,13 @@ export default function RoadsideInspectionsPage() {
                       {selectedIncident.violations && selectedIncident.violations.length > 0 && (
                         <div>
                           <ViolationGroupsWithCAFGeneration
-                            incidentId={selectedIncident.id}
+                            incident={{ id: selectedIncident.id }}
                             violations={selectedIncident.violations}
-                            onCAFCreated={(cafIds) => {
-                              setCreatedCAFsInSession(prev => [...prev, ...cafIds])
+                            organizationId={orgId}
+                            onCAFCreated={(caf) => {
+                              if (caf?.id) setCreatedCAFsInSession(prev => [...prev, caf.id])
                             }}
-                            onCAFSelected={(cafId) => setSelectedCAFId(cafId)}
-                            createdCAFsInSession={createdCAFsInSession}
+                            onCAFClick={(caf) => setSelectedCAFId(caf.id)}
                           />
                         </div>
                       )}
@@ -471,10 +471,7 @@ export default function RoadsideInspectionsPage() {
       </div>
       
       {/* CAF Detail Modal */}
-      <CAFDetailModal
-        cafId={selectedCAFId}
-        onClose={() => setSelectedCAFId(null)}
-      />
+      <CAFDetailModal cafId={selectedCAFId ?? undefined} onClose={() => setSelectedCAFId(null)} />
     </AppLayout>
   )
 } 

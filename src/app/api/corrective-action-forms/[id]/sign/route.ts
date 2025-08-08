@@ -3,14 +3,14 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
 import { updateRINSCompletionStatus } from '@/lib/caf-utils'
+import { withApiError } from '@/lib/with-api-error'
 
 // POST /api/corrective-action-forms/[id]/sign - Add digital signature
-export async function POST(
+export const POST = withApiError('/api/corrective-action-forms/[id]/sign', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -153,16 +153,16 @@ export async function POST(
     await db.activity_log.create({
       data: {
         id: createId(),
-        action: 'CAF_SIGNED',
-        entityType: 'corrective_action_form',
-        entityId: params.id,
-        details: {
+        cafId: params.id,
+        activityType: 'caf',
+        title: 'CAF signed',
+        content: JSON.stringify({
           signatureType,
-          signedBy: `${staff.party.person.firstName} ${staff.party.person.lastName}`,
+          signedBy: `${staff.party.person?.firstName ?? ''} ${staff.party.person?.lastName ?? ''}`.trim(),
           signatureId: signature.id
-        },
-        userId,
-        cafId: params.id
+        }),
+        tags: ['caf', 'signature'],
+        createdBy: userId,
       }
     })
 
@@ -177,11 +177,4 @@ export async function POST(
     }
 
     return NextResponse.json(signature)
-
-  } catch (error) {
-    console.error('Error creating signature:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 })
-  }
-} 
+})

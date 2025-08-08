@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { captureAPIError } from '@/lib/sentry-utils'
+import { withApiError } from '@/lib/with-api-error'
 
-export async function GET(
+export const GET = withApiError('/api/master/[masterOrgId]/organization/[orgId]/driver/[driverId]/accidents', async (
   request: NextRequest,
   { params }: { params: { masterOrgId: string; orgId: string; driverId: string } }
-) {
+) => {
+  const { masterOrgId, orgId, driverId } = params
   try {
     const authResult = await auth()
     const userId = authResult.userId
@@ -14,8 +16,6 @@ export async function GET(
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { masterOrgId, orgId, driverId } = params
 
     // Fetch all the contextual data in one query - Gold Standard pattern
     const [masterOrg, organization, driver, accidents] = await Promise.all([
@@ -181,9 +181,6 @@ export async function GET(
       method: 'GET',
       extra: { masterOrgId, orgId, driverId }
     })
-    return NextResponse.json(
-      { error: 'Failed to fetch driver accident data' },
-      { status: 500 }
-    )
+    throw error
   }
-} 
+})

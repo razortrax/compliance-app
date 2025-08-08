@@ -1,4 +1,4 @@
-import { PDFDocument, PDFForm, PDFTextField, PDFCheckBox, PDFFont, rgb, StandardFonts } from 'pdf-lib'
+import { PDFDocument, PDFForm, PDFFont, rgb, StandardFonts, degrees } from 'pdf-lib'
 import jsPDF from 'jspdf'
 
 export interface CAFData {
@@ -55,19 +55,23 @@ export interface CAFData {
 }
 
 export class CAFPDFGenerator {
-  private doc: PDFDocument
-  private form: PDFForm
-  private font: PDFFont
-  private boldFont: PDFFont
+  private doc: PDFDocument | null = null
+  private form: PDFForm | null = null
+  private font!: PDFFont
+  private boldFont!: PDFFont
 
   constructor() {
-    this.doc = PDFDocument.create()
-    this.form = this.doc.getForm()
+    // Defer document creation until generation
+  }
+
+  private async createDocument() {
+    this.doc = await PDFDocument.create()
+    this.form = this.doc!.getForm()
   }
 
   private async initializeFonts() {
-    this.font = await this.doc.embedFont(StandardFonts.Helvetica)
-    this.boldFont = await this.doc.embedFont(StandardFonts.HelveticaBold)
+    this.font = await this.doc!.embedFont(StandardFonts.Helvetica)
+    this.boldFont = await this.doc!.embedFont(StandardFonts.HelveticaBold)
   }
 
   private getCAFTemplate(cafData: CAFData): string {
@@ -90,10 +94,11 @@ export class CAFPDFGenerator {
   }
 
   async generateFillablePDF(cafData: CAFData): Promise<Uint8Array> {
+    await this.createDocument()
     await this.initializeFonts()
 
     // Create new page
-    const page = this.doc.addPage([612, 792]) // 8.5 x 11 inches
+    const page = this.doc!.addPage([612, 792]) // 8.5 x 11 inches
     const { width, height } = page.getSize()
 
     // Title
@@ -256,41 +261,41 @@ export class CAFPDFGenerator {
     // Add signature areas
     await this.addSignatureAreas(cafData, yPosition - 150)
 
-    return await this.doc.save()
+    return await this.doc!.save()
   }
 
   private async addFormFields(startY: number) {
     let yPosition = startY
 
     // Corrective Actions Required section
-    this.form.createTextField('corrective_actions_title')
+    this.form!.createTextField('corrective_actions_title')
     yPosition -= 30
 
     // Create fillable text area for corrective actions
-    const correctiveActionsField = this.form.createTextField('corrective_actions')
+    const correctiveActionsField = this.form!.createTextField('corrective_actions')
     correctiveActionsField.setText('')
     correctiveActionsField.setFontSize(10)
     
     // Add more fillable fields based on CAF type
-    const completionNotesField = this.form.createTextField('completion_notes')
+    const completionNotesField = this.form!.createTextField('completion_notes')
     completionNotesField.setText('')
     completionNotesField.setFontSize(10)
 
-    const supervisorCommentsField = this.form.createTextField('supervisor_comments')
+    const supervisorCommentsField = this.form!.createTextField('supervisor_comments')
     supervisorCommentsField.setText('')
     supervisorCommentsField.setFontSize(10)
 
-    // Status checkboxes
-    const statusInProgressBox = this.form.createCheckBox('status_in_progress')
-    const statusCompletedBox = this.form.createCheckBox('status_completed')
-    const statusApprovedBox = this.form.createCheckBox('status_approved')
+    // Status checkboxes (created for form structure)
+    this.form!.createCheckBox('status_in_progress')
+    this.form!.createCheckBox('status_completed')
+    this.form!.createCheckBox('status_approved')
   }
 
   private async addSignatureAreas(cafData: CAFData, startY: number) {
     let yPosition = startY
 
     // Supervisor Signature Section
-    const page = this.doc.getPages()[0]
+    const page = this.doc!.getPages()[0]
     
     page.drawText('SUPERVISOR SIGNATURE', {
       x: 50,
@@ -439,13 +444,15 @@ export class CAFPDFGenerator {
     const firstPage = pages[0]
     
     if (cafData.status === 'APPROVED') {
+      // Embed bold font on the existing doc as well
+      const bold = await existingPdfDoc.embedFont(StandardFonts.HelveticaBold)
       firstPage.drawText('APPROVED', {
         x: 450,
         y: 100,
         size: 24,
-        font: this.boldFont,
+        font: bold,
         color: rgb(0, 0.5, 0),
-        rotate: { type: 'degrees', angle: -45 }
+        rotate: degrees(-45)
       })
     }
 

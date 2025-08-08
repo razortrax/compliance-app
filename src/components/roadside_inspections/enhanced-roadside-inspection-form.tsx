@@ -31,6 +31,7 @@ interface Equipment {
   year?: number
   vinNumber?: string
   plateNumber?: string
+  unitNumber?: number
 }
 
 interface Violation {

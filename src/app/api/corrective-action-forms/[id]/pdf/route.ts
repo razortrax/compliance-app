@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { CAFPDFGenerator } from '@/lib/pdf-generator'
+import { createId } from '@paralleldrive/cuid2'
+import { withApiError } from '@/lib/with-api-error'
 
 // GET /api/corrective-action-forms/[id]/pdf - Generate CAF PDF
-export async function GET(
+export const GET = withApiError('/api/corrective-action-forms/[id]/pdf', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -110,44 +111,46 @@ export async function GET(
       status: caf.status,
       organizationId: caf.organizationId,
       dueDate: caf.dueDate?.toISOString(),
-      completionNotes: caf.completionNotes,
+      completionNotes: caf.completionNotes ?? undefined,
       completedAt: caf.completedAt?.toISOString(),
       approvedAt: caf.approvedAt?.toISOString(),
       createdAt: caf.createdAt.toISOString(),
-      assigned_staff: caf.assigned_staff ? {
+       assigned_staff: caf.assigned_staff ? {
         party: {
           person: {
-            firstName: caf.assigned_staff.party.person.firstName,
-            lastName: caf.assigned_staff.party.person.lastName
+             firstName: caf.assigned_staff.party.person?.firstName || '',
+             lastName: caf.assigned_staff.party.person?.lastName || ''
           }
         },
         position: caf.assigned_staff.position || 'N/A'
       } : undefined,
-      created_by_staff: caf.created_by_staff ? {
+       created_by_staff: caf.created_by_staff ? {
         party: {
           person: {
-            firstName: caf.created_by_staff.party.person.firstName,
-            lastName: caf.created_by_staff.party.person.lastName
+             firstName: caf.created_by_staff.party.person?.firstName || '',
+             lastName: caf.created_by_staff.party.person?.lastName || ''
           }
         }
       } : undefined,
       organization: caf.organization ? {
         name: caf.organization.name
       } : undefined,
-      signatures: caf.signatures?.map(sig => ({
+       signatures: caf.signatures?.map(sig => ({
         signatureType: sig.signatureType,
         signedAt: sig.signedAt.toISOString(),
         digitalSignature: sig.digitalSignature || '',
         staff: {
           party: {
             person: {
-              firstName: sig.staff.party.person.firstName,
-              lastName: sig.staff.party.person.lastName
+               firstName: sig.staff.party.person?.firstName || '',
+               lastName: sig.staff.party.person?.lastName || ''
             }
           }
         }
       })) || []
     }
+
+    // Ensure types match CAFData
 
     // Generate PDF
     const generator = new CAFPDFGenerator()
@@ -177,28 +180,15 @@ export async function GET(
     // Log the PDF generation
     await db.activity_log.create({
       data: {
-        id: require('@paralleldrive/cuid2').createId(),
-        action: 'CAF_PDF_GENERATED',
-        entityType: 'corrective_action_form',
-        entityId: params.id,
-        details: {
-          format,
-          filename,
-          generatedBy: userId,
-          fileSize: pdfBytes.length
-        },
-        userId,
-        cafId: params.id
+        id: createId(),
+        cafId: params.id,
+        activityType: 'caf',
+        title: 'CAF PDF generated',
+        content: JSON.stringify({ format, filename, generatedBy: userId, fileSize: pdfBytes.length }),
+        tags: ['caf', 'pdf'],
+        createdBy: userId,
       }
     })
 
     return response
-
-  } catch (error) {
-    console.error('Error generating CAF PDF:', error)
-    return NextResponse.json({ 
-      error: 'Failed to generate PDF',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
-  }
-} 
+})

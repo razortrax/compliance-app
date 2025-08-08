@@ -3,14 +3,14 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { readFile } from 'fs/promises'
 import { createId } from '@paralleldrive/cuid2'
+import { withApiError } from '@/lib/with-api-error'
 
 // GET /api/attachments/[id]/download - Download attachment file
-export async function GET(
+export const GET = withApiError('/api/attachments/[id]/download', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -66,21 +66,20 @@ export async function GET(
       }, { status: 404 })
     }
 
-    // Log the download
+    // Log the download to activity_log (schema-aligned)
     if (attachment.cafId) {
       await db.activity_log.create({
         data: {
           id: createId(),
-          action: 'ATTACHMENT_DOWNLOADED',
-          entityType: 'corrective_action_form',
-          entityId: attachment.cafId,
-          details: {
+          cafId: attachment.cafId,
+          activityType: 'attachment',
+          title: 'Attachment downloaded',
+          content: JSON.stringify({
             fileName: attachment.fileName,
             fileType: attachment.fileType,
-            downloadedBy: userId
-          },
-          userId,
-          cafId: attachment.cafId
+          }),
+          tags: ['attachment', 'download'],
+          createdBy: userId,
         }
       })
     }
@@ -96,12 +95,4 @@ export async function GET(
     response.headers.set('ETag', `"${attachment.id}"`)
 
     return response
-
-  } catch (error) {
-    console.error('Error downloading attachment:', error)
-    return NextResponse.json({ 
-      error: 'Download failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
-  }
-} 
+})

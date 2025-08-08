@@ -1,7 +1,8 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
+import { withApiError } from '@/lib/with-api-error'
 
 // Define types for registration data
 interface RegistrationIssueData {
@@ -19,11 +20,10 @@ interface RegistrationIssueData {
 }
 
 // GET /api/registrations - List registrations with filtering
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withApiError('/api/registrations', async (request: NextRequest) => {
     const { userId } = await auth()
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -144,19 +144,14 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return Response.json({ registrations })
-  } catch (error) {
-    console.error('Error fetching registrations:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return NextResponse.json({ registrations })
+})
 
 // POST /api/registrations - Create new registration
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiError('/api/registrations', async (request: NextRequest) => {
     const { userId } = await auth()
     if (!userId) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body: RegistrationIssueData = await request.json()
@@ -164,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.plateNumber || !body.state || !body.startDate || 
         !body.expirationDate || !body.partyId) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Check if user has access to the party (equipment)
@@ -185,7 +180,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!party) {
-      return Response.json({ error: 'Party not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Party not found' }, { status: 404 })
     }
 
     // Access control check - support Master, Organization, and Location managers
@@ -264,7 +259,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!hasAccess) {
-      return Response.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
     // Create registration in transaction
@@ -313,9 +308,5 @@ export async function POST(request: NextRequest) {
       return registrationIssue
     })
 
-    return Response.json(result, { status: 201 })
-  } catch (error) {
-    console.error('Error creating registration:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
-  }
-} 
+    return NextResponse.json(result, { status: 201 })
+})

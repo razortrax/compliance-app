@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { captureAPIError } from '@/lib/sentry-utils'
 
-type RouteContext = { params?: Record<string, string> }
+export type RouteContext = { params?: Record<string, string> }
 
-export function withApiError(
+export function withApiError<C extends RouteContext = RouteContext>(
   endpoint: string,
-  handler: (request: NextRequest, context?: RouteContext) => Promise<NextResponse>
+  handler: (request: NextRequest, context: C) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context?: RouteContext): Promise<NextResponse> => {
+  return async (request: NextRequest, context: C): Promise<NextResponse> => {
     try {
       return await handler(request, context)
     } catch (err: unknown) {
@@ -15,7 +15,7 @@ export function withApiError(
       captureAPIError(error, {
         endpoint,
         method: request.method,
-        extra: { params: context?.params },
+        extra: { params: (context as unknown as RouteContext | undefined)?.params },
       })
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }

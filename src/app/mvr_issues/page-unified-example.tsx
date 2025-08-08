@@ -25,7 +25,9 @@ import { buildStandardDriverNavigation } from '@/lib/utils'
 // ... other interfaces remain the same ...
 
 export default function MvrIssuesPageUnified() {
-  // ... existing state remains the same ...
+  // Demo-only placeholders to keep example type-safe under app typecheck
+  const [selectedMvrIssue] = useState<{ id: string }>({ id: 'demo' })
+  const fetchAttachments = () => {}
   
   // NEW: Replace individual addon modal state with unified hook
   const addonModal = useAddonModal('mvr') // Gets MVR-specific configuration
@@ -40,7 +42,7 @@ export default function MvrIssuesPageUnified() {
   // ... rest of component logic remains the same until the render section ...
 
   return (
-    <AppLayout>
+    <AppLayout name="Unified Example">
       {/* ... existing JSX remains the same until the Add Addon button ... */}
       
       {/* SIMPLIFIED: Add Addon button */}

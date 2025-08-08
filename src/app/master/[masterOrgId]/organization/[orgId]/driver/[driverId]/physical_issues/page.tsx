@@ -294,7 +294,7 @@ export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
 
   if (loading) {
     return (
-      <AppLayout>
+      <AppLayout name="Loading..." sidebarMenu="driver">
         <div className="flex justify-center items-center h-64">
           <div className="text-lg">Loading...</div>
         </div>
@@ -304,7 +304,7 @@ export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
 
   if (error) {
     return (
-      <AppLayout>
+      <AppLayout name="Error" sidebarMenu="driver">
         <div className="flex justify-center items-center h-64">
           <div className="text-lg text-red-600">{error}</div>
         </div>
@@ -314,7 +314,7 @@ export default function PhysicalIssueePage({ params }: PhysicalIssuePageProps) {
 
   if (!data) {
     return (
-      <AppLayout>
+      <AppLayout name="Not Found" sidebarMenu="driver">
         <div className="flex justify-center items-center h-64">
           <div className="text-lg text-red-600">Failed to load physical issues data</div>
         </div>

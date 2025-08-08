@@ -804,7 +804,6 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                     <CardContent>
                       <ActivityLog 
                         cafId={caf.id}
-                        entityContext="caf"
                       />
                     </CardContent>
                   </Card>

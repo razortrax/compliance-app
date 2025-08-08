@@ -87,13 +87,13 @@ export function UnifiedAddonDisplay({
   // Get unique tags from items
   const allTags = useMemo(() => {
     const tags = items.flatMap(item => item.tags || [])
-    return [...new Set(tags)].sort()
+    return Array.from(new Set(tags)).sort()
   }, [items])
 
   // Get unique statuses from items
   const allStatuses = useMemo(() => {
-    const statuses = items.map(item => item.status).filter(Boolean)
-    return [...new Set(statuses)].sort()
+    const statuses = items.map(item => item.status).filter(Boolean) as string[]
+    return Array.from(new Set(statuses)).sort()
   }, [items])
 
   // Filter items based on current filters

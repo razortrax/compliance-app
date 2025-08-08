@@ -112,10 +112,17 @@ export async function POST(request: NextRequest) {
     if (!partyId && data.newPerson) {
       const newPersonData = data.newPerson
       
-      // Create person and party
-      const person = await db.person.create({
+      // Create party first, then person linked to party
+      const party = await db.party.create({
         data: {
           id: createId(),
+        }
+      })
+
+      await db.person.create({
+        data: {
+          id: createId(),
+          partyId: party.id,
           firstName: newPersonData.firstName,
           lastName: newPersonData.lastName,
           email: newPersonData.email,
@@ -124,13 +131,6 @@ export async function POST(request: NextRequest) {
           city: newPersonData.city,
           state: newPersonData.state,
           zipCode: newPersonData.zipCode,
-        }
-      })
-
-      const party = await db.party.create({
-        data: {
-          id: createId(),
-          personId: person.id,
         }
       })
 

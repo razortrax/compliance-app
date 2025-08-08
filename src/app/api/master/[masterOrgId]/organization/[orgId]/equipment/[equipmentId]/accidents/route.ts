@@ -8,14 +8,13 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } }
 ) {
+  const { masterOrgId, orgId, equipmentId } = params
   try {
     const { userId } = await auth()
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { masterOrgId, orgId, equipmentId } = params
 
     // Get equipment details
     const equipment = await db.equipment.findUnique({
@@ -188,14 +187,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } }
 ) {
+  const { masterOrgId, orgId, equipmentId } = params
   try {
     const { userId } = await auth()
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { masterOrgId, orgId, equipmentId } = params
     const formData = await request.json()
 
     // Get equipment details
