@@ -28,105 +28,108 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Company/Organization name is required" }, { status: 400 });
     }
 
-    // Check if user already has a profile
+    // Fetch user's party (if any) and existing person
     const existingParty = await db.party.findFirst({
       where: { userId },
-      include: {
-        person: true,
-        organization: true,
-      },
+      include: { person: true },
     });
-
-    // Also check if user has a master organization via role
-    const existingRole = await db.role.findFirst({
-      where: {
-        partyId: existingParty?.id,
-        roleType: "master",
-      },
-    });
-
-    // Only block if user has BOTH person AND master organization
-    if (existingParty && existingParty.person && existingRole && existingRole.organizationId) {
-      return NextResponse.json({ error: "Profile already completed" }, { status: 400 });
-    }
+    // Check if user has a master organization via role
+    const existingMasterRole = existingParty
+      ? await db.role.findFirst({
+          where: { partyId: existingParty.id, roleType: "master", isActive: true },
+        })
+      : null;
 
     console.log("🔍 Profile completion check:", {
       hasPerson: !!existingParty?.person,
-      hasRole: !!existingRole,
-      hasOrganization: !!existingRole?.organizationId,
+      hasMasterRole: !!existingMasterRole,
+      hasOrganization: !!existingMasterRole?.organizationId,
       allowCompletion: true,
     });
 
-    const result = await db.$transaction(async (tx: any) => {
-      // Create or use existing user party
+    const result = await db.$transaction(async (tx) => {
+      // 1) Ensure user party exists
       const userParty =
         existingParty ||
         (await tx.party.create({
-          data: {
-            id: createId(),
-            userId,
-            status: "active",
-            updatedAt: new Date(),
-          },
+          data: { id: createId(), userId, status: "active", updatedAt: new Date() },
         }));
 
-      // Create person record
-      const person = await tx.person.create({
-        data: {
-          id: createId(),
-          partyId: userParty.id,
-          firstName,
-          lastName,
-        },
-      });
-
-      let organization = null;
-
-      // Create organization if organizationName is provided
-      if (organizationName) {
-        const organizationParty = await tx.party.create({
-          data: {
-            id: createId(),
-            userId, // Associate with user for ownership
-            status: "active",
-            updatedAt: new Date(),
-          },
+      // 2) Ensure person exists (update names if present)
+      let person = existingParty?.person || null;
+      if (!person) {
+        person = await tx.person.create({
+          data: { id: createId(), partyId: userParty.id, firstName, lastName },
         });
-
-        organization = await tx.organization.create({
-          data: {
-            id: createId(),
-            partyId: organizationParty.id,
-            name: organizationName,
-          },
+      } else {
+        person = await tx.person.update({
+          where: { id: person.id },
+          data: { firstName, lastName },
         });
       }
 
-      // Create role
-      const userRole = await tx.role.create({
-        data: {
-          id: createId(),
-          partyId: userParty.id,
-          roleType: role,
-          organizationId: organization?.id,
-          status: "active",
-          isActive: true,
-        },
-      });
+      // 3) Resolve or create the primary organization
+      let organizationIdToUse: string | null = null;
+      if (role === "master") {
+        if (existingMasterRole?.organizationId) {
+          organizationIdToUse = existingMasterRole.organizationId;
+        } else {
+          // Try legacy owned org
+          const ownedOrg = await tx.organization.findFirst({ where: { party: { userId } } });
+          if (ownedOrg) {
+            organizationIdToUse = ownedOrg.id;
+          } else {
+            // Create new owned org
+            const organizationParty = await tx.party.create({
+              data: { id: createId(), userId, status: "active", updatedAt: new Date() },
+            });
+            const org = await tx.organization.create({
+              data: { id: createId(), partyId: organizationParty.id, name: organizationName },
+            });
+            organizationIdToUse = org.id;
+          }
+        }
+      } else {
+        // For organization/location roles, ensure there is a master org to attach
+        const masterOwned = await tx.organization.findFirst({ where: { party: { userId } } });
+        if (masterOwned) {
+          organizationIdToUse = masterOwned.id;
+        } else {
+          const organizationParty = await tx.party.create({
+            data: { id: createId(), userId, status: "active", updatedAt: new Date() },
+          });
+          const org = await tx.organization.create({
+            data: { id: createId(), partyId: organizationParty.id, name: organizationName },
+          });
+          organizationIdToUse = org.id;
+        }
+      }
 
-      return {
-        userParty,
-        person,
-        organization,
-        userRole,
-      };
+      // 4) Ensure role exists (idempotent)
+      const existingSameRole = await tx.role.findFirst({
+        where: { partyId: userParty.id, roleType: role, organizationId: organizationIdToUse },
+      });
+      const userRole =
+        existingSameRole ||
+        (await tx.role.create({
+          data: {
+            id: createId(),
+            partyId: userParty.id,
+            roleType: role,
+            organizationId: organizationIdToUse,
+            status: "active",
+            isActive: true,
+          },
+        }));
+
+      return { userParty, person, organizationId: organizationIdToUse, userRole };
     });
 
     return NextResponse.json({
       message: "Profile completed successfully",
       data: {
         person: result.person,
-        organization: result.organization,
+        organizationId: result.organizationId,
         role: result.userRole,
       },
     });
