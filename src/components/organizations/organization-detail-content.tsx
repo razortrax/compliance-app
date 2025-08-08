@@ -167,6 +167,33 @@ export function OrganizationDetailContent({
   const [newPartnerCategory, setNewPartnerCategory] = useState<string | null>(null);
   const [creatingPartner, setCreatingPartner] = useState(false);
 
+  // Partner detail tabs: profile, contacts (org only), addons
+  const [partnerDetailTab, setPartnerDetailTab] = useState<"profile" | "contacts" | "addons">(
+    "profile",
+  );
+  const [contactMethods, setContactMethods] = useState<any[]>([]);
+  const [contactAddresses, setContactAddresses] = useState<any[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [showAddMethodDialog, setShowAddMethodDialog] = useState(false);
+  const [showAddAddressDialog, setShowAddAddressDialog] = useState(false);
+  const [newMethod, setNewMethod] = useState({
+    type: "PHONE",
+    scope: "WORK",
+    label: "",
+    value: "",
+  });
+  const [newAddress, setNewAddress] = useState({
+    scope: "WORK",
+    addressType: "PHYSICAL",
+    label: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "US",
+  });
+
   // Staff management state
   const [showStaffForm, setShowStaffForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
@@ -260,6 +287,25 @@ export function OrganizationDetailContent({
     }
   };
 
+  const refreshPartnerContacts = async () => {
+    if (!selectedPartner) return;
+    try {
+      setLoadingContacts(true);
+      const ownerParam =
+        selectedPartner.type === "organization"
+          ? `organizationId=${selectedPartner.id}`
+          : `personId=${selectedPartner.id}`;
+      const [methodsRes, addressesRes] = await Promise.all([
+        fetch(`/api/contact-methods?${ownerParam}`),
+        fetch(`/api/contact-addresses?${ownerParam}`),
+      ]);
+      if (methodsRes.ok) setContactMethods(await methodsRes.json());
+      if (addressesRes.ok) setContactAddresses(await addressesRes.json());
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
   const fetchEquipment = async () => {
     try {
       const response = await fetch(`/api/equipment?organizationId=${organizationId}`);
@@ -311,6 +357,13 @@ export function OrganizationDetailContent({
     partnerIncludeInactive,
     JSON.stringify(selectedCategories),
   ]);
+
+  // Load contact methods/addresses when profile tab active and partner selected
+  useEffect(() => {
+    if (activeTab === "partners" && selectedPartner && partnerDetailTab === "profile") {
+      refreshPartnerContacts();
+    }
+  }, [activeTab, partnerDetailTab, selectedPartner?.id]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -1070,6 +1123,7 @@ export function OrganizationDetailContent({
               <div className="flex-1 overflow-y-auto">
                 {selectedPartner ? (
                   <div className="p-6 space-y-6">
+                    {/* Header */}
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm text-gray-500 mb-1">{organization?.name}</div>
@@ -1087,20 +1141,163 @@ export function OrganizationDetailContent({
                       </div>
                     </div>
 
-                    {/* Add‑Ons for Partner */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Add‑Ons</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ActivityLog
-                          organizationId={selectedPartner.type === "organization" ? selectedPartner.id : undefined}
-                          personId={selectedPartner.type === "person" ? selectedPartner.id : undefined}
-                          title="Add‑Ons"
-                          showAddButton
-                        />
-                      </CardContent>
-                    </Card>
+                    {/* Inner tabs */}
+                    <div className="flex items-center gap-2 border-b pb-2">
+                      <button
+                        className={`px-3 py-1.5 rounded-md text-sm ${
+                          partnerDetailTab === "profile"
+                            ? "bg-blue-100 text-blue-700"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                        onClick={() => setPartnerDetailTab("profile")}
+                      >
+                        Profile
+                      </button>
+                      {selectedPartner.type === "organization" && (
+                        <button
+                          className={`px-3 py-1.5 rounded-md text-sm ${
+                            partnerDetailTab === "contacts"
+                              ? "bg-blue-100 text-blue-700"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                          onClick={() => setPartnerDetailTab("contacts")}
+                        >
+                          Contacts
+                        </button>
+                      )}
+                      <button
+                        className={`px-3 py-1.5 rounded-md text-sm ${
+                          partnerDetailTab === "addons"
+                            ? "bg-blue-100 text-blue-700"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                        onClick={() => setPartnerDetailTab("addons")}
+                      >
+                        Add‑Ons
+                      </button>
+                    </div>
+
+                    {partnerDetailTab === "profile" && (
+                      <div className="space-y-6">
+                        {/* Basic Info */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Basic Information</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm text-gray-500">Name</Label>
+                                <div className="text-gray-900">{selectedPartner.name}</div>
+                              </div>
+                              <div>
+                                <Label className="text-sm text-gray-500">Category</Label>
+                                <div className="capitalize">{selectedPartner.category.replace(/_/g, " ")}</div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Contact Methods */}
+                        <Card>
+                          <CardHeader className="flex-row items-center justify-between">
+                            <CardTitle className="text-lg">Contact Methods</CardTitle>
+                            <Button size="sm" onClick={() => setShowAddMethodDialog(true)}>
+                              <Plus className="h-4 w-4 mr-1" /> Add Method
+                            </Button>
+                          </CardHeader>
+                          <CardContent>
+                            {loadingContacts ? (
+                              <div className="text-sm text-muted-foreground">Loading…</div>
+                            ) : contactMethods.length === 0 ? (
+                              <div className="text-sm text-muted-foreground">No contact methods</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {contactMethods.map((m) => (
+                                  <div key={m.id} className="flex items-center justify-between border rounded p-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline">{m.scope}</Badge>
+                                      <span className="font-medium">{m.type}</span>
+                                      {m.label && <span className="text-gray-500">• {m.label}</span>}
+                                      <span className="text-gray-900">{m.value}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant={m.isPrimary ? "default" : "outline"} className="text-xs">
+                                        {m.isPrimary ? "Primary" : "Secondary"}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Addresses */}
+                        <Card>
+                          <CardHeader className="flex-row items-center justify-between">
+                            <CardTitle className="text-lg">Addresses</CardTitle>
+                            <Button size="sm" onClick={() => setShowAddAddressDialog(true)}>
+                              <Plus className="h-4 w-4 mr-1" /> Add Address
+                            </Button>
+                          </CardHeader>
+                          <CardContent>
+                            {loadingContacts ? (
+                              <div className="text-sm text-muted-foreground">Loading…</div>
+                            ) : contactAddresses.length === 0 ? (
+                              <div className="text-sm text-muted-foreground">No addresses</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {contactAddresses.map((a) => (
+                                  <div key={a.id} className="border rounded p-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline">{a.scope}</Badge>
+                                      <Badge variant="secondary">{a.addressType}</Badge>
+                                      {a.label && <span className="text-gray-500">• {a.label}</span>}
+                                      <Badge variant={a.isPrimary ? "default" : "outline"} className="ml-auto text-xs">
+                                        {a.isPrimary ? "Primary" : "Secondary"}
+                                      </Badge>
+                                    </div>
+                                    <div className="mt-1 text-gray-900">
+                                      {a.line1}
+                                      {a.line2 ? `, ${a.line2}` : ""}
+                                      , {a.city}, {a.state} {a.postalCode}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+
+                    {partnerDetailTab === "contacts" && selectedPartner.type === "organization" && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Contacts</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">Coming soon</div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {partnerDetailTab === "addons" && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Add‑Ons</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ActivityLog
+                            organizationId={selectedPartner.type === "organization" ? selectedPartner.id : undefined}
+                            personId={selectedPartner.type === "person" ? selectedPartner.id : undefined}
+                            title="Add‑Ons"
+                            showAddButton
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center">
@@ -1185,6 +1382,192 @@ export function OrganizationDetailContent({
                       disabled={creatingPartner || !newPartnerName.trim() || !newPartnerCategory}
                     >
                       {creatingPartner ? "Saving..." : selectedPartner ? "Save" : "Create"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Add Contact Method Dialog */}
+            <Dialog open={showAddMethodDialog} onOpenChange={setShowAddMethodDialog}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add Contact Method</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Type</Label>
+                      <Select
+                        value={newMethod.type}
+                        onValueChange={(v) => setNewMethod((p) => ({ ...p, type: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PHONE">Phone</SelectItem>
+                          <SelectItem value="EMAIL">Email</SelectItem>
+                          <SelectItem value="SOCIAL">Social</SelectItem>
+                          <SelectItem value="WEBSITE">Website</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Scope</Label>
+                      <Select
+                        value={newMethod.scope}
+                        onValueChange={(v) => setNewMethod((p) => ({ ...p, scope: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="WORK">Work</SelectItem>
+                          <SelectItem value="PERSONAL">Personal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Label</Label>
+                    <Input value={newMethod.label} onChange={(e) => setNewMethod((p) => ({ ...p, label: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Value</Label>
+                    <Input value={newMethod.value} onChange={(e) => setNewMethod((p) => ({ ...p, value: e.target.value }))} />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowAddMethodDialog(false)}>Cancel</Button>
+                    <Button
+                      onClick={async () => {
+                        if (!selectedPartner) return;
+                        const owner: any =
+                          selectedPartner.type === "organization"
+                            ? { organizationId: selectedPartner.id }
+                            : { personId: selectedPartner.id };
+                        const res = await fetch("/api/contact-methods", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ ...owner, ...newMethod }),
+                        });
+                        if (res.ok) {
+                          setShowAddMethodDialog(false);
+                          setNewMethod({ type: "PHONE", scope: "WORK", label: "", value: "" });
+                          await refreshPartnerContacts();
+                        }
+                      }}
+                      disabled={!newMethod.value.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Add Address Dialog */}
+            <Dialog open={showAddAddressDialog} onOpenChange={setShowAddAddressDialog}>
+              <DialogContent className="sm:max-w-[560px]">
+                <DialogHeader>
+                  <DialogTitle>Add Address</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Scope</Label>
+                      <Select
+                        value={newAddress.scope}
+                        onValueChange={(v) => setNewAddress((p) => ({ ...p, scope: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="WORK">Work</SelectItem>
+                          <SelectItem value="PERSONAL">Personal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Type</Label>
+                      <Select
+                        value={newAddress.addressType}
+                        onValueChange={(v) => setNewAddress((p) => ({ ...p, addressType: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PHYSICAL">Physical</SelectItem>
+                          <SelectItem value="MAILING">Mailing</SelectItem>
+                          <SelectItem value="BILLING">Billing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Label</Label>
+                      <Input value={newAddress.label} onChange={(e) => setNewAddress((p) => ({ ...p, label: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Line 1</Label>
+                      <Input value={newAddress.line1} onChange={(e) => setNewAddress((p) => ({ ...p, line1: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Line 2</Label>
+                      <Input value={newAddress.line2} onChange={(e) => setNewAddress((p) => ({ ...p, line2: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm">City</Label>
+                      <Input value={newAddress.city} onChange={(e) => setNewAddress((p) => ({ ...p, city: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm">State</Label>
+                      <Input value={newAddress.state} onChange={(e) => setNewAddress((p) => ({ ...p, state: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Postal Code</Label>
+                      <Input
+                        value={newAddress.postalCode}
+                        onChange={(e) => setNewAddress((p) => ({ ...p, postalCode: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowAddAddressDialog(false)}>Cancel</Button>
+                    <Button
+                      onClick={async () => {
+                        if (!selectedPartner) return;
+                        const owner: any =
+                          selectedPartner.type === "organization"
+                            ? { organizationId: selectedPartner.id }
+                            : { personId: selectedPartner.id };
+                        const res = await fetch("/api/contact-addresses", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ ...owner, ...newAddress }),
+                        });
+                        if (res.ok) {
+                          setShowAddAddressDialog(false);
+                          setNewAddress({
+                            scope: "WORK",
+                            addressType: "PHYSICAL",
+                            label: "",
+                            line1: "",
+                            line2: "",
+                            city: "",
+                            state: "",
+                            postalCode: "",
+                            country: "US",
+                          });
+                          await refreshPartnerContacts();
+                        }
+                      }}
+                      disabled={!newAddress.line1.trim() || !newAddress.city.trim() || !newAddress.state.trim() || !newAddress.postalCode.trim()}
+                    >
+                      Save
                     </Button>
                   </div>
                 </div>
