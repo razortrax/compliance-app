@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { captureAPIError, addBreadcrumb } from "@/lib/sentry-utils";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // FIRST: Check if Sentry is properly configured
     const sentryDSN = process.env.SENTRY_DSN;

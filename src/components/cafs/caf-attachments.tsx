@@ -81,6 +81,7 @@ export default function CAFAttachments({
 
   useEffect(() => {
     fetchAttachments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cafId]);
 
   const fetchAttachments = async () => {
