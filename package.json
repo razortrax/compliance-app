@@ -10,7 +10,17 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "ts-node": "ts-node",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "next lint --fix --file",
+      "tsc -p tsconfig.app.json --noEmit --pretty false"
+    ],
+    "**/*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@clerk/nextjs": "^6.28.1",
@@ -52,6 +62,8 @@
     "@types/react-dom": "^18.3.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.30",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.4",
     "postcss": "^8.5.1",
     "prettier": "^3.6.2",
     "prisma": "^6.1.0",

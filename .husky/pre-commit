@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Prevent committing Next.js build artifacts
+if git diff --cached --name-only | grep -E '^\.next/'; then
+  echo 'Error: Do not commit .next build artifacts.'
+  exit 1
+fi
+
+# Run lint-staged (lint + typecheck on staged files)
+npx lint-staged

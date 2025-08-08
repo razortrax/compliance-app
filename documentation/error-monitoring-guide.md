@@ -6,7 +6,7 @@
 - `SENTRY_DSN` (server)
 - `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (e.g. `development`, `production`)
 
-Define these locally in `.env.local` and in your hosting provider’s environment configuration for production.
+Define these locally in `.env.local` and in your hosting provider’s environment configuration for production. An example template is provided in `.env.example` (do not commit real secrets).
 
 ### How to test locally
 
