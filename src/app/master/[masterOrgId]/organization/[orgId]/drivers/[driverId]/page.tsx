@@ -84,8 +84,8 @@ export default function DriverDetailPage() {
   }, [driverId, organizationId])
 
   const handlePersonUpdate = () => {
-    // Refresh person data
-    window.location.reload()
+    // Refresh person data without full reload
+    router.refresh()
   }
 
   if (loading) {

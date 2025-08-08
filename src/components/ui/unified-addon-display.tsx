@@ -324,6 +324,8 @@ export function UnifiedAddonDisplay({
                       src={item.url} 
                       alt={item.fileName || 'Image'}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 ) : (

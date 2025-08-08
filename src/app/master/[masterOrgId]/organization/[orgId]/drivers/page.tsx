@@ -357,7 +357,7 @@ export default function DriversPage() {
                   <p>{error}</p>
                   <p className="mt-2">
                     <button 
-                      onClick={() => window.location.reload()} 
+                      onClick={() => router.refresh()} 
                       className="font-medium underline hover:no-underline"
                     >
                       Try refreshing the page

@@ -252,7 +252,7 @@ export default function MasterDriverDrugAlcoholPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
           <p className="text-gray-600">{error}</p>
           <Button 
-            onClick={() => window.location.reload()} 
+            onClick={() => router.refresh()} 
             className="mt-4"
           >
             Try Again
