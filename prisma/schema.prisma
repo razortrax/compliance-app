@@ -935,8 +935,12 @@ model organization {
   location                location[]
   corrective_action_forms corrective_action_form[] // CAF system support
   activity_logs           activity_log[] // Enhanced activity tracking
-  action_items            action_item[]
+  // Contacts
+  contact_methods         contact_method[]
+  contact_addresses       contact_address[]
   organization_tags       organization_tag[] // Custom tag management
+  // Back-reference for actions
+  action_items            action_item[]
 
   // Equipment enum management - organizations can customize their equipment options
   equipmentStatuses       EquipmentStatus[]
@@ -981,8 +985,11 @@ model person {
   city          String?
   state         String?
   zipCode       String?
-  activity_logs activity_log[] // Enhanced activity tracking for drivers/staff
-  action_items  action_item[]
+  activity_logs     activity_log[] // Enhanced activity tracking for drivers/staff
+  action_items      action_item[]
+  // Contacts
+  contact_methods   contact_method[]
+  contact_addresses contact_address[]
   party         party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
@@ -1000,6 +1007,90 @@ model role {
   consultationId String?
   party          party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
   location       location? @relation(fields: [locationId], references: [id])
+  // Contacts scoped to a specific assignment (work methods for a person at an org)
+  contact_methods   contact_method[]
+  contact_addresses contact_address[]
+}
+
+// =============================
+// Contacts System (Partners/Staff)
+// =============================
+
+enum ContactMethodType {
+  PHONE
+  EMAIL
+  SOCIAL
+  WEBSITE
+}
+
+enum ContactScope {
+  WORK
+  PERSONAL
+}
+
+enum AddressType {
+  PHYSICAL
+  MAILING
+  BILLING
+}
+
+model contact_method {
+  id              String             @id @default(cuid())
+  // Owner (exactly one should be set by application logic)
+  organizationId  String?
+  personId        String?
+  roleId          String?
+
+  type            ContactMethodType
+  scope           ContactScope       @default(WORK)
+  label           String?            // e.g., Main, Billing, Cell
+  value           String             // normalized value (E.164 phone, lowercase email)
+  isPrimary       Boolean            @default(false)
+  isVerified      Boolean            @default(false)
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relations
+  organization    organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  person          person?            @relation(fields: [personId], references: [id], onDelete: Cascade)
+  role            role?              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([personId])
+  @@index([roleId])
+  @@index([type])
+}
+
+model contact_address {
+  id              String        @id @default(cuid())
+  // Owner (exactly one should be set by application logic)
+  organizationId  String?
+  personId        String?
+  roleId          String?
+
+  scope           ContactScope  @default(WORK)
+  addressType     AddressType   @default(PHYSICAL)
+  label           String?       // e.g., Main Office, Billing Dept
+  line1           String
+  line2           String?
+  city            String
+  state           String
+  postalCode      String
+  country         String        @default("US")
+  isPrimary       Boolean       @default(false)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  organization    organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  person          person?       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  role            role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([personId])
+  @@index([roleId])
 }
 
 enum RinsLevel {
