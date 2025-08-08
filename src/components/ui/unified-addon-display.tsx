@@ -322,7 +322,7 @@ export function UnifiedAddonDisplay({
                   <div className="w-10 h-10 rounded border overflow-hidden">
                     <img 
                       src={item.url} 
-                      alt={item.fileName || 'Image'}
+                      alt={item.fileName || 'Attachment thumbnail'}
                       className="w-full h-full object-cover"
                       loading="lazy"
                       decoding="async"

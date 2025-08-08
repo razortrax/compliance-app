@@ -51,15 +51,8 @@ export async function apiCall<T = any>(
 
     if (response.status === 401) {
       console.warn('🔒 Authentication required - redirecting to sign in')
-      try {
-        // Prefer client-side navigation if router available; fallback to hard redirect
-        const { useRouter } = await import('next/navigation')
-        const router = useRouter()
-        router.push('/sign-in')
-      } catch {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/sign-in'
-        }
+      if (typeof window !== 'undefined') {
+        window.location.href = '/sign-in'
       }
       return { status: 401, error: 'Authentication required' }
     }
