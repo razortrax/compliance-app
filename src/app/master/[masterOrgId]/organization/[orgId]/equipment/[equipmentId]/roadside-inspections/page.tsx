@@ -534,13 +534,13 @@ export default function EquipmentRoadsideInspectionsPage() {
                   {selectedRoadsideInspection.violations && selectedRoadsideInspection.violations.length > 0 && (
                     <div>
                       <ViolationGroupsWithCAFGeneration
-                        incidentId={selectedRoadsideInspection.id}
+                        incident={{ id: selectedRoadsideInspection.id }}
                         violations={selectedRoadsideInspection.violations}
-                        onCAFCreated={(cafIds) => {
-                          setCreatedCAFsInSession(prev => [...prev, ...cafIds])
+                        organizationId={orgId}
+                        onCAFCreated={(caf) => {
+                          if (caf?.id) setCreatedCAFsInSession(prev => [...prev, caf.id])
                         }}
-                        onCAFSelected={(cafId) => setSelectedCAFId(cafId)}
-                        createdCAFsInSession={createdCAFsInSession}
+                        onCAFClick={(caf) => setSelectedCAFId(caf.id)}
                       />
                     </div>
                   )}
@@ -583,7 +583,7 @@ export default function EquipmentRoadsideInspectionsPage() {
       
       {/* CAF Detail Modal */}
       <CAFDetailModal
-        cafId={selectedCAFId}
+        cafId={selectedCAFId ?? undefined}
         onClose={() => setSelectedCAFId(null)}
       />
     </AppLayout>

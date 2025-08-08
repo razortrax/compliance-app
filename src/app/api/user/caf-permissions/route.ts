@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
           include: {
             person: true
           }
-        },
-        organization: true
+        }
       }
     })
     
@@ -56,9 +55,7 @@ export async function GET(request: NextRequest) {
                 roleType: 'staff',
                 isActive: true
               },
-              include: {
-                organization: true
-              }
+              include: {}
             }
           }
         }
@@ -66,8 +63,13 @@ export async function GET(request: NextRequest) {
     })
     
     if (staffRecord) {
-      const organization = staffRecord.party.role[0]?.organization
-      
+      const orgId = staffRecord.party.role[0]?.organizationId || null
+      let organization: { id: string; name: string } | null = null
+      if (orgId) {
+        const org = await db.organization.findUnique({ where: { id: orgId }, select: { id: true, name: true } })
+        organization = org ?? null
+      }
+
       return NextResponse.json({
         canCreateCAFs: true,
         userType: 'organization',

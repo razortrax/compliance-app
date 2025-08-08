@@ -32,11 +32,11 @@ export default function ViolationGroupsWithCAFGeneration({
   onCAFCreated,
   onCAFClick 
 }: ViolationGroupsWithCAFGenerationProps) {
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set<string>())
   const [generatingCAF, setGeneratingCAF] = useState<string | null>(null)
   const [showCAFDialog, setShowCAFDialog] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<ViolationGroup | null>(null)
-  const [generatedCAFs, setGeneratedCAFs] = useState<Set<string>>(new Set())
+  const [generatedCAFs, setGeneratedCAFs] = useState<Set<string>>(new Set<string>())
   const [existingCAFs, setExistingCAFs] = useState<ExistingCAF[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,7 +50,7 @@ export default function ViolationGroupsWithCAFGeneration({
           setExistingCAFs(cafs)
           
           // Mark violation types that already have CAFs
-          const existingTypes = new Set(cafs.map((caf: any) => caf.violationType))
+          const existingTypes = new Set<string>(cafs.map((caf: any) => caf.violationType))
           setGeneratedCAFs(existingTypes)
         }
       } catch (error) {
@@ -126,7 +126,11 @@ export default function ViolationGroupsWithCAFGeneration({
       const caf = await createCAF(request)
       
       // Mark this group as having a CAF generated
-      setGeneratedCAFs(prev => new Set(Array.from(prev).concat([group.type])))
+      setGeneratedCAFs((prev) => {
+        const next = new Set<string>(prev)
+        next.add(group.type)
+        return next
+      })
       
       if (onCAFCreated) {
         onCAFCreated(caf)

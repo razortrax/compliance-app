@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { AppLayout } from '@/components/layouts/app-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -73,6 +74,7 @@ interface MVRIssuePageProps {
 
 export default function MVRIssuePage({ params }: MVRIssuePageProps) {
   const { masterOrgId, orgId, driverId } = params
+  const router = useRouter()
   
   const [data, setData] = useState<ContextData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -367,7 +369,7 @@ export default function MVRIssuePage({ params }: MVRIssuePageProps) {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
           <p className="text-gray-600">{error}</p>
           <Button 
-            onClick={() => window.location.reload()} 
+            onClick={() => router.refresh()} 
             className="mt-4"
           >
             Try Again

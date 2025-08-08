@@ -3,31 +3,20 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
 import { unlink, readFile } from 'fs/promises'
+import { withApiError } from '@/lib/with-api-error'
 
 // GET /api/attachments/[id] - Get attachment details
-export async function GET(
+export const GET = withApiError('/api/attachments/[id]', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const attachment = await db.attachment.findUnique({
-      where: { id: params.id },
-      include: {
-        uploadedBy: {
-          include: {
-            party: {
-              include: {
-                person: true
-              }
-            }
-          }
-        }
-      }
+      where: { id: params.id }
     })
 
     if (!attachment) {
@@ -67,22 +56,14 @@ export async function GET(
     }
 
     return NextResponse.json(attachment)
-
-  } catch (error) {
-    console.error('Error fetching attachment:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 })
-  }
-}
+})
 
 // DELETE /api/attachments/[id] - Delete attachment
-export async function DELETE(
+export const DELETE = withApiError('/api/attachments/[id]', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -147,31 +128,23 @@ export async function DELETE(
       where: { id: params.id }
     })
 
-    // Log the deletion
+    // Log the deletion (schema-aligned)
     if (attachment.cafId) {
       await db.activity_log.create({
         data: {
           id: createId(),
-          action: 'ATTACHMENT_DELETED',
-          entityType: 'corrective_action_form',
-          entityId: attachment.cafId,
-          details: {
+          cafId: attachment.cafId,
+          activityType: 'attachment',
+          title: 'Attachment deleted',
+          content: JSON.stringify({
             fileName: attachment.fileName,
             fileType: attachment.fileType,
-            deletedBy: userId
-          },
-          userId,
-          cafId: attachment.cafId
+          }),
+          tags: ['attachment', 'delete'],
+          createdBy: userId,
         }
       })
     }
 
     return NextResponse.json({ message: 'Attachment deleted successfully' })
-
-  } catch (error) {
-    console.error('Error deleting attachment:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 })
-  }
-} 
+})

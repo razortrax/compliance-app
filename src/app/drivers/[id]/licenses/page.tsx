@@ -908,8 +908,10 @@ export default function DriverLicensesPage() {
                                       <div className="w-10 h-10 rounded border overflow-hidden">
                                         <img 
                                           src={addon.url} 
-                                          alt={addon.fileName}
+                                          alt={addon.fileName || 'Attachment image'}
                                           className="w-full h-full object-cover"
+                                          loading="lazy"
+                                          decoding="async"
                                         />
                                       </div>
                                     ) : addon.fileType?.startsWith('video/') ? (

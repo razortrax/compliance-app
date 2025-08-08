@@ -3,19 +3,19 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { createId } from '@paralleldrive/cuid2'
 import { captureAPIError } from '@/lib/sentry-utils'
+import { withApiError } from '@/lib/with-api-error'
 
-export async function GET(
+export const GET = withApiError('/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/roadside-inspections', async (
   request: NextRequest,
   { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } }
-) {
+) => {
+  const { masterOrgId, orgId, equipmentId } = params
   try {
     const { userId } = await auth()
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { masterOrgId, orgId, equipmentId } = params
 
     // Get equipment details
     const equipment = await db.equipment.findUnique({
@@ -205,25 +205,21 @@ export async function GET(
       method: 'GET',
       extra: { masterOrgId, orgId, equipmentId }
     })
-    return NextResponse.json(
-      { error: 'Failed to fetch roadside inspections' },
-      { status: 500 }
-    )
+    throw error
   }
-}
+})
 
-export async function POST(
+export const POST = withApiError('/api/master/[masterOrgId]/organization/[orgId]/equipment/[equipmentId]/roadside-inspections', async (
   request: NextRequest,
   { params }: { params: { masterOrgId: string; orgId: string; equipmentId: string } }
-) {
+) => {
+  const { masterOrgId, orgId, equipmentId } = params
   try {
     const { userId } = await auth()
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { masterOrgId, orgId, equipmentId } = params
     const formData = await request.json()
 
     // Get equipment details
@@ -341,9 +337,6 @@ export async function POST(
       method: 'POST',
       extra: { masterOrgId, orgId, equipmentId }
     })
-    return NextResponse.json(
-      { error: 'Failed to create roadside inspection' },
-      { status: 500 }
-    )
+    throw error
   }
-} 
+})

@@ -51,7 +51,9 @@ export async function apiCall<T = any>(
 
     if (response.status === 401) {
       console.warn('🔒 Authentication required - redirecting to sign in')
-      window.location.href = '/sign-in'
+      if (typeof window !== 'undefined') {
+        window.location.href = '/sign-in'
+      }
       return { status: 401, error: 'Authentication required' }
     }
 

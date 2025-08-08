@@ -18,6 +18,24 @@ test.describe('RSIN flow (guarded)', () => {
     const alt = page.getByText(/Roadside Inspections/i)
     await expect(heading.or(alt)).toBeVisible()
   })
+
+  test('open create RSIN dialog and cancel', async ({ page }) => {
+    await page.goto(`/master/${masterOrgId}/organization/${orgId}/equipment/${equipmentId}/roadside-inspections`)
+    // Open dialog
+    await page.getByRole('button', { name: /add inspection|create roadside inspection|add/i }).first().click()
+    // Expect dialog visible
+    await expect(page.getByRole('heading', { name: /create roadside inspection/i }).or(page.getByText(/Create Roadside Inspection/i))).toBeVisible()
+    // Close/cancel
+    const cancel = page.getByRole('button', { name: /cancel/i })
+    if (await cancel.count()) {
+      await cancel.first().click()
+    } else {
+      await page.keyboard.press('Escape')
+    }
+    // Back on page
+    const listHeading = page.getByRole('heading', { name: /roadside inspections?/i })
+    await expect(listHeading).toBeVisible()
+  })
 })
 
 

@@ -153,7 +153,7 @@ export default function CAFManagementPage() {
   // Get unique organizations for filter
   const organizations = Array.from(new Set(cafs.map(caf => caf.organizationId)))
     .map(orgId => cafs.find(caf => caf.organizationId === orgId)?.organization)
-    .filter(Boolean)
+    .filter((org): org is NonNullable<CAF['organization']> => Boolean(org))
 
   // Get status badge variant and icon
   function getStatusInfo(status: string) {

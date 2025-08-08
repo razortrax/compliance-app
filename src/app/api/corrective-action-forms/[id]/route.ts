@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { updateRINSCompletionStatus } from '@/lib/caf-utils'
+import { withApiError } from '@/lib/with-api-error'
 
 // GET /api/corrective-action-forms/[id] - Fetch CAF details
-export async function GET(
+export const GET = withApiError('/api/corrective-action-forms/[id]', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -93,22 +93,14 @@ export async function GET(
     }
 
     return NextResponse.json(caf)
-
-  } catch (error) {
-    console.error('Error fetching CAF:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 })
-  }
-}
+})
 
 // PUT /api/corrective-action-forms/[id] - Update CAF status
-export async function PUT(
+export const PUT = withApiError('/api/corrective-action-forms/[id]', async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = auth()
+) => {
+    const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -148,6 +140,13 @@ export async function PUT(
     const userStaff = await db.staff.findFirst({
       where: {
         party: { userId }
+      },
+      include: {
+        party: {
+          include: {
+            person: true
+          }
+        }
       }
     })
 
@@ -248,17 +247,17 @@ export async function PUT(
     await db.activity_log.create({
       data: {
         id: require('@paralleldrive/cuid2').createId(),
-        action: 'CAF_STATUS_UPDATED',
-        entityType: 'corrective_action_form',
-        entityId: params.id,
-        details: {
+        cafId: params.id,
+        activityType: 'caf',
+        title: 'CAF status updated',
+        content: JSON.stringify({
           previousStatus: existingCAF.status,
           newStatus: status,
-          updatedBy: userStaff ? `${userStaff.party?.person?.firstName} ${userStaff.party?.person?.lastName}` : 'Master User',
+          updatedBy: userStaff ? `${userStaff.party?.person?.firstName ?? ''} ${userStaff.party?.person?.lastName ?? ''}`.trim() : 'Master User',
           completionNotes: completionNotes
-        },
-        userId,
-        cafId: params.id
+        }),
+        tags: ['caf', 'status'],
+        createdBy: userId,
       }
     })
 
@@ -273,11 +272,4 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedCAF)
-
-  } catch (error) {
-    console.error('Error updating CAF:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 })
-  }
-} 
+})
