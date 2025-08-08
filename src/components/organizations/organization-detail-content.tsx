@@ -29,6 +29,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrganizationAddOns } from "./organization-add-ons";
@@ -117,6 +118,41 @@ export function OrganizationDetailContent({
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
 
+  // Partners (Vendors/Agencies) state
+  type Partner = {
+    id: string;
+    partyId: string;
+    type: "organization" | "person";
+    name: string;
+    category: string;
+    isActive: boolean;
+    startedAt?: string;
+  };
+  const PARTNER_CATEGORY_CHIPS = [
+    { value: "annual_inspection_shop", label: "Inspection Shop" },
+    { value: "repair_facility", label: "Repair" },
+    { value: "lab", label: "Lab" },
+    { value: "collection_site", label: "Collection" },
+    { value: "mro", label: "MRO" },
+    { value: "tpa", label: "TPA" },
+    { value: "training_provider", label: "Training" },
+    { value: "background_check_provider", label: "Background" },
+    { value: "insurance_carrier", label: "Insurance" },
+    { value: "telematics_provider", label: "Telematics" },
+    { value: "towing_service", label: "Towing" },
+    { value: "agency", label: "Agency" },
+  ];
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnersLoading, setPartnersLoading] = useState(false);
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [partnerQuery, setPartnerQuery] = useState("");
+  const [partnerCategory, setPartnerCategory] = useState<string | null>(null);
+  const [partnerIncludeInactive, setPartnerIncludeInactive] = useState(false);
+  const [showPartnerDialog, setShowPartnerDialog] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState("");
+  const [newPartnerCategory, setNewPartnerCategory] = useState<string | null>(null);
+  const [creatingPartner, setCreatingPartner] = useState(false);
+
   // Staff management state
   const [showStaffForm, setShowStaffForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
@@ -187,6 +223,29 @@ export function OrganizationDetailContent({
     }
   };
 
+  const fetchPartners = async () => {
+    try {
+      setPartnersLoading(true);
+      const params = new URLSearchParams();
+      params.set("organizationId", organizationId);
+      if (partnerCategory) params.set("category", partnerCategory);
+      if (partnerIncludeInactive) params.set("includeInactive", "true");
+      if (partnerQuery.trim()) params.set("q", partnerQuery.trim());
+      const res = await fetch(`/api/partners?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPartners(data);
+        if (data.length > 0 && (!selectedPartner || !data.find((p: Partner) => p.id === selectedPartner.id))) {
+          setSelectedPartner(data[0]);
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching partners", e);
+    } finally {
+      setPartnersLoading(false);
+    }
+  };
+
   const fetchEquipment = async () => {
     try {
       const response = await fetch(`/api/equipment?organizationId=${organizationId}`);
@@ -225,6 +284,13 @@ export function OrganizationDetailContent({
   useEffect(() => {
     fetchOrganization();
   }, [organizationId]);
+
+  // Load partners when Partners tab active or filters change
+  useEffect(() => {
+    if (activeTab === "partners") {
+      fetchPartners();
+    }
+  }, [activeTab, organizationId, partnerCategory, partnerQuery, partnerIncludeInactive]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -843,120 +909,215 @@ export function OrganizationDetailContent({
             </div>
           </TabsContent>
 
-          {/* Partners Tab */}
+          {/* Partners Tab - master-detail layout within org page */}
           <TabsContent value="partners" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Partners</CardTitle>
-                    <CardDescription>
-                      External parties that work with {organization?.name}
-                    </CardDescription>
+            <div className="h-[600px] flex border rounded-lg bg-white overflow-hidden">
+              {/* Left Sidebar - Partners List */}
+              <div className="w-80 border-r border-gray-200 flex flex-col">
+                <div className="p-3 border-b">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Partners</h3>
+                    <Badge variant="secondary">{partners.length}</Badge>
                   </div>
-                  <Button onClick={() => router.push(`/organizations/${organizationId}/partners`)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Partner
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Vendors */}
-                  <Card className="border-l-4 border-l-blue-500">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Building className="h-4 w-4" />
-                        Vendors
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-blue-600 mb-1">0</div>
-                      <p className="text-xs text-gray-600">Service providers</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Agencies */}
-                  <Card className="border-l-4 border-l-green-500">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Agencies
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-green-600 mb-1">0</div>
-                      <p className="text-xs text-gray-600">Regulatory bodies</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Repair Shops */}
-                  <Card className="border-l-4 border-l-orange-500">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Truck className="h-4 w-4" />
-                        Repair Shops
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-orange-600 mb-1">0</div>
-                      <p className="text-xs text-gray-600">Maintenance providers</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Inspectors */}
-                  <Card className="border-l-4 border-l-purple-500">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4" />
-                        Inspectors
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-purple-600 mb-1">0</div>
-                      <p className="text-xs text-gray-600">DOT inspectors</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Testing Labs */}
-                  <Card className="border-l-4 border-l-red-500">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Testing Labs
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-red-600 mb-1">0</div>
-                      <p className="text-xs text-gray-600">Drug & alcohol testing</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Collection Sites */}
-                  <Card className="border-l-4 border-l-gray-500">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Collection Sites
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-gray-600 mb-1">0</div>
-                      <p className="text-xs text-gray-600">Sample collection</p>
-                    </CardContent>
-                  </Card>
+                  {/* Quick filters (very small) */}
+                  <div className="flex gap-1 overflow-x-auto pb-1">
+                    {PARTNER_CATEGORY_CHIPS.map((chip) => (
+                      <button
+                        key={chip.value}
+                        onClick={() => setPartnerCategory((prev) => (prev === chip.value ? null : chip.value))}
+                        className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                          partnerCategory === chip.value ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"
+                        }`}
+                        title={chip.label}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input
+                      placeholder="Search..."
+                      value={partnerQuery}
+                      onChange={(e) => setPartnerQuery(e.target.value)}
+                      className="h-8"
+                    />
+                    <Button
+                      variant={partnerIncludeInactive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPartnerIncludeInactive((v) => !v)}
+                    >
+                      Inactive
+                    </Button>
+                  </div>
+                  <div className="mt-2">
+                    <Button size="sm" className="w-full" onClick={() => setShowPartnerDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" /> Add Partner
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Coming Soon Message */}
-                <div className="mt-6">
-                  <EmptyState
-                    icon={Building}
-                    title="Coming Soon"
-                    description="External party management will be available here. Track vendors, agencies, repair shops, inspectors, testing labs, and collection sites."
-                  />
+                <div className="p-3 flex-1 overflow-y-auto space-y-2">
+                  {partnersLoading ? (
+                    <div className="text-center py-8 text-sm text-gray-500">Loading...</div>
+                  ) : partners.length === 0 ? (
+                    <EmptyState
+                      icon={Building}
+                      title="No partners yet"
+                      description="Add your first partner to get started"
+                      action={{ label: "Add Partner", onClick: () => setShowPartnerDialog(true) }}
+                    />
+                  ) : (
+                    partners.map((p) => (
+                      <Card
+                        key={`${p.id}-${p.partyId}`}
+                        className={`cursor-pointer transition-colors ${
+                          selectedPartner?.id === p.id ? "ring-2 ring-blue-500 bg-blue-50" : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => setSelectedPartner(p)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-sm">{p.name}</div>
+                              <div className="text-[11px] text-muted-foreground capitalize">
+                                {p.category.replace(/_/g, " ")}
+                              </div>
+                            </div>
+                            <Badge variant={p.isActive ? "secondary" : "outline"} className="text-[10px]">
+                              {p.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Right Content - Partner Details */}
+              <div className="flex-1 overflow-y-auto">
+                {selectedPartner ? (
+                  <div className="p-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-500 mb-1">{organization?.name}</div>
+                        <h1 className="text-2xl font-bold text-gray-900">{selectedPartner.name}</h1>
+                        <div className="mt-1">
+                          <Badge variant="outline" className="capitalize">
+                            {selectedPartner.category.replace(/_/g, " ")}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setShowPartnerDialog(true)}>
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Add‑Ons for Partner */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Add‑Ons</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ActivityLog
+                          organizationId={selectedPartner.type === "organization" ? selectedPartner.id : undefined}
+                          personId={selectedPartner.type === "person" ? selectedPartner.id : undefined}
+                          title="Add‑Ons"
+                          showAddButton
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <Building className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500">Select a partner to view details</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Add/Edit Partner Dialog */}
+            <Dialog open={showPartnerDialog} onOpenChange={setShowPartnerDialog}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>{selectedPartner ? "Edit Partner" : "Add Partner"}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Name</label>
+                    <Input
+                      placeholder="Partner name"
+                      value={newPartnerName}
+                      onChange={(e) => setNewPartnerName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Category</label>
+                    <Select
+                      value={newPartnerCategory || undefined}
+                      onValueChange={setNewPartnerCategory as any}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PARTNER_CATEGORY_CHIPS.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowPartnerDialog(false);
+                        setNewPartnerName("");
+                        setNewPartnerCategory(null);
+                      }}
+                      disabled={creatingPartner}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!newPartnerName.trim() || !newPartnerCategory) return;
+                        setCreatingPartner(true);
+                        try {
+                          const res = await fetch("/api/partners", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              organizationId,
+                              name: newPartnerName.trim(),
+                              category: newPartnerCategory,
+                            }),
+                          });
+                          if (res.ok) {
+                            setShowPartnerDialog(false);
+                            setNewPartnerName("");
+                            setNewPartnerCategory(null);
+                            await fetchPartners();
+                          }
+                        } finally {
+                          setCreatingPartner(false);
+                        }
+                      }}
+                      disabled={creatingPartner || !newPartnerName.trim() || !newPartnerCategory}
+                    >
+                      {creatingPartner ? "Saving..." : selectedPartner ? "Save" : "Create"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Stuff Tab */}
