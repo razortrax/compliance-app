@@ -102,7 +102,8 @@ function CompleteProfileForm() {
       if (!response.ok) {
         const data = await response.json();
         console.error("Profile completion failed:", data);
-        throw new Error(data.error || "Failed to complete profile");
+        setError(data.error || "Failed to complete profile");
+        return;
       }
 
       const result = await response.json();

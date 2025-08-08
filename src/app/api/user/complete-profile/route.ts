@@ -135,6 +135,20 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Profile completion error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      return NextResponse.json(
+        {
+          error: "Failed to complete profile",
+          details: {
+            name: (error as any)?.name,
+            message: (error as any)?.message,
+            code: (error as any)?.code,
+            meta: (error as any)?.meta,
+          },
+        },
+        { status: 500 },
+      );
+    }
     return NextResponse.json({ error: "Failed to complete profile" }, { status: 500 });
   }
 }
