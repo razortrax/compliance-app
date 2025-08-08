@@ -18,9 +18,6 @@ import { buildStandardDriverNavigation } from "@/lib/utils";
 import MvrIssueForm from "@/components/mvr_issues/mvr-issue-form";
 import { MvrRenewalForm } from "@/components/mvr_issues/mvr-renewal-form";
 import { ActivityLog } from "@/components/ui/activity-log";
-import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
-import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
-import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 import { Plus, FileText, AlertTriangle, Clock, CheckCircle, Edit, Calendar } from "lucide-react";
 import { format } from "date-fns";
 
@@ -94,7 +91,6 @@ export default function MVRIssuePage({ params }: MVRIssuePageProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
-  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
 
   // Single API call to get all context and data
@@ -657,56 +653,13 @@ export default function MVRIssuePage({ params }: MVRIssuePageProps) {
                       </div>
                     )}
 
-                    {/* Enhanced Activity Log */}
+                    {/* Add-Ons (Activity Log) */}
                     <ActivityLog
                       issueId={selectedMVR.issueId}
-                      title="Activity Log"
                       allowedTypes={["note", "communication", "url", "credential", "attachment"]}
                       compact={false}
                       maxHeight="400px"
                     />
-
-                    {/* Add-Ons Section */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-medium text-gray-900">Add-Ons</h3>
-                        <Button size="sm" variant="outline" onClick={() => setShowAddAddonModal(true)}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Add-On
-                        </Button>
-                      </div>
-
-                      <UnifiedAddonDisplay
-                        items={attachments.map((a) => ({
-                          id: a.id,
-                          attachmentType:
-                            a.attachmentType || (a.noteContent ? "note" : a.url ? "url" : "attachment"),
-                          fileName: a.title || a.fileName,
-                          description: a.description,
-                          noteContent: a.noteContent,
-                          url: a.url,
-                          fileType: a.fileType,
-                          fileSize: a.fileSize,
-                          createdAt: a.createdAt,
-                          updatedAt: a.updatedAt,
-                          tags: a.tags,
-                          status: a.status,
-                        }))}
-                        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.mvr.modal.availableTypes}
-                        config={{
-                          showSearch: true,
-                          showTypeFilter: true,
-                          allowCreate: false,
-                          emptyStateText: "No add-ons yet",
-                        }}
-                        onViewClick={(item) => {
-                          if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
-                        }}
-                        onDownloadClick={(item) => {
-                          if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
-                        }}
-                      />
-                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -759,17 +712,7 @@ export default function MVRIssuePage({ params }: MVRIssuePageProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Unified Add-On Modal */}
-      <UnifiedAddonModal
-        isOpen={showAddAddonModal}
-        onClose={() => setShowAddAddonModal(false)}
-        onSuccess={refreshAttachments}
-        issueId={selectedMVR?.issueId || ""}
-        issueType="mvr"
-        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.mvr.modal.availableTypes}
-        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.mvr.modal.modalTitle}
-        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.mvr.modal.modalDescription}
-      />
+      {/* Unified Add-On Modal removed; ActivityLog provides add functionality */}
     </AppLayout>
   );
 }

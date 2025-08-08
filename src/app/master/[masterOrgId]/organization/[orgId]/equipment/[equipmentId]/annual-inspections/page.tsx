@@ -31,9 +31,7 @@ import {
   Shield,
 } from "lucide-react";
 import { format } from "date-fns";
-import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
-import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
-import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
+import { ActivityLog } from "@/components/ui/activity-log";
 
 interface AnnualInspection {
   id: string;
@@ -516,20 +514,14 @@ export default function EquipmentAnnualInspectionsPage() {
 
                         {/* Gold Standard Add Ons Section */}
                         <div className="border-t pt-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-medium text-gray-900">Add-Ons</h4>
-                            {selectedInspection?.issue?.id && (
-                              <Button size="sm" variant="outline" onClick={() => setShowAddAddonModal(true)}>
-                                <Plus className="h-4 w-4 mr-1" /> Add Add-On
-                              </Button>
-                            )}
-                          </div>
-                          <UnifiedAddonDisplay
-                            items={attachments}
-                            availableTypes={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.availableTypes}
-                            config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
-                            onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
-                          />
+                          {selectedInspection?.issue?.id && (
+                            <ActivityLog
+                              issueId={selectedInspection.issue.id}
+                              allowedTypes={["note", "communication", "url", "credential", "attachment", "task"]}
+                              compact={false}
+                              maxHeight="400px"
+                            />
+                          )}
                         </div>
 
                         {/* Action Buttons */}
@@ -595,18 +587,7 @@ export default function EquipmentAnnualInspectionsPage() {
           </div>
         </div>
       </div>
-      {/* Unified Add-On Modal */}
-      <UnifiedAddonModal
-        isOpen={showAddAddonModal}
-        onClose={() => setShowAddAddonModal(false)}
-        onSuccess={refreshAttachments}
-        issueId={selectedInspection?.issue?.id || ""}
-        issueType="annual_inspection"
-        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.availableTypes}
-        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.modalTitle}
-        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.modalDescription}
-        allowFileUpload
-      />
+      {/* Unified Add-On Modal removed; ActivityLog provides add functionality */}
     </AppLayout>
   );
 }

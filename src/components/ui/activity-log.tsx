@@ -158,7 +158,7 @@ export function ActivityLog({
   equipmentId,
   locationId,
   cafId,
-  title = "Activity Log",
+  title = "Add-Ons",
   allowedTypes = Object.keys(ACTIVITY_TYPES),
   showEntityLabel = false,
   compact = false,
@@ -354,11 +354,18 @@ export function ActivityLog({
             {/* Filter Controls */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-1" />
-                  Filter
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filters"
+                  className="relative"
+                >
+                  <Filter className="h-4 w-4" />
                   {(selectedTags.length > 0 || selectedTypes.length > 0) && (
-                    <Badge variant="secondary" className="ml-1 text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="absolute -top-1 -right-1 h-5 w-5 p-0 text-[10px] leading-5"
+                    >
                       {selectedTags.length + selectedTypes.length}
                     </Badge>
                   )}
@@ -433,12 +440,12 @@ export function ActivityLog({
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-1" />
-                    Add
+                    Add-On
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Add Activity</DialogTitle>
+                    <DialogTitle>Add Add-On</DialogTitle>
                   </DialogHeader>
 
                   <div className="space-y-4">

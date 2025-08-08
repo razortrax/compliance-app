@@ -28,9 +28,7 @@ import {
   Shield,
 } from "lucide-react";
 import { format } from "date-fns";
-import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
-import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
-import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
+import { ActivityLog } from "@/components/ui/activity-log";
 
 interface Training {
   id: string;
@@ -684,26 +682,14 @@ export default function MasterDriverTrainingPage() {
                 {selectedTraining ? (
                   <div className="space-y-6">
                     {/* Add-Ons */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">Add-Ons</h4>
-                        {selectedTraining?.issue?.id && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowAddAddonModal(true)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" /> Add Add-On
-                          </Button>
-                        )}
-                      </div>
-                      <UnifiedAddonDisplay
-                        items={attachments}
-                        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.training.modal.availableTypes}
-                        config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
-                        onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
+                    {selectedTraining?.issue?.id && (
+                      <ActivityLog
+                        issueId={selectedTraining.issue.id}
+                        allowedTypes={["note", "communication", "url", "credential", "attachment", "task"]}
+                        compact={false}
+                        maxHeight="400px"
                       />
-                    </div>
+                    )}
                     {/* Training Information */}
                     <div>
                       <div className="flex items-center gap-2 mb-4">
@@ -863,18 +849,7 @@ export default function MasterDriverTrainingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Unified Add-On Modal */}
-      <UnifiedAddonModal
-        isOpen={showAddAddonModal}
-        onClose={() => setShowAddAddonModal(false)}
-        onSuccess={refreshAttachments}
-        issueId={selectedTraining?.issue?.id || ""}
-        issueType="training"
-        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.training.modal.availableTypes}
-        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.training.modal.modalTitle}
-        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.training.modal.modalDescription}
-        allowFileUpload
-      />
+      {/* Unified Add-On Modal removed; ActivityLog provides add functionality */}
     </AppLayout>
   );
 }
