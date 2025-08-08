@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Building, Users, MapPin, HelpCircle } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
@@ -30,6 +31,7 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
   const { user } = useUser();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (user) {
@@ -144,7 +146,12 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
                   key={index}
                   href={item.href}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    item.isActive
+                    // Auto-detect active state if not explicitly provided
+                    (item.isActive ?? (
+                      pathname?.startsWith(item.href) ||
+                      // Treat singular detail routes as part of the plural section
+                      (item.href.includes("/drivers") && pathname?.includes("/driver/"))
+                    ))
                       ? "bg-blue-100 text-blue-700 border border-blue-200"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
