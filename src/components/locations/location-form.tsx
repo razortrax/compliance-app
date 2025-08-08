@@ -202,7 +202,27 @@ export function LocationForm({ organizationId, location, onSuccess, onCancel }: 
                 <FormItem>
                   <FormLabel>ZIP Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="90001" {...field} />
+                    <Input
+                      placeholder="90001"
+                      {...field}
+                      onBlur={async (e) => {
+                        const zip = e.target.value.trim();
+                        if (!/^\d{5}(-\d{4})?$/.test(zip)) return;
+                        try {
+                          const res = await fetch(`/api/zip-lookup?zip=${encodeURIComponent(zip)}`);
+                          if (res.ok) {
+                            const data = await res.json();
+                            // Only update city/state if they are empty or match previous value
+                            const currentCity = form.getValues("city");
+                            const currentState = form.getValues("state");
+                            if (!currentCity) form.setValue("city", data.city, { shouldValidate: true });
+                            if (!currentState) form.setValue("state", data.state, { shouldValidate: true });
+                          }
+                        } catch (err) {
+                          // Silent fail; keep manual entry
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
