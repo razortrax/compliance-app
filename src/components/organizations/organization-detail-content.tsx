@@ -935,55 +935,64 @@ export function OrganizationDetailContent({
               {/* Left Sidebar - Partners List */}
               <div className="w-80 border-r border-gray-200 flex flex-col">
                 <div className="p-3 border-b">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                  {/* Header row: title + count on left, Add on right */}
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-semibold text-gray-900">Partners</h3>
                       <Badge variant="secondary">{partners.length}</Badge>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="icon" aria-label="Filters" className="relative h-8 w-8">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3"/></svg>
-                            {selectedCategories.length > 0 && (
-                              <Badge variant="secondary" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-[10px] leading-5">
-                                {selectedCategories.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-96" align="end">
-                          <div className="space-y-2">
-                            <div className="text-sm font-medium">Categories</div>
-                            <div className="grid grid-cols-2 gap-1 max-h-[60vh] overflow-y-auto">
-                              {PARTNER_CATEGORY_CHIPS.map((chip) => {
-                                const active = selectedCategories.includes(chip.value);
-                                return (
-                                  <button
-                                    key={chip.value}
-                                    className={`text-left text-sm px-2 py-1 rounded border ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"}`}
-                                    onClick={() =>
-                                      setSelectedCategories((prev) =>
-                                        prev.includes(chip.value)
-                                          ? prev.filter((c) => c !== chip.value)
-                                          : [...prev, chip.value],
-                                      )
-                                    }
-                                  >
-                                    {chip.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div className="flex justify-between pt-2">
-                              <Button variant="outline" size="sm" onClick={() => setSelectedCategories([])}>Clear</Button>
-                              <Button size="sm" onClick={() => setFilterOpen(false)}>Close</Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    <Button size="sm" onClick={() => setShowPartnerDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" /> Add
+                    </Button>
+                  </div>
 
-                      {Object.entries(QUICK_GROUPS).map(([label, list]) => {
+                  {/* Filters row: icon, quick chips (no Other), Clear */}
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon" aria-label="Filters" className="relative h-8 w-8">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3"/></svg>
+                          {selectedCategories.length > 0 && (
+                            <Badge variant="secondary" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-[10px] leading-5">
+                              {selectedCategories.length}
+                            </Badge>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-96" align="end">
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium">Categories</div>
+                          <div className="grid grid-cols-2 gap-1 max-h-[60vh] overflow-y-auto">
+                            {PARTNER_CATEGORY_CHIPS.map((chip) => {
+                              const active = selectedCategories.includes(chip.value);
+                              return (
+                                <button
+                                  key={chip.value}
+                                  className={`text-left text-sm px-2 py-1 rounded border ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"}`}
+                                  onClick={() =>
+                                    setSelectedCategories((prev) =>
+                                      prev.includes(chip.value)
+                                        ? prev.filter((c) => c !== chip.value)
+                                        : [...prev, chip.value],
+                                    )
+                                  }
+                                >
+                                  {chip.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-between pt-2">
+                            <Button variant="outline" size="sm" onClick={() => setSelectedCategories([])}>Clear</Button>
+                            <Button size="sm" onClick={() => setFilterOpen(false)}>Close</Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    {Object.entries(QUICK_GROUPS)
+                      .filter(([label]) => label !== "Other")
+                      .map(([label, list]) => {
                         const active = list.every((c) => selectedCategories.includes(c));
                         return (
                           <button
@@ -998,14 +1007,9 @@ export function OrganizationDetailContent({
                         );
                       })}
 
-                      <Button variant="outline" size="sm" className="h-8" onClick={() => setSelectedCategories([])}>
-                        Clear
-                      </Button>
-
-                      <Button size="sm" onClick={() => setShowPartnerDialog(true)}>
-                        <Plus className="h-4 w-4 mr-2" /> Add Partner
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => setSelectedCategories([])}>
+                      Clear
+                    </Button>
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Input
