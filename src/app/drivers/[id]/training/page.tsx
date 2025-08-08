@@ -1,33 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { AppLayout } from "@/components/layouts/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { TrainingForm } from "@/components/training/training-form";
-import { ActivityLog } from "@/components/ui/activity-log";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddAddonModal } from "@/components/ui/add-addon-modal";
 import { useMasterOrg } from "@/hooks/use-master-org";
-import { getUserRole, buildStandardDriverNavigation } from "@/lib/utils";
+import { buildStandardDriverNavigation } from "@/lib/utils";
 import {
   Edit,
   Plus,
   FileText,
   GraduationCap,
-  ArrowLeft,
   Loader2,
-  CheckCircle,
-  AlertCircle,
 } from "lucide-react";
 
 interface Person {
@@ -86,7 +74,6 @@ interface Training {
 export default function DriverTrainingPage() {
   const params = useParams();
   const { masterOrg, loading } = useMasterOrg();
-  const router = useRouter();
 
   const driverId = params.id as string;
 
@@ -99,9 +86,6 @@ export default function DriverTrainingPage() {
   const [showRenewalForm, setShowRenewalForm] = useState(false);
   const [showAddAddonModal, setShowAddAddonModal] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
-  const [organizations, setOrganizations] = useState<any[]>([]); // Changed to any[] as Organization type was removed
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Helper function to calculate expiration status
   const getExpirationStatus = (expirationDate: string) => {
@@ -118,11 +102,11 @@ export default function DriverTrainingPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (driverId) {
       fetchDriver();
       fetchTrainings();
-      fetchOrganizations();
     }
   }, [driverId]);
 
@@ -157,40 +141,7 @@ export default function DriverTrainingPage() {
     }
   };
 
-  // Robust mapping for sidebar/layout: always provide a fallback party object.
-  // This ensures the UI does not break if a master user has not yet created an organization.
-  const mapToSidebarOrg = (org: any) => ({
-    id: org?.id || "",
-    name: org?.name || "No Organization",
-    dotNumber: org?.dotNumber || null,
-    party: org?.party
-      ? {
-          userId: org.party.userId || null,
-          status: org.party.status || "", // always a string
-        }
-      : {
-          userId: null,
-          status: "", // always a string
-        },
-  });
-
-  const fetchOrganizations = async () => {
-    try {
-      const response = await fetch("/api/organizations");
-      if (response.ok) {
-        const data = await response.json();
-        setOrganizations(data.map(mapToSidebarOrg));
-      }
-    } catch (error) {
-      console.error("Error fetching organizations:", error);
-    }
-  };
-
-  const handleOrganizationSelect = (selectedOrg: any) => {
-    // Changed to any as Organization type was removed
-    setIsSheetOpen(false);
-    router.push(`/organizations/${selectedOrg.id}/drivers`);
-  };
+  // Removed unused organization sidebar helpers to reduce lint noise
 
   const handleRenewTraining = (training: Training) => {
     setSelectedTraining(training);
@@ -276,7 +227,7 @@ export default function DriverTrainingPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-gray-900">Driver not found</h2>
             <p className="text-gray-600 mt-2">
-              The driver you're looking for doesn't exist or you don't have permission to view it.
+              The driver you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.
             </p>
           </div>
         </div>
