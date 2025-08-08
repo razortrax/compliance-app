@@ -75,7 +75,7 @@ export function UnifiedAddonModal({
   cafId,
   issueType = "record",
   availableTypes = DEFAULT_ADDON_TYPES,
-  allowFileUpload = false, // Disabled by default until DigitalOcean Spaces
+  allowFileUpload = true,
   allowUrlWithCredentials = false, // Only for organization-level addons
   defaultType = "note",
   modalTitle = "Add Addon",
@@ -156,33 +156,52 @@ export function UnifiedAddonModal({
     setIsUploading(true);
 
     try {
-      const payload: any = {
-        ...(issueId && { issueId }),
-        ...(cafId && { cafId }),
-        attachmentType: formData.type,
-        title: formData.title.trim() || `${formData.type} - ${new Date().toLocaleDateString()}`,
-        description: formData.description.trim(),
-        tags: formData.tags,
-      };
+      let response: Response;
 
-      // Add type-specific data
-      if (formData.type === "note") {
-        payload.noteContent = formData.noteContent.trim();
-      } else if (formData.type === "url") {
-        payload.url = formData.url.trim();
-        if (allowUrlWithCredentials) {
-          payload.username = formData.username.trim();
-          payload.password = formData.password.trim();
+      // If uploading a file, use multipart form data
+      if (formData.type === "attachment" && allowFileUpload && selectedFile) {
+        const fd = new FormData();
+        fd.append("file", selectedFile);
+        if (issueId) fd.append("issueId", issueId);
+        if (cafId) fd.append("cafId", cafId);
+        fd.append("attachmentType", formData.type);
+        fd.append("title", formData.title.trim() || `${formData.type} - ${new Date().toLocaleDateString()}`);
+        fd.append("description", formData.description.trim());
+        if (formData.tags.length > 0) fd.append("tags", JSON.stringify(formData.tags));
+
+        response = await fetch("/api/attachments", {
+          method: "POST",
+          body: fd,
+        });
+      } else {
+        // JSON payload for non-file types
+        const payload: any = {
+          ...(issueId && { issueId }),
+          ...(cafId && { cafId }),
+          attachmentType: formData.type,
+          title: formData.title.trim() || `${formData.type} - ${new Date().toLocaleDateString()}`,
+          description: formData.description.trim(),
+          tags: formData.tags,
+        };
+
+        if (formData.type === "note") {
+          payload.noteContent = formData.noteContent.trim();
+        } else if (formData.type === "url") {
+          payload.url = formData.url.trim();
+          if (allowUrlWithCredentials) {
+            payload.username = formData.username.trim();
+            payload.password = formData.password.trim();
+          }
         }
-      }
 
-      const response = await fetch("/api/attachments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+        response = await fetch("/api/attachments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!response.ok) {
         throw new Error("Failed to save addon");
