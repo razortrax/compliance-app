@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FileText, Image, Video, FileIcon, Search, Filter, Plus, Eye, Download } from 'lucide-react'
+import NextImage from 'next/image'
 
 export interface AddonDisplayItem {
   id: string
@@ -320,12 +321,13 @@ export function UnifiedAddonDisplay({
               <div className="flex-shrink-0">
                 {item.fileType?.startsWith('image/') && item.url ? (
                   <div className="w-10 h-10 rounded border overflow-hidden">
-                    <img 
+                    <NextImage 
                       src={item.url} 
                       alt={item.fileName || 'Attachment thumbnail'}
+                      width={40}
+                      height={40}
                       className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
+                      unoptimized
                     />
                   </div>
                 ) : (
