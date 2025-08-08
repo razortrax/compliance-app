@@ -32,7 +32,8 @@ export interface UnifiedAddonModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  issueId: string;
+  issueId?: string;
+  cafId?: string;
   issueType?: string; // e.g., 'License', 'Training', 'MVR', etc.
 
   // Configuration options
@@ -71,6 +72,7 @@ export function UnifiedAddonModal({
   onClose,
   onSuccess,
   issueId,
+  cafId,
   issueType = "record",
   availableTypes = DEFAULT_ADDON_TYPES,
   allowFileUpload = false, // Disabled by default until DigitalOcean Spaces
@@ -155,7 +157,8 @@ export function UnifiedAddonModal({
 
     try {
       const payload: any = {
-        issueId,
+        ...(issueId && { issueId }),
+        ...(cafId && { cafId }),
         attachmentType: formData.type,
         title: formData.title.trim() || `${formData.type} - ${new Date().toLocaleDateString()}`,
         description: formData.description.trim(),

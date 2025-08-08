@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ActivityLog } from "@/components/ui/activity-log";
 import DigitalSignature from "@/components/cafs/digital-signature";
 import CAFAttachments from "@/components/cafs/caf-attachments";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 import { downloadPDF } from "@/lib/pdf-generator";
 import {
   DropdownMenu,
@@ -37,6 +40,7 @@ import {
   ThumbsUp,
   ChevronDown,
 } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface CAF {
   id: string;
@@ -125,6 +129,8 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
   const [completionNotes, setCompletionNotes] = useState("");
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureType, setSignatureType] = useState<"COMPLETION" | "APPROVAL">("COMPLETION");
+  const [cafAttachments, setCafAttachments] = useState<any[]>([]);
+  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
 
   // Fetch CAF data
   useEffect(() => {
@@ -144,6 +150,19 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
       }
     } catch (error) {
       console.error("Error fetching CAF:", error);
+    }
+  };
+
+  const refreshCafAttachments = async () => {
+    if (!cafId) return;
+    try {
+      const res = await fetch(`/api/attachments?cafId=${cafId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCafAttachments(data);
+      }
+    } catch (e) {
+      console.error("Failed to load CAF attachments", e);
     }
   };
 
@@ -509,7 +528,7 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
               <TabsList className="mx-6 mt-4 grid w-full grid-cols-4">
                 <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="progress">Progress</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
+                  <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
 
@@ -883,13 +902,21 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
                 </TabsContent>
 
                 <TabsContent value="documents" className="mt-0">
-                  <CAFAttachments
-                    cafId={caf.id}
-                    cafStatus={caf.status}
-                    isReadOnly={caf.status === "APPROVED" || caf.status === "CANCELLED"}
-                    onAttachmentAdded={() => {
-                      // Refresh CAF data to update any counts or status
-                      fetchCAF();
+                  <div className="flex items-center justify-between mb-4">
+                    <CardTitle>Documents & Attachments</CardTitle>
+                    {!(caf.status === "APPROVED" || caf.status === "CANCELLED") && (
+                      <Button size="sm" onClick={() => setShowAddAddonModal(true)}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Add-On
+                      </Button>
+                    )}
+                  </div>
+                  <UnifiedAddonDisplay
+                    items={cafAttachments}
+                    availableTypes={UNIFIED_ADDON_CONFIGURATIONS.roadside_inspection.modal.availableTypes}
+                    config={{ showSearch: false, showTypeFilter: false, allowDownload: true }}
+                    onDownloadClick={(item) => {
+                      if (item.id) window.open(`/api/attachments/${item.id}/download`, "_blank");
                     }}
                   />
                 </TabsContent>
@@ -927,6 +954,21 @@ export default function CAFDetailModal({ cafId, onClose }: CAFDetailModalProps) 
           />
         </DialogContent>
       </Dialog>
+
+      {/* Add Add-On Modal (CAF) */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={async () => {
+          await refreshCafAttachments();
+          await fetchCAF();
+        }}
+        cafId={caf?.id}
+        issueType="CAF"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.roadside_inspection.modal.availableTypes}
+        modalTitle="Add CAF Documentation"
+        modalDescription="Add documents, notes, or tasks related to this CAF"
+      />
     </>
   );
 }
