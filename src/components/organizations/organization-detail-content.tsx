@@ -149,6 +149,7 @@ export function OrganizationDetailContent({
   const [partnerQuery, setPartnerQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [partnerIncludeInactive, setPartnerIncludeInactive] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const QUICK_GROUPS: Record<string, string[]> = {
     Inspect: ["annual_inspection_shop", "agency"],
     Repair: ["repair_facility", "towing_service"],
@@ -303,7 +304,13 @@ export function OrganizationDetailContent({
     if (activeTab === "partners") {
       fetchPartners();
     }
-  }, [activeTab, organizationId, selectedCategories.length, partnerQuery, partnerIncludeInactive]);
+  }, [
+    activeTab,
+    organizationId,
+    partnerQuery,
+    partnerIncludeInactive,
+    JSON.stringify(selectedCategories),
+  ]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -926,17 +933,17 @@ export function OrganizationDetailContent({
           <TabsContent value="partners" className="space-y-6">
             <div className="h-[600px] flex border rounded-lg bg-white overflow-hidden">
               {/* Left Sidebar - Partners List */}
-              <div className="w-80 border-r border-gray-2 00 flex flex-col">
+              <div className="w-80 border-r border-gray-200 flex flex-col">
                 <div className="p-3 border-b">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-semibold text-gray-900">Partners</h3>
                       <Badge variant="secondary">{partners.length}</Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Popover>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Popover open={filterOpen} onOpenChange={setFilterOpen}>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" size="icon" aria-label="Filters" className="relative">
+                          <Button variant="outline" size="icon" aria-label="Filters" className="relative h-8 w-8">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3"/></svg>
                             {selectedCategories.length > 0 && (
                               <Badge variant="secondary" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-[10px] leading-5">
@@ -945,10 +952,10 @@ export function OrganizationDetailContent({
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-64" align="end">
+                        <PopoverContent className="w-96" align="end">
                           <div className="space-y-2">
                             <div className="text-sm font-medium">Categories</div>
-                            <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-1 max-h-[60vh] overflow-y-auto">
                               {PARTNER_CATEGORY_CHIPS.map((chip) => {
                                 const active = selectedCategories.includes(chip.value);
                                 return (
@@ -970,32 +977,35 @@ export function OrganizationDetailContent({
                             </div>
                             <div className="flex justify-between pt-2">
                               <Button variant="outline" size="sm" onClick={() => setSelectedCategories([])}>Clear</Button>
-                              <Button size="sm" onClick={() => undefined}>Close</Button>
+                              <Button size="sm" onClick={() => setFilterOpen(false)}>Close</Button>
                             </div>
                           </div>
                         </PopoverContent>
                       </Popover>
+
+                      {Object.entries(QUICK_GROUPS).map(([label, list]) => {
+                        const active = list.every((c) => selectedCategories.includes(c));
+                        return (
+                          <button
+                            key={label}
+                            onClick={() => setSelectedCategories(active ? [] : list)}
+                            className={`h-8 text-[11px] px-2 rounded-full border flex items-center ${
+                              active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+
+                      <Button variant="outline" size="sm" className="h-8" onClick={() => setSelectedCategories([])}>
+                        Clear
+                      </Button>
+
                       <Button size="sm" onClick={() => setShowPartnerDialog(true)}>
                         <Plus className="h-4 w-4 mr-2" /> Add Partner
                       </Button>
                     </div>
-                  </div>
-                  {/* Quick filters: Inspect, Repair, Collect, Other */}
-                  <div className="mt-2 flex gap-1">
-                    {Object.entries(QUICK_GROUPS).map(([label, list]) => {
-                      const active = list.every((c) => selectedCategories.includes(c));
-                      return (
-                        <button
-                          key={label}
-                          onClick={() => setSelectedCategories(active ? [] : list)}
-                          className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                            active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Input
