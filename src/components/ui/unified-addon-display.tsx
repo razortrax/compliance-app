@@ -236,11 +236,18 @@ export function UnifiedAddonDisplay({
             finalConfig.showTagFilter) && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filters"
+                  className="relative shrink-0"
+                >
+                  <Filter className="h-4 w-4" />
                   {hasActiveFilters && (
-                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="absolute -top-1 -right-1 h-5 w-5 p-0 text-[10px] leading-5"
+                    >
                       {selectedTypes.length + selectedStatuses.length + selectedTags.length}
                     </Badge>
                   )}
@@ -325,6 +332,33 @@ export function UnifiedAddonDisplay({
           </Button>
         )}
       </div>
+
+      {/* Quick Type Filters (icon+label chips, scrollable on narrow widths) */}
+      {finalConfig.showTypeFilter && availableTypes.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto py-1 -mx-1 px-1">
+          {availableTypes.map((type) => {
+            const isSelected = selectedTypes.includes(type.value);
+            const Icon = type.icon;
+            return (
+              <Button
+                key={type.value}
+                variant={isSelected ? "default" : "outline"}
+                size="sm"
+                className="whitespace-nowrap"
+                onClick={() => toggleTypeFilter(type.value)}
+              >
+                {Icon ? <Icon className="h-4 w-4 mr-1" /> : null}
+                {type.label}
+              </Button>
+            );
+          })}
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0">
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Items Display */}
       {filteredItems.length > 0 ? (
