@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -93,9 +93,18 @@ export function UnifiedAddonModal({
     tags: [] as string[],
   });
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [newTag, setNewTag] = useState("");
+
+  const MAX_MB = useMemo(() => {
+    const val = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB ?? 25);
+    return Number.isFinite(val) && val > 0 ? val : 25;
+  }, []);
+  const MAX_BYTES = MAX_MB * 1024 * 1024;
+  const ACCEPT = "image/*,application/pdf";
 
   // Filter available types based on configuration
   const filteredTypes = availableTypes.filter((type) => {
@@ -104,16 +113,43 @@ export function UnifiedAddonModal({
     return true;
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      if (!formData.title) {
-        setFormData((prev) => ({
-          ...prev,
-          title: file.name.split(".").slice(0, -1).join("."),
-        }));
+  const addFiles = (files: FileList | File[]) => {
+    const incoming = Array.from(files);
+    const filtered = incoming.filter((file) => {
+      if (file.size > MAX_BYTES) {
+        alert(`${file.name} exceeds the ${MAX_MB}MB limit`);
+        return false;
       }
+      return true;
+    });
+    if (filtered.length === 0) return;
+    setSelectedFiles((prev) => [...prev, ...filtered]);
+    if (!formData.title && filtered[0]) {
+      setFormData((prev) => ({
+        ...prev,
+        title: filtered[0].name.split(".").slice(0, -1).join("."),
+      }));
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) addFiles(e.target.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(e.dataTransfer.files);
+      e.dataTransfer.clearData();
     }
   };
 
@@ -139,7 +175,7 @@ export function UnifiedAddonModal({
       return formData.title.trim() || formData.noteContent.trim();
     }
     if (formData.type === "attachment") {
-      return selectedFile || formData.title.trim();
+      return selectedFiles.length > 0 || formData.title.trim();
     }
     if (formData.type === "url") {
       return formData.url.trim() && formData.title.trim();
@@ -156,23 +192,43 @@ export function UnifiedAddonModal({
     setIsUploading(true);
 
     try {
-      let response: Response;
+      let response: Response | null = null;
 
-      // If uploading a file, use multipart form data
-      if (formData.type === "attachment" && allowFileUpload && selectedFile) {
-        const fd = new FormData();
-        fd.append("file", selectedFile);
-        if (issueId) fd.append("issueId", issueId);
-        if (cafId) fd.append("cafId", cafId);
-        fd.append("attachmentType", formData.type);
-        fd.append("title", formData.title.trim() || `${formData.type} - ${new Date().toLocaleDateString()}`);
-        fd.append("description", formData.description.trim());
-        if (formData.tags.length > 0) fd.append("tags", JSON.stringify(formData.tags));
+      // If uploading files, send each sequentially with progress
+      if (formData.type === "attachment" && allowFileUpload && selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api/attachments");
+            xhr.upload.onprogress = (evt) => {
+              if (evt.lengthComputable) {
+                setUploadProgress((p) => ({ ...p, [file.name]: Math.round((evt.loaded / evt.total) * 100) }));
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve();
+              } else {
+                reject(new Error(`Upload failed: ${xhr.status}`));
+              }
+            };
+            xhr.onerror = () => reject(new Error("Network error during upload"));
 
-        response = await fetch("/api/attachments", {
-          method: "POST",
-          body: fd,
-        });
+            const fd = new FormData();
+            fd.append("file", file);
+            if (issueId) fd.append("issueId", issueId);
+            if (cafId) fd.append("cafId", cafId);
+            fd.append("attachmentType", "attachment");
+            fd.append(
+              "title",
+              formData.title.trim() || `${file.name.split(".").slice(0, -1).join(".")}`,
+            );
+            fd.append("description", formData.description.trim());
+            if (formData.tags.length > 0) fd.append("tags", JSON.stringify(formData.tags));
+            xhr.send(fd);
+          });
+        }
+        response = new Response(null, { status: 200 });
       } else {
         // JSON payload for non-file types
         const payload: any = {
@@ -203,7 +259,7 @@ export function UnifiedAddonModal({
         });
       }
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         throw new Error("Failed to save addon");
       }
 
@@ -229,7 +285,8 @@ export function UnifiedAddonModal({
       password: "",
       tags: [],
     });
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setUploadProgress({});
     setNewTag("");
   };
 
@@ -367,15 +424,55 @@ export function UnifiedAddonModal({
 
           {formData.type === "attachment" && allowFileUpload && (
             <div className="space-y-2">
-              <Label htmlFor="file">File</Label>
-              <input
-                id="file"
-                type="file"
-                onChange={handleFileSelect}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {selectedFile && (
-                <p className="text-sm text-gray-600">Selected: {selectedFile.name}</p>
+              <Label>Files</Label>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
+                  isDragging ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"
+                }`}
+                onClick={() => document.getElementById("unified-addon-file-input")?.click()}
+              >
+                <input
+                  id="unified-addon-file-input"
+                  type="file"
+                  multiple
+                  accept={ACCEPT}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <div className="opacity-80">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600">Drag & drop files here, or click to select</p>
+                  <p className="text-xs text-gray-400">Allowed: images, PDF • Max {MAX_MB}MB each</p>
+                </div>
+              </div>
+
+              {selectedFiles.length > 0 && (
+                <ul className="mt-2 max-h-40 overflow-auto divide-y rounded border bg-white">
+                  {selectedFiles.map((f) => (
+                    <li key={f.name} className="flex items-center justify-between gap-3 p-2 text-sm">
+                      <span className="truncate">{f.name}</span>
+                      <div className="flex items-center gap-3">
+                        {uploadProgress[f.name] != null && (
+                          <span className="text-xs text-gray-500 w-14 text-right">
+                            {uploadProgress[f.name]}%
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="text-gray-500 hover:text-red-600"
+                          onClick={() => setSelectedFiles((prev) => prev.filter((x) => x !== f))}
+                          disabled={isUploading}
+                          aria-label={`Remove ${f.name}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}
