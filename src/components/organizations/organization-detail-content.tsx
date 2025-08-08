@@ -476,7 +476,7 @@ export function OrganizationDetailContent({
 
   return (
     <AppLayout name={masterOrg?.name || "Fleetrax"} topNav={topNav} className="p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6 h-full flex flex-col min-h-0">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -513,7 +513,7 @@ export function OrganizationDetailContent({
         </div>
 
         {/* Tab Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 min-h-0 flex flex-col">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="locations">
@@ -983,11 +983,11 @@ export function OrganizationDetailContent({
           </TabsContent>
 
           {/* Partners Tab - master-detail layout within org page */}
-          <TabsContent value="partners" className="space-y-6">
-            <div className="h-[600px] flex border rounded-lg bg-white overflow-hidden">
+          <TabsContent value="partners" className="space-y-6 flex-1 min-h-0">
+            <div className="h-full flex border rounded-lg bg-white overflow-hidden min-h-0">
               {/* Left Sidebar - Partners List */}
-              <div className="w-80 border-r border-gray-200 flex flex-col">
-                <div className="p-3 border-b">
+              <div className="w-80 border-r border-gray-200 flex flex-col min-h-0">
+                <div className="p-3 border-b flex-shrink-0">
                   {/* Header row: title + count on left, Add on right */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -1081,7 +1081,7 @@ export function OrganizationDetailContent({
                   </div>
                 </div>
 
-                <div className="p-3 flex-1 overflow-y-auto space-y-2">
+                <div className="p-3 flex-1 overflow-y-auto space-y-2 min-h-0">
                   {partnersLoading ? (
                     <div className="text-center py-8 text-sm text-gray-500">Loading...</div>
                   ) : partners.length === 0 ? (
@@ -1120,7 +1120,7 @@ export function OrganizationDetailContent({
               </div>
 
               {/* Right Content - Partner Details */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0">
                 {selectedPartner ? (
                   <div className="p-6 space-y-6">
                     {/* Header */}

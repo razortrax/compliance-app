@@ -121,11 +121,12 @@ export function AppLayout({
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <AppHeader name={name} topNav={topNav} />
 
-      <div className="flex">
+      {/* Body: flex-1 with min-h-0 so inner scrolls work without double scrollbars */}
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar - show when we have context */}
         {showSidebar && (
           <AppSidebar
@@ -138,7 +139,7 @@ export function AppLayout({
         )}
 
         {/* Main Content */}
-        <main className={`flex-1 ${className}`}>{children}</main>
+        <main className={`flex-1 min-h-0 overflow-hidden ${className}`}>{children}</main>
       </div>
     </div>
   );
