@@ -236,6 +236,7 @@ model equipment {
   // Relationships
   party         party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
   activity_logs activity_log[] // Enhanced activity tracking for equipment
+  action_items  action_item[]
 
   // Incident involvement relationships (unified)
   incident_involvement incident_equipment_involvement[]
@@ -258,6 +259,7 @@ model issue {
   party                   party                    @relation(fields: [partyId], references: [id])
   attachments             attachment[] // Issue can have multiple attachments
   activity_logs           activity_log[] // Enhanced activity tracking for issues
+  action_items            action_item[]
   mvr_issue               mvr_issue?
   physical_issue          physical_issue?
   drugalcohol_issue       drugalcohol_issue?
@@ -764,6 +766,99 @@ model activity_log {
   caf          corrective_action_form? @relation("CAFActivityLogs", fields: [cafId], references: [id], onDelete: Cascade)
 }
 
+// New unified Action system with subtypes (storage vs time‑based)
+model action_item {
+  id             String   @id @default(cuid())
+
+  // Entity relationships (flexible)
+  issueId        String?
+  organizationId String?
+  personId       String?
+  equipmentId    String?
+  locationId     String?
+  cafId          String?
+
+  // Common fields
+  actionType   String   // 'note' | 'attachment' | 'url' | 'credential' | 'task' | 'communication'
+  title        String
+  description  String?
+  tags         String[]
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations to core entities
+  issue        issue?                  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  organization organization?           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  person       person?                 @relation(fields: [personId], references: [id], onDelete: Cascade)
+  equipment    equipment?              @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  location     location?               @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  caf          corrective_action_form? @relation(fields: [cafId], references: [id], onDelete: Cascade)
+
+  // Subtype relations (1:1)
+  note        action_note?
+  attachment  action_attachment?
+  url         action_url?
+  credential  action_credential?
+  task        action_task?
+
+  @@index([issueId])
+  @@index([organizationId])
+  @@index([personId])
+  @@index([equipmentId])
+  @@index([locationId])
+  @@index([cafId])
+  @@index([actionType, createdAt])
+}
+
+model action_note {
+  actionId String @id
+  content  String
+
+  action action_item @relation(fields: [actionId], references: [id], onDelete: Cascade)
+}
+
+model action_attachment {
+  actionId   String @id
+  storageKey String  // S3/Spaces key or local path
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  checksum   String? // optional integrity check
+  width      Int?
+  height     Int?
+
+  action action_item @relation(fields: [actionId], references: [id], onDelete: Cascade)
+}
+
+model action_url {
+  actionId String @id
+  url      String
+
+  action action_item @relation(fields: [actionId], references: [id], onDelete: Cascade)
+}
+
+model action_credential {
+  actionId String @id
+  url      String?
+  username String?
+  password String? // encrypted
+
+  action action_item @relation(fields: [actionId], references: [id], onDelete: Cascade)
+}
+
+model action_task {
+  actionId       String   @id
+  dueAt          DateTime?
+  assignedToUser String?
+  status         String   @default("pending") // pending, in_progress, completed, cancelled
+  priority       String   @default("medium")  // low, medium, high, urgent
+  completedAt    DateTime?
+
+  action action_item @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  @@index([status, dueAt])
+}
+
 // Organization-specific tag management for future customization
 model organization_tag {
   id             String   @id @default(cuid())
@@ -818,6 +913,7 @@ model location {
 
   // Relationships
   activity_logs activity_log[] // Enhanced activity tracking for locations
+  action_items  action_item[]
   party         party?         @relation(fields: [partyId], references: [id], onDelete: Cascade)
   organization  organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   equipment     equipment[]
@@ -839,6 +935,7 @@ model organization {
   location                location[]
   corrective_action_forms corrective_action_form[] // CAF system support
   activity_logs           activity_log[] // Enhanced activity tracking
+  action_items            action_item[]
   organization_tags       organization_tag[] // Custom tag management
 
   // Equipment enum management - organizations can customize their equipment options
@@ -885,6 +982,7 @@ model person {
   state         String?
   zipCode       String?
   activity_logs activity_log[] // Enhanced activity tracking for drivers/staff
+  action_items  action_item[]
   party         party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
 
@@ -1084,6 +1182,7 @@ model corrective_action_form {
   signatures         caf_signature[]
   attachments        attachment[]        @relation("CAFAttachments")
   activity_logs      activity_log[]      @relation("CAFActivityLogs") // Enhanced activity tracking for CAFs
+  action_items       action_item[]
 }
 
 model caf_signature {
