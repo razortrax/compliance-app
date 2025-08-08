@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrganizationAddOns } from "./organization-add-ons";
@@ -146,8 +147,20 @@ export function OrganizationDetailContent({
   const [partnersLoading, setPartnersLoading] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [partnerQuery, setPartnerQuery] = useState("");
-  const [partnerCategory, setPartnerCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [partnerIncludeInactive, setPartnerIncludeInactive] = useState(false);
+  const QUICK_GROUPS: Record<string, string[]> = {
+    Inspect: ["annual_inspection_shop", "agency"],
+    Repair: ["repair_facility", "towing_service"],
+    Collect: ["collection_site", "lab", "mro", "tpa"],
+    Other: [
+      "training_provider",
+      "background_check_provider",
+      "insurance_carrier",
+      "telematics_provider",
+    ],
+  };
+
   const [showPartnerDialog, setShowPartnerDialog] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerCategory, setNewPartnerCategory] = useState<string | null>(null);
@@ -228,7 +241,7 @@ export function OrganizationDetailContent({
       setPartnersLoading(true);
       const params = new URLSearchParams();
       params.set("organizationId", organizationId);
-      if (partnerCategory) params.set("category", partnerCategory);
+      if (selectedCategories.length > 0) params.set("category", selectedCategories.join(","));
       if (partnerIncludeInactive) params.set("includeInactive", "true");
       if (partnerQuery.trim()) params.set("q", partnerQuery.trim());
       const res = await fetch(`/api/partners?${params.toString()}`);
@@ -290,7 +303,7 @@ export function OrganizationDetailContent({
     if (activeTab === "partners") {
       fetchPartners();
     }
-  }, [activeTab, organizationId, partnerCategory, partnerQuery, partnerIncludeInactive]);
+  }, [activeTab, organizationId, selectedCategories.length, partnerQuery, partnerIncludeInactive]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -913,26 +926,76 @@ export function OrganizationDetailContent({
           <TabsContent value="partners" className="space-y-6">
             <div className="h-[600px] flex border rounded-lg bg-white overflow-hidden">
               {/* Left Sidebar - Partners List */}
-              <div className="w-80 border-r border-gray-200 flex flex-col">
+              <div className="w-80 border-r border-gray-2 00 flex flex-col">
                 <div className="p-3 border-b">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Partners</h3>
-                    <Badge variant="secondary">{partners.length}</Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-gray-900">Partners</h3>
+                      <Badge variant="secondary">{partners.length}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="icon" aria-label="Filters" className="relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3"/></svg>
+                            {selectedCategories.length > 0 && (
+                              <Badge variant="secondary" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-[10px] leading-5">
+                                {selectedCategories.length}
+                              </Badge>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64" align="end">
+                          <div className="space-y-2">
+                            <div className="text-sm font-medium">Categories</div>
+                            <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                              {PARTNER_CATEGORY_CHIPS.map((chip) => {
+                                const active = selectedCategories.includes(chip.value);
+                                return (
+                                  <button
+                                    key={chip.value}
+                                    className={`text-left text-sm px-2 py-1 rounded border ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"}`}
+                                    onClick={() =>
+                                      setSelectedCategories((prev) =>
+                                        prev.includes(chip.value)
+                                          ? prev.filter((c) => c !== chip.value)
+                                          : [...prev, chip.value],
+                                      )
+                                    }
+                                  >
+                                    {chip.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="flex justify-between pt-2">
+                              <Button variant="outline" size="sm" onClick={() => setSelectedCategories([])}>Clear</Button>
+                              <Button size="sm" onClick={() => undefined}>Close</Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <Button size="sm" onClick={() => setShowPartnerDialog(true)}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Partner
+                      </Button>
+                    </div>
                   </div>
-                  {/* Quick filters (very small) */}
-                  <div className="flex gap-1 overflow-x-auto pb-1">
-                    {PARTNER_CATEGORY_CHIPS.map((chip) => (
-                      <button
-                        key={chip.value}
-                        onClick={() => setPartnerCategory((prev) => (prev === chip.value ? null : chip.value))}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                          partnerCategory === chip.value ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"
-                        }`}
-                        title={chip.label}
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
+                  {/* Quick filters: Inspect, Repair, Collect, Other */}
+                  <div className="mt-2 flex gap-1">
+                    {Object.entries(QUICK_GROUPS).map(([label, list]) => {
+                      const active = list.every((c) => selectedCategories.includes(c));
+                      return (
+                        <button
+                          key={label}
+                          onClick={() => setSelectedCategories(active ? [] : list)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                            active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-200"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Input
@@ -947,11 +1010,6 @@ export function OrganizationDetailContent({
                       onClick={() => setPartnerIncludeInactive((v) => !v)}
                     >
                       Inactive
-                    </Button>
-                  </div>
-                  <div className="mt-2">
-                    <Button size="sm" className="w-full" onClick={() => setShowPartnerDialog(true)}>
-                      <Plus className="h-4 w-4 mr-2" /> Add Partner
                     </Button>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { withApiError } from "@/lib/with-api-error";
+import { createId } from "@paralleldrive/cuid2";
 
 // Partner categories we recognize in role.roleType
 const PARTNER_CATEGORIES = [
@@ -102,10 +103,16 @@ export const POST = withApiError("/api/partners", async (request: NextRequest) =
   }
 
   // Create a vendor organization and link it to the client organization via role
-  const party = await db.party.create({ data: {} });
+  const party = await db.party.create({
+    data: {
+      id: createId(),
+      status: "active",
+    },
+  });
 
   const vendorOrg = await db.organization.create({
     data: {
+      id: createId(),
       partyId: party.id,
       name,
     },
@@ -113,6 +120,7 @@ export const POST = withApiError("/api/partners", async (request: NextRequest) =
 
   await db.role.create({
     data: {
+      id: createId(),
       partyId: party.id,
       roleType: category,
       organizationId, // client org that this partner serves
