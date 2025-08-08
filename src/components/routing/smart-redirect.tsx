@@ -87,7 +87,8 @@ export function SmartRedirect() {
               router.push(`/master/${profileData.masterOrganization.id}`);
               setHasRedirected(true);
             } else {
-              console.log("🔍 Master user missing organization data - staying on current page");
+              console.log("🔍 Master user missing organization data - send to complete profile");
+              router.push("/complete-profile?role=master");
               setHasRedirected(true);
             }
             break;
@@ -102,8 +103,8 @@ export function SmartRedirect() {
                 router.push(`/master/${masterOrganization.id}/organization/${role.organizationId}`);
                 setHasRedirected(true);
               } else {
-                console.log("🔄 Org user missing master org - staying on current page");
-                // Don't redirect to complete-profile, let user stay where they are
+                console.log("🔄 Org user missing master org - send to complete profile");
+                router.push("/complete-profile?role=organization");
                 setHasRedirected(true);
               }
             }
@@ -119,8 +120,8 @@ export function SmartRedirect() {
                 router.push(`/master/${masterOrganization.id}/organization/${role.organizationId}`);
                 setHasRedirected(true);
               } else {
-                console.log("🔄 Location user missing master org - staying on current page");
-                // Don't redirect to complete-profile, let user stay where they are
+                console.log("🔄 Location user missing master org - send to complete profile");
+                router.push("/complete-profile?role=location");
                 setHasRedirected(true);
               }
             }

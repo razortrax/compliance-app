@@ -10,32 +10,38 @@ export async function GET() {
   }
 
   try {
-    // Find the user's party and person record
-    const party = await db.party.findFirst({
-      where: { userId: userId },
-      include: {
-        person: true,
-        organization: true,
-      },
+    // 1) Fetch the user's party (person record lives here)
+    const userParty = await db.party.findFirst({
+      where: { userId },
+      include: { person: true },
     });
 
-    if (!party) {
-      return NextResponse.json(
-        {
-          error: "User profile not found",
-        },
-        { status: 404 },
-      );
+    if (!userParty) {
+      return NextResponse.json({ error: "User profile not found" }, { status: 404 });
     }
 
-    // For master users, the organization they own is their "master organization"
-    // This is the organization they use to manage other organizations
-    const masterOrganization = party.organization;
+    // 2) Resolve the user's primary organization ("master" org) robustly
+    // Prefer role linkage; fallback to org owned via party.userId (legacy)
+    let masterOrganization: any = null;
+
+    const userMasterRole = await db.role.findFirst({
+      where: { partyId: userParty.id, isActive: true, organizationId: { not: null } },
+      orderBy: { startDate: "desc" },
+      select: { organizationId: true },
+    });
+
+    if (userMasterRole?.organizationId) {
+      masterOrganization = await db.organization.findUnique({ where: { id: userMasterRole.organizationId } });
+    } else {
+      // Legacy: organization whose party is owned by this user
+      masterOrganization = await db.organization.findFirst({
+        where: { party: { userId } },
+      });
+    }
 
     return NextResponse.json({
-      person: party.person,
-      organization: party.organization, // Keep for backward compatibility
-      masterOrganization: masterOrganization, // Add the master organization for new routing
+      person: userParty.person,
+      masterOrganization,
     });
   } catch (error) {
     console.error("Error fetching user profile:", error);

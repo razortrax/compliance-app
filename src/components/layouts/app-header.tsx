@@ -64,8 +64,10 @@ export function AppHeader({ name, topNav = [] }: AppHeaderProps) {
       const response = await fetch("/api/user/profile");
       if (response.ok) {
         const data = await response.json();
-        if (data.person) {
-          setUserName(data.person.firstName);
+        if (data.person?.firstName) setUserName(data.person.firstName);
+        // Fallback to Clerk if API did not return a name
+        if (!data.person?.firstName && user) {
+          setUserName(user.firstName || user.fullName?.split(" ")[0] || null);
         }
       }
     } catch (error) {
