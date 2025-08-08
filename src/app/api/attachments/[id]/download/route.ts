@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { readFile } from "fs/promises";
 import { createId } from "@paralleldrive/cuid2";
 import { withApiError } from "@/lib/with-api-error";
+import { storage } from "@/lib/storage";
 
 // GET /api/attachments/[id]/download - Download attachment file
 export const GET = withApiError(
@@ -54,18 +55,24 @@ export const GET = withApiError(
       }
     }
 
-    // Read file from disk
+    // Read file via storage helper (Spaces or local fallback)
     let fileBuffer: Buffer;
     try {
-      fileBuffer = await readFile(attachment.filePath);
+      // If filePath is a Spaces URL, we stored with key `attachments/<name>`; attempt to parse key
+      let key = attachment.filePath;
+      const idx = key.indexOf("/attachments/");
+      if (idx !== -1) {
+        key = key.substring(idx + 1); // keep attachments/...
+      }
+      if (key.startsWith("attachments/")) {
+        fileBuffer = await storage.download({ key });
+      } else {
+        // legacy local path
+        fileBuffer = await readFile(attachment.filePath);
+      }
     } catch (fileError) {
       console.error("Error reading file:", fileError);
-      return NextResponse.json(
-        {
-          error: "File not found on disk",
-        },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
     // Log the download to activity_log (schema-aligned)

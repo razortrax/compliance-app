@@ -120,6 +120,14 @@ random_page_cost = 1.1
 # Driver Files: /org-{orgId}/drivers/{driverId}/
 # Issue Files: /org-{orgId}/drivers/{driverId}/{issueType}/
 # CDN Integration: Automatic via DigitalOcean Spaces CDN
+
+# Environment Variables (set in production):
+# DO_SPACES_KEY=...
+# DO_SPACES_SECRET=...
+# DO_SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
+# DO_SPACES_CDN=https://cdn.your-space-domain.com   # optional
+# DO_SPACES_REGION=us-east-1
+# DO_SPACES_BUCKET=fleetrax-uploads
 ```
 
 ---

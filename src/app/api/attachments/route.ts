@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { createId } from "@paralleldrive/cuid2";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { storage } from "@/lib/storage";
 import { withApiError } from "@/lib/with-api-error";
 
 // GET /api/attachments - List attachments for a CAF or entity
@@ -193,17 +194,14 @@ export const POST = withApiError("/api/attachments", async (req: NextRequest) =>
     );
   }
 
-  const uploadsDir = path.join(process.cwd(), "uploads");
-  try {
-    await mkdir(uploadsDir, { recursive: true });
-  } catch {}
-
   const fileExtension = path.extname(file.name);
   const baseFileName = path.basename(file.name, fileExtension);
   const uniqueFileName = `${baseFileName}_${createId()}${fileExtension}`;
-  const filePath = path.join(uploadsDir, uniqueFileName);
   const buffer = await file.arrayBuffer();
-  await writeFile(filePath, Buffer.from(buffer));
+
+  // Store to Spaces when configured, else local fallback
+  const key = `attachments/${uniqueFileName}`;
+  const storedPathOrUrl = await storage.upload({ key, contentType: file.type, body: buffer });
 
   const id = createId();
   const attachment = await db.attachment.create({
@@ -212,7 +210,7 @@ export const POST = withApiError("/api/attachments", async (req: NextRequest) =>
       fileName: file.name,
       fileType: file.type,
       fileSize: file.size,
-      filePath,
+      filePath: storedPathOrUrl,
       attachmentType,
       description: description || null,
       noteContent: noteContent || null,
