@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import DrugAlcoholIssueForm from "@/components/drugalcohol_issues/drugalcohol-issue-form";
-import { AddAddonModal } from "@/components/licenses/add-addon-modal";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 import { Plus, Users, Edit, Trash2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { buildStandardDriverNavigation } from "@/lib/utils";
@@ -613,117 +615,45 @@ export default function DrugAlcoholIssuesPage() {
                           </div>
                         </div>
 
-                        {/* Addons Section */}
+                        {/* Add-Ons Section */}
                         <div>
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-medium text-gray-900">Addons</h3>
+                            <h3 className="text-lg font-medium text-gray-900">Add-Ons</h3>
                             <Button size="sm" onClick={() => setShowAddonModal(true)}>
                               <Plus className="h-4 w-4 mr-2" />
-                              Addon
+                              Add Add-On
                             </Button>
                           </div>
-
-                          {/* List of Addons */}
-                          <div className="space-y-2">
-                            {attachments.map((addon) => (
-                              <div
-                                key={addon.id}
-                                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                              >
-                                <div className="flex-shrink-0">
-                                  {addon.attachmentType === "note" || addon.noteContent ? (
-                                    <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
-                                      <FileText className="h-5 w-5 text-blue-600" />
-                                    </div>
-                                  ) : addon.fileType?.startsWith("image/") ? (
-                                    <div className="w-10 h-10 rounded border overflow-hidden">
-                                      <img
-                                        src={addon.filePath}
-                                        alt={addon.fileName}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                  ) : addon.fileType?.startsWith("video/") ? (
-                                    <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center">
-                                      <FileText className="h-5 w-5 text-purple-600" />
-                                    </div>
-                                  ) : (
-                                    <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                                      <FileText className="h-5 w-5 text-gray-600" />
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate">
-                                    {addon.fileName || "Untitled"}
-                                  </p>
-                                  {addon.description && (
-                                    <p className="text-xs text-gray-600 truncate">
-                                      {addon.description}
-                                    </p>
-                                  )}
-                                  {addon.noteContent && (
-                                    <p
-                                      className="text-xs text-gray-600 italic"
-                                      style={{
-                                        display: "-webkit-box",
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: "vertical",
-                                        overflow: "hidden",
-                                      }}
-                                    >
-                                      "
-                                      {addon.noteContent.length > 150
-                                        ? addon.noteContent.substring(0, 150) + "..."
-                                        : addon.noteContent}
-                                      "
-                                    </p>
-                                  )}
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="outline" className="text-xs">
-                                      {addon.attachmentType === "note"
-                                        ? "Note"
-                                        : addon.noteContent
-                                          ? "File + Note"
-                                          : "File"}
-                                    </Badge>
-                                    <span className="text-xs text-gray-500">
-                                      {new Date(addon.createdAt).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-1">
-                                  {addon.attachmentType === "note" || addon.noteContent ? (
-                                    <Button size="sm" variant="ghost">
-                                      View
-                                    </Button>
-                                  ) : (
-                                    <Button size="sm" variant="ghost" asChild>
-                                      <a
-                                        href={addon.filePath}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        View
-                                      </a>
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-
-                            {attachments.length === 0 && (
-                              <div className="text-center py-6 text-gray-500">
-                                <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                                <p className="text-sm">No attachments yet</p>
-                                <p className="text-xs">
-                                  Add test results, chain of custody, or other documents
-                                </p>
-                              </div>
-                            )}
-                          </div>
+                          <UnifiedAddonDisplay
+                            items={attachments.map((a) => ({
+                              id: a.id,
+                              attachmentType:
+                                a.attachmentType || (a.noteContent ? "note" : a.filePath ? "url" : "attachment"),
+                              fileName: a.fileName,
+                              description: a.description,
+                              noteContent: a.noteContent,
+                              url: a.filePath,
+                              fileType: a.fileType,
+                              fileSize: a.fileSize,
+                              createdAt: a.createdAt,
+                              updatedAt: a.updatedAt,
+                              tags: a.tags,
+                              status: a.status,
+                            }))}
+                            availableTypes={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.availableTypes}
+                            config={{
+                              showSearch: true,
+                              showTypeFilter: true,
+                              allowCreate: false,
+                              emptyStateText: "No add-ons yet",
+                            }}
+                            onViewClick={(item) => {
+                              if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                            }}
+                            onDownloadClick={(item) => {
+                              if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                            }}
+                          />
                         </div>
                       </div>
                     </CardContent>
@@ -745,12 +675,16 @@ export default function DrugAlcoholIssuesPage() {
         </div>
       </AppLayout>
 
-      {/* Add Addon Modal */}
-      <AddAddonModal
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
         isOpen={showAddonModal}
         issueId={selectedDrugAlcohol?.issue.id || ""}
         onSuccess={handleAddAddonSuccess}
         onClose={() => setShowAddonModal(false)}
+        issueType="drugalcohol"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.modalDescription}
       />
     </>
   );

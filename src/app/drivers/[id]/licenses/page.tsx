@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LicenseForm } from "@/components/licenses/license-form";
-import { AddAddonModal } from "@/components/licenses/add-addon-modal";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 import { Edit, Plus, FileText, IdCard, CheckCircle, AlertCircle, Loader2, Clock } from "lucide-react";
 
 interface Person {
@@ -916,119 +918,51 @@ export default function DriverLicensesPage() {
                           </div>
                         </div>
 
-                        {/* Addons Section */}
+                        {/* Add-Ons Section */}
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-medium text-gray-900">Addons</h4>
+                            <h4 className="font-medium text-gray-900">Add-Ons</h4>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => setShowAddAddonModal(true)}
                             >
                               <Plus className="h-4 w-4 mr-1" />
-                              Add
+                              Add Add-On
                             </Button>
                           </div>
-
-                          {/* List of Addons */}
-                          <div className="space-y-2">
-                            {attachments
-                              .filter(
-                                (a) =>
-                                  !["license_front", "license_back"].includes(a.attachmentType),
-                              )
-                              .map((addon) => (
-                                <div
-                                  key={addon.id}
-                                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                                >
-                                  <div className="flex-shrink-0">
-                                    {addon.attachmentType === "note" || addon.noteContent ? (
-                                      <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
-                                        <FileText className="h-5 w-5 text-blue-600" />
-                                      </div>
-                                    ) : addon.fileType?.startsWith("image/") ? (
-                                      <div className="w-10 h-10 rounded border overflow-hidden">
-                                        <NextImage
-                                          src={addon.url}
-                                          alt={addon.fileName || "Attachment image"}
-                                          width={40}
-                                          height={40}
-                                          className="w-full h-full object-cover"
-                                          unoptimized
-                                        />
-                                      </div>
-                                    ) : addon.fileType?.startsWith("video/") ? (
-                                      <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center">
-                                        <FileText className="h-5 w-5 text-purple-600" />
-                                      </div>
-                                    ) : (
-                                      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                                        <FileText className="h-5 w-5 text-gray-600" />
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                      {addon.fileName || "Untitled"}
-                                    </p>
-                                    {addon.description && (
-                                      <p className="text-xs text-gray-600 truncate">
-                                        {addon.description}
-                                      </p>
-                                    )}
-                                    {addon.noteContent && (
-                                      <p className="text-xs text-gray-600 truncate italic">
-                                        "{addon.noteContent.substring(0, 50)}..."
-                                      </p>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge variant="outline" className="text-xs">
-                                        {addon.attachmentType === "note"
-                                          ? "Note"
-                                          : addon.noteContent
-                                            ? "File + Note"
-                                            : "File"}
-                                      </Badge>
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(addon.createdAt).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-1">
-                                    {addon.attachmentType === "note" || addon.noteContent ? (
-                                      <Button size="sm" variant="ghost">
-                                        View
-                                      </Button>
-                                    ) : (
-                                      <Button size="sm" variant="ghost" asChild>
-                                        <a
-                                          href={addon.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          View
-                                        </a>
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-
-                            {attachments.filter(
-                              (a) => !["license_front", "license_back"].includes(a.attachmentType),
-                            ).length === 0 && (
-                              <div className="text-center py-6 text-gray-500">
-                                <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                                <p className="text-sm">No addons yet</p>
-                                <p className="text-xs">
-                                  Add notes, documents, or other files related to this license
-                                </p>
-                              </div>
-                            )}
-                          </div>
+                          <UnifiedAddonDisplay
+                            items={attachments
+                              .filter((a) => !["license_front", "license_back"].includes(a.attachmentType))
+                              .map((a) => ({
+                                id: a.id,
+                                attachmentType:
+                                  a.attachmentType || (a.noteContent ? "note" : a.url ? "url" : "attachment"),
+                                fileName: a.title || a.fileName,
+                                description: a.description,
+                                noteContent: a.noteContent,
+                                url: a.url,
+                                fileType: a.fileType,
+                                fileSize: a.fileSize,
+                                createdAt: a.createdAt,
+                                updatedAt: a.updatedAt,
+                                tags: a.tags,
+                                status: a.status,
+                              }))}
+                            availableTypes={UNIFIED_ADDON_CONFIGURATIONS.license.modal.availableTypes}
+                            config={{
+                              showSearch: true,
+                              showTypeFilter: true,
+                              allowCreate: false,
+                              emptyStateText: "No add-ons yet",
+                            }}
+                            onViewClick={(item) => {
+                              if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                            }}
+                            onDownloadClick={(item) => {
+                              if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                            }}
+                          />
                         </div>
 
                         {/* Notes Section - if any */}
@@ -1060,8 +994,8 @@ export default function DriverLicensesPage() {
         </div>
       </AppLayout>
 
-      {/* Add Addon Modal */}
-      <AddAddonModal
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
         isOpen={showAddAddonModal}
         onClose={() => setShowAddAddonModal(false)}
         onSuccess={() => {
@@ -1069,6 +1003,10 @@ export default function DriverLicensesPage() {
           setShowAddAddonModal(false);
         }}
         issueId={selectedLicense?.issue.id || ""}
+        issueType="license"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.license.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.license.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.license.modal.modalDescription}
       />
     </>
   );
