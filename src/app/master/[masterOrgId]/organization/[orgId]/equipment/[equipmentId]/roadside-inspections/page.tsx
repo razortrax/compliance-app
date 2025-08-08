@@ -30,6 +30,9 @@ import { format } from "date-fns";
 import EnhancedRoadsideInspectionForm from "@/components/roadside_inspections/enhanced-roadside-inspection-form";
 import ViolationGroupsWithCAFGeneration from "@/components/cafs/violation-groups-with-caf-generation";
 import CAFDetailModal from "@/components/cafs/caf-detail-modal";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 
 interface RoadsideInspection {
   id: string;
@@ -144,6 +147,8 @@ export default function EquipmentRoadsideInspectionsPage() {
   // CAF Generation State
   const [createdCAFsInSession, setCreatedCAFsInSession] = useState<string[]>([]);
   const [selectedCAFId, setSelectedCAFId] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
 
   // Smart expiration status function - Equipment Gold Standard (RSIN-specific)
   const getRoadsideInspectionStatus = (roadsideInspection: RoadsideInspection) => {
@@ -220,6 +225,28 @@ export default function EquipmentRoadsideInspectionsPage() {
       setLoading(false);
     }
   };
+
+  const fetchAttachments = async (issueId: string) => {
+    try {
+      const response = await fetch(`/api/attachments?issueId=${issueId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAttachments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching attachments:", error);
+    }
+  };
+
+  // Refresh attachments when selected inspection changes
+  useEffect(() => {
+    if (selectedRoadsideInspection?.issue?.id) {
+      fetchAttachments(selectedRoadsideInspection.issue.id);
+    } else {
+      setAttachments([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoadsideInspection]);
 
   const handleAddRoadsideInspection = async (formData: any) => {
     try {
@@ -597,6 +624,47 @@ export default function EquipmentRoadsideInspectionsPage() {
                     <h4 className="font-medium mb-3">Activity Log</h4>
                     <ActivityLog issueId={selectedRoadsideInspection.id} />
                   </div>
+
+                  {/* Add-Ons */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-900">Add-Ons</h4>
+                      <Button size="sm" variant="outline" onClick={() => setShowAddAddonModal(true)}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Add-On
+                      </Button>
+                    </div>
+                    <UnifiedAddonDisplay
+                      items={attachments.map((a) => ({
+                        id: a.id,
+                        attachmentType:
+                          a.attachmentType || (a.noteContent ? "note" : a.url ? "url" : "attachment"),
+                        fileName: a.title || a.fileName,
+                        description: a.description,
+                        noteContent: a.noteContent,
+                        url: a.url,
+                        fileType: a.fileType,
+                        fileSize: a.fileSize,
+                        createdAt: a.createdAt,
+                        updatedAt: a.updatedAt,
+                        tags: a.tags,
+                        status: a.status,
+                      }))}
+                      availableTypes={UNIFIED_ADDON_CONFIGURATIONS.roadside_inspection.modal.availableTypes}
+                      config={{
+                        showSearch: false,
+                        showTypeFilter: false,
+                        allowCreate: false,
+                        emptyStateText: "No add-ons yet",
+                      }}
+                      onViewClick={(item) => {
+                        if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                      }}
+                      onDownloadClick={(item) => {
+                        if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                      }}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ) : (
@@ -628,6 +696,23 @@ export default function EquipmentRoadsideInspectionsPage() {
 
       {/* CAF Detail Modal */}
       <CAFDetailModal cafId={selectedCAFId ?? undefined} onClose={() => setSelectedCAFId(null)} />
+
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={() => {
+          if (selectedRoadsideInspection?.issue?.id) {
+            fetchAttachments(selectedRoadsideInspection.issue.id);
+          }
+          setShowAddAddonModal(false);
+        }}
+        issueId={selectedRoadsideInspection?.issue?.id || ""}
+        issueType="roadside_inspection"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.roadside_inspection.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.roadside_inspection.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.roadside_inspection.modal.modalDescription}
+      />
     </AppLayout>
   );
 }
