@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Edit, Plus, FileText, IdCard, CheckCircle, AlertCircle, Clock, X } from "lucide-react";
 import { format } from "date-fns";
-import { ActivityLog } from "@/components/ui/activity-log";
+// duplicate import removed
 
 interface License {
   id: string;

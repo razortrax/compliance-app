@@ -34,7 +34,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
-import { ActivityLog } from "@/components/ui/activity-log";
+// duplicate import removed
 
 interface MaintenanceIssue {
   id: string;
