@@ -393,8 +393,8 @@ export function OrganizationDetailContent({
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="others">
-              Others <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">0</span>
+            <TabsTrigger value="partners">
+              Partners <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 rounded-full">0</span>
             </TabsTrigger>
             <TabsTrigger value="stuff">Stuff</TabsTrigger>
           </TabsList>
@@ -843,20 +843,20 @@ export function OrganizationDetailContent({
             </div>
           </TabsContent>
 
-          {/* Others Tab */}
-          <TabsContent value="others" className="space-y-6">
+          {/* Partners Tab */}
+          <TabsContent value="partners" className="space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Others</CardTitle>
+                    <CardTitle>Partners</CardTitle>
                     <CardDescription>
                       External parties that work with {organization?.name}
                     </CardDescription>
                   </div>
-                  <Button>
+                  <Button onClick={() => router.push(`/organizations/${organizationId}/partners`)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Party
+                    Add Partner
                   </Button>
                 </div>
               </CardHeader>

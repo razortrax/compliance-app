@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ActivityLog } from "@/components/ui/activity-log";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, Plus, Building2, Users } from "lucide-react";
 
 type Partner = {
@@ -50,6 +52,10 @@ export default function OrganizationPartnersPage() {
   const [selected, setSelected] = useState<Partner | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState("");
+  const [newPartnerCategory, setNewPartnerCategory] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     fetchPartners();
@@ -141,7 +147,73 @@ export default function OrganizationPartnersPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 className="h-8 w-40"
               />
-              <Button size="sm" onClick={() => router.push(`/organizations/${organizationId}`)}>
+              <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-1" /> New Partner
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Partner</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Name</label>
+                      <Input
+                        placeholder="Vendor name"
+                        value={newPartnerName}
+                        onChange={(e) => setNewPartnerName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Category</label>
+                      <Select value={newPartnerCategory || undefined} onValueChange={setNewPartnerCategory as any}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORY_CHIPS.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowNewDialog(false)} disabled={creating}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (!newPartnerName.trim() || !newPartnerCategory) return;
+                          setCreating(true);
+                          try {
+                            const res = await fetch("/api/partners", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ organizationId, name: newPartnerName.trim(), category: newPartnerCategory }),
+                            });
+                            if (res.ok) {
+                              setShowNewDialog(false);
+                              setNewPartnerName("");
+                              setNewPartnerCategory(null);
+                              await fetchPartners();
+                            }
+                          } finally {
+                            setCreating(false);
+                          }
+                        }}
+                        disabled={creating || !newPartnerName.trim() || !newPartnerCategory}
+                      >
+                        {creating ? "Creating..." : "Create"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button size="sm" variant="outline" onClick={() => router.push(`/organizations/${organizationId}`)}>
                 Back
               </Button>
             </div>
