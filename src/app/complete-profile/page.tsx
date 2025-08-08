@@ -118,9 +118,10 @@ function CompleteProfileForm() {
       console.log("🔄 Redirecting after profile completion, role:", roleParam);
 
       // Direct redirect based on role instead of going through SmartRedirect
-      if (roleParam === "master" && result.organization?.id) {
-        console.log("🔄 Direct redirect to master dashboard:", result.organization.id);
-        router.push(`/master/${result.organization.id}`);
+      const orgId = result?.data?.organizationId || result?.organization?.id;
+      if (roleParam === "master" && orgId) {
+        console.log("🔄 Direct redirect to master dashboard:", orgId);
+        router.push(`/master/${orgId}`);
       } else {
         console.log("🔄 Fallback redirect to homepage for SmartRedirect handling");
         router.push("/");
