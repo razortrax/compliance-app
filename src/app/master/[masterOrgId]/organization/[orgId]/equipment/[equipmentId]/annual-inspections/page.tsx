@@ -31,6 +31,9 @@ import {
   Shield,
 } from "lucide-react";
 import { format } from "date-fns";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 
 interface AnnualInspection {
   id: string;
@@ -89,6 +92,8 @@ export default function EquipmentAnnualInspectionsPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showRenewalForm, setShowRenewalForm] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<AnnualInspection | null>(null);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
 
   useEffect(() => {
     if (equipmentId) {
@@ -131,6 +136,18 @@ export default function EquipmentAnnualInspectionsPage() {
       setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshAttachments = async () => {
+    if (!selectedInspection?.issue?.id) return;
+    try {
+      const res = await fetch(`/api/attachments?issueId=${selectedInspection.issue.id}`);
+      if (res.ok) {
+        setAttachments(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -499,10 +516,19 @@ export default function EquipmentAnnualInspectionsPage() {
 
                         {/* Gold Standard Add Ons Section */}
                         <div className="border-t pt-4">
-                          <ActivityLog
-                            issueId={selectedInspection.issue.id}
-                            title="Add Ons Log"
-                            showAddButton={true}
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium text-gray-900">Add-Ons</h4>
+                            {selectedInspection?.issue?.id && (
+                              <Button size="sm" variant="outline" onClick={() => setShowAddAddonModal(true)}>
+                                <Plus className="h-4 w-4 mr-1" /> Add Add-On
+                              </Button>
+                            )}
+                          </div>
+                          <UnifiedAddonDisplay
+                            items={attachments}
+                            availableTypes={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.availableTypes}
+                            config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
+                            onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
                           />
                         </div>
 
@@ -569,6 +595,18 @@ export default function EquipmentAnnualInspectionsPage() {
           </div>
         </div>
       </div>
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={refreshAttachments}
+        issueId={selectedInspection?.issue?.id || ""}
+        issueType="annual_inspection"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.annual_inspection.modal.modalDescription}
+        allowFileUpload
+      />
     </AppLayout>
   );
 }

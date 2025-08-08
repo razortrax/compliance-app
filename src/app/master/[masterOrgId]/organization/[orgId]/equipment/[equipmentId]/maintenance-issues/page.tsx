@@ -34,6 +34,9 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 
 interface MaintenanceIssue {
   id: string;
@@ -118,6 +121,8 @@ export default function EquipmentMaintenanceIssuesPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showABSchedule, setShowABSchedule] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<MaintenanceIssue | null>(null);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
 
   useEffect(() => {
     if (equipmentId) {
@@ -245,6 +250,16 @@ export default function EquipmentMaintenanceIssuesPage() {
     setShowEditForm(false);
     setSelectedIssue(null);
     fetchData();
+  };
+
+  const refreshAttachments = async () => {
+    if (!selectedIssue?.issue?.id) return;
+    try {
+      const res = await fetch(`/api/attachments?issueId=${selectedIssue.issue.id}`);
+      if (res.ok) setAttachments(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleEdit = (issue: MaintenanceIssue) => {
@@ -656,12 +671,22 @@ export default function EquipmentMaintenanceIssuesPage() {
                       )}
                     </div>
 
-                    {/* Gold Standard Add Ons - CONTAINED WITHIN SCROLL */}
+                    {/* Add-Ons */}
                     <div className="border-t pt-6">
-                      <h3 className="text-lg font-semibold mb-4">Communications & Documentation</h3>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <ActivityLog issueId={selectedIssue.issue.id} />
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold">Add-Ons</h3>
+                        {selectedIssue?.issue?.id && (
+                          <Button size="sm" variant="outline" onClick={() => setShowAddAddonModal(true)}>
+                            <Plus className="h-4 w-4 mr-1" /> Add Add-On
+                          </Button>
+                        )}
                       </div>
+                      <UnifiedAddonDisplay
+                        items={attachments}
+                        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.maintenance.modal.availableTypes}
+                        config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
+                        onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
+                      />
                     </div>
                   </div>
                 ) : (
@@ -719,6 +744,19 @@ export default function EquipmentMaintenanceIssuesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={refreshAttachments}
+        issueId={selectedIssue?.issue?.id || ""}
+        issueType="maintenance"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.maintenance.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.maintenance.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.maintenance.modal.modalDescription}
+        allowFileUpload
+      />
     </AppLayout>
   );
 }

@@ -18,6 +18,9 @@ import {
 import { RegistrationForm } from "@/components/registrations/registration-form";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityLog } from "@/components/ui/activity-log";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 import {
   Clipboard,
   Plus,
@@ -92,6 +95,8 @@ export default function EquipmentRegistrationsPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showRenewalForm, setShowRenewalForm] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
 
   useEffect(() => {
     if (equipmentId) {
@@ -453,12 +458,21 @@ export default function EquipmentRegistrationsPage() {
                         </div>
                       )}
 
-                      {/* Gold Standard Add Ons Section */}
+                      {/* Add-Ons */}
                       <div className="border-t pt-4">
-                        <ActivityLog
-                          issueId={selectedRegistration.issue.id}
-                          title="Add Ons Log"
-                          showAddButton={true}
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-gray-900">Add-Ons</h4>
+                          {selectedRegistration?.issue?.id && (
+                            <Button size="sm" variant="outline" onClick={() => setShowAddAddonModal(true)}>
+                              <Plus className="h-4 w-4 mr-1" /> Add Add-On
+                            </Button>
+                          )}
+                        </div>
+                        <UnifiedAddonDisplay
+                          items={attachments}
+                          availableTypes={UNIFIED_ADDON_CONFIGURATIONS.registration.modal.availableTypes}
+                          config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
+                          onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
                         />
                       </div>
 
@@ -524,7 +538,26 @@ export default function EquipmentRegistrationsPage() {
           </div>
         </div>
       </div>
-      {/* Add Addon Modal - REMOVED since using ActivityLog's built-in add functionality */}
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={async () => {
+          if (!selectedRegistration?.issue?.id) return;
+          try {
+            const res = await fetch(`/api/attachments?issueId=${selectedRegistration.issue.id}`);
+            if (res.ok) setAttachments(await res.json());
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+        issueId={selectedRegistration?.issue?.id || ""}
+        issueType="registration"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.registration.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.registration.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.registration.modal.modalDescription}
+        allowFileUpload
+      />
     </AppLayout>
   );
 }

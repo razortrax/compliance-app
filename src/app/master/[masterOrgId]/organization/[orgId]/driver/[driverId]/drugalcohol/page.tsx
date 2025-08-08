@@ -28,6 +28,9 @@ import {
   TestTubes,
 } from "lucide-react";
 import { format } from "date-fns";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 
 interface DrugAlcoholTest {
   id: string;
@@ -95,6 +98,7 @@ export default function MasterDriverDrugAlcoholPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [showAddAddonModal, setShowAddAddonModal] = useState(false);
 
   // URL-driven data loading - Gold Standard pattern! 🚀
   useEffect(() => {
@@ -448,10 +452,26 @@ export default function MasterDriverDrugAlcoholPage() {
                       )}
                     </div>
 
-                    {/* Activity Log */}
+                    {/* Add-Ons */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Activity Log</h4>
-                      <ActivityLog issueId={selectedTest.issue.id} />
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">Add-Ons</h4>
+                        {selectedTest?.issue?.id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowAddAddonModal(true)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" /> Add Add-On
+                          </Button>
+                        )}
+                      </div>
+                      <UnifiedAddonDisplay
+                        items={attachments}
+                        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.availableTypes}
+                        config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
+                        onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
+                      />
                     </div>
                   </CardContent>
                 </div>
@@ -468,6 +488,18 @@ export default function MasterDriverDrugAlcoholPage() {
           </div>
         </div>
       </div>
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={refreshAttachments}
+        issueId={selectedTest?.issue?.id || ""}
+        issueType="drugalcohol"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.drugalcohol.modal.modalDescription}
+        allowFileUpload
+      />
     </AppLayout>
   );
 }

@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { Edit, Plus, FileText, IdCard, CheckCircle, AlertCircle, Clock, X } from "lucide-react";
 import { format } from "date-fns";
+import { UnifiedAddonDisplay } from "@/components/ui/unified-addon-display";
+import { UnifiedAddonModal } from "@/components/ui/unified-addon-modal";
+import { UNIFIED_ADDON_CONFIGURATIONS } from "@/hooks/use-unified-addons";
 
 interface License {
   id: string;
@@ -497,6 +500,27 @@ export default function MasterDriverLicensesPage() {
               <CardContent className="overflow-y-auto max-h-[calc(100%-120px)]">
                 {selectedLicense ? (
                   <div className="space-y-6">
+                    {/* Add-Ons */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">Add-Ons</h4>
+                        {selectedLicense?.issue?.id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowAddAddonModal(true)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" /> Add Add-On
+                          </Button>
+                        )}
+                      </div>
+                      <UnifiedAddonDisplay
+                        items={attachments}
+                        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.license.modal.availableTypes}
+                        config={{ allowCreate: false, showTypeFilter: false, showSearch: false }}
+                        onDownloadClick={(item) => window.open(`/api/attachments/${item.id}/download`, "_blank")}
+                      />
+                    </div>
                     {/* License Information */}
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
@@ -635,6 +659,19 @@ export default function MasterDriverLicensesPage() {
           </Card>
         </Dialog>
       )}
+
+      {/* Unified Add-On Modal */}
+      <UnifiedAddonModal
+        isOpen={showAddAddonModal}
+        onClose={() => setShowAddAddonModal(false)}
+        onSuccess={refreshAttachments}
+        issueId={selectedLicense?.issue?.id || ""}
+        issueType="license"
+        availableTypes={UNIFIED_ADDON_CONFIGURATIONS.license.modal.availableTypes}
+        modalTitle={UNIFIED_ADDON_CONFIGURATIONS.license.modal.modalTitle}
+        modalDescription={UNIFIED_ADDON_CONFIGURATIONS.license.modal.modalDescription}
+        allowFileUpload
+      />
     </AppLayout>
   );
 }
