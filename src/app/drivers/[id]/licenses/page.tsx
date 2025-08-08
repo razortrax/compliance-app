@@ -10,24 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LicenseForm } from "@/components/licenses/license-form";
 import { AddAddonModal } from "@/components/licenses/add-addon-modal";
-import {
-  Edit,
-  Plus,
-  FileText,
-  IdCard,
-  ArrowLeft,
-  User,
-  Eye,
-  Truck,
-  MapPin,
-  Hash,
-  Phone,
-  Mail,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  Clock,
-} from "lucide-react";
+import { Edit, Plus, FileText, IdCard, CheckCircle, AlertCircle, Loader2, Clock } from "lucide-react";
 
 interface Person {
   id: string;
@@ -114,9 +97,9 @@ export default function DriverLicensesPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showAddAddonModal, setShowAddAddonModal] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [_uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+  const [_organizations, setOrganizations] = useState<Organization[]>([]);
+  const [_isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Smart expiration status function - MVR Gold Standard
   const getExpirationStatus = (license: License) => {
@@ -217,6 +200,7 @@ export default function DriverLicensesPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (driverId) {
       fetchDriver();
@@ -283,11 +267,6 @@ export default function DriverLicensesPage() {
     }
   };
 
-  const handleOrganizationSelect = (selectedOrg: Organization) => {
-    setIsSheetOpen(false);
-    router.push(`/organizations/${selectedOrg.id}/drivers`);
-  };
-
   const handleRenewLicense = (license: License) => {
     setSelectedLicense(license);
     setShowRenewalForm(true);
@@ -306,43 +285,8 @@ export default function DriverLicensesPage() {
     }
   };
 
-  const handleFileUpload = async (file: File, attachmentType: string, issueId: string) => {
-    const uploadKey = `${issueId}-${attachmentType}`;
-
-    try {
-      setUploadingFiles((prev) => new Set(prev).add(uploadKey));
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("issueId", issueId);
-      formData.append("attachmentType", attachmentType);
-
-      const response = await fetch("/api/attachments", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        // Refresh attachments after successful upload
-        await fetchAttachments(issueId);
-        alert("File uploaded successfully!");
-      } else {
-        const error = await response.json();
-        alert(`Upload failed: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Upload failed. Please try again.");
-    } finally {
-      setUploadingFiles((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(uploadKey);
-        return newSet;
-      });
-    }
-  };
-
   // Fetch attachments when selected license changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selectedLicense?.issue.id) {
       fetchAttachments(selectedLicense.issue.id);
@@ -414,7 +358,7 @@ export default function DriverLicensesPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-gray-900">Driver not found</h2>
             <p className="text-gray-600 mt-2">
-              The driver you're looking for doesn't exist or you don't have permission to view it.
+              The driver you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.
             </p>
           </div>
         </div>
